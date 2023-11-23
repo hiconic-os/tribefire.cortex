@@ -15,7 +15,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Locale;
 
-import com.auxilii.glf.client.exception.LicenseException;
+// import com.auxilii.glf.client.exception.LicenseException;
 import com.braintribe.common.lcd.Pair;
 import com.braintribe.logging.Logger;
 import com.braintribe.model.generic.session.InputStreamProvider;
@@ -81,26 +81,26 @@ public class LicenseTools {
 		return sb.toString();
 	}
 
-	public static Pair<com.auxilii.glf.client.License, String> validateLicense(InputStreamProvider licenseInputStreamProvider, Object license) {
-		try {
-			LicenseLoader licenseLoader = new LicenseLoader(licenseInputStreamProvider);
-			com.auxilii.glf.client.License glfLicense = com.auxilii.glf.client.License.loadLicensePreliminary(GlfLicenseManager.LICENSE_KEY,
-					licenseLoader);
-
-			Date expiryDate = glfLicense.getExpiryDate();
-			if (expiryDate != null && expiryDate.before(new Date()))
-				throw new IllegalArgumentException("License has expired on " + expiryDate);
-
-			if (!glfLicense.isValid()) {
-				throw new IllegalStateException("License " + license + " is not valid.");
-			}
-
-			return Pair.of(glfLicense, licenseLoader.getMd5());
-
-		} catch (LicenseException e) {
-			throw new IllegalStateException("License " + license + " is not valid.", e);
-		}
-
-	}
+//	public static Pair<com.auxilii.glf.client.License, String> validateLicense(InputStreamProvider licenseInputStreamProvider, Object license) {
+//		try {
+//			LicenseLoader licenseLoader = new LicenseLoader(licenseInputStreamProvider);
+//			com.auxilii.glf.client.License glfLicense = com.auxilii.glf.client.License.loadLicensePreliminary(GlfLicenseManager.LICENSE_KEY,
+//					licenseLoader);
+//
+//			Date expiryDate = glfLicense.getExpiryDate();
+//			if (expiryDate != null && expiryDate.before(new Date()))
+//				throw new IllegalArgumentException("License has expired on " + expiryDate);
+//
+//			if (!glfLicense.isValid()) {
+//				throw new IllegalStateException("License " + license + " is not valid.");
+//			}
+//
+//			return Pair.of(glfLicense, licenseLoader.getMd5());
+//
+//		} catch (LicenseException e) {
+//			throw new IllegalStateException("License " + license + " is not valid.", e);
+//		}
+//
+//	}
 
 }

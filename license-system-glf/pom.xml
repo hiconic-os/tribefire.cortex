@@ -56,11 +56,13 @@ You should have received a copy of the GNU Lesser General Public License along w
             <artifactId>ioc-annotations</artifactId>
             <version>${V.com.braintribe.common}</version>
         </dependency>
+        <!--
         <dependency>
             <groupId>com.auxilii</groupId>
             <artifactId>glf-client</artifactId>
             <version>${V.com.auxilii}</version>
         </dependency>
+        -->
         <dependency>
             <groupId>com.braintribe.gm</groupId>
             <artifactId>gm-session-api</artifactId>

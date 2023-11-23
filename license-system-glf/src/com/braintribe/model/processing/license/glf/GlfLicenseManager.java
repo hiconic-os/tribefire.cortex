@@ -17,8 +17,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import java.util.zip.Adler32;
 
-import com.auxilii.glf.client.License;
-import com.auxilii.glf.client.LicenseLoader;
+//import com.auxilii.glf.client.License;
+//import com.auxilii.glf.client.LicenseLoader;
 import com.braintribe.cfg.Configurable;
 import com.braintribe.cfg.Required;
 import com.braintribe.common.lcd.Numbers;
@@ -126,27 +126,27 @@ public class GlfLicenseManager implements LicenseManager {
 
 	private void checkLicenseInternally() throws Exception {
 
-		License license = License.getInstance(LICENSE_KEY, this.licenseLoader);
-		if (!license.isValid())
-			throw new Exception(String.format("License '%s' is not valid.", license.getLicensee()));
-
-		PersistenceGmSession session = this.sessionProvider.get();
-		com.braintribe.model.license.License modelLicense = LicenseLoaderUtil.getLicenseResource(session);
-		this.syncLicenseInformation(license, modelLicense, session);
-
-		long licenseChecksum = getAdler32(License.class);
-		if (licenseChecksum != LICENSE_CHECKSUM)
-			throw new Exception("The License manager is not the one as expected.");
-
-		if (logger.isTraceEnabled()) {
-
-			String expiry = "it is non-expiring";
-			if (license.getExpiryDate() != null) {
-				expiry = String.format("it expires on %s", DateTools.encode(license.getExpiryDate(), DateTools.ISO8601_DATE_WITH_MS_FORMAT));
-			}
-
-			logger.trace(String.format("This product is licensed to '%s' (%s)", license.getLicensee(), expiry));
-		}
+//		License license = License.getInstance(LICENSE_KEY, this.licenseLoader);
+//		if (!license.isValid())
+//			throw new Exception(String.format("License '%s' is not valid.", license.getLicensee()));
+//
+//		PersistenceGmSession session = this.sessionProvider.get();
+//		com.braintribe.model.license.License modelLicense = LicenseLoaderUtil.getLicenseResource(session);
+//		this.syncLicenseInformation(license, modelLicense, session);
+//
+//		long licenseChecksum = getAdler32(License.class);
+//		if (licenseChecksum != LICENSE_CHECKSUM)
+//			throw new Exception("The License manager is not the one as expected.");
+//
+//		if (logger.isTraceEnabled()) {
+//
+//			String expiry = "it is non-expiring";
+//			if (license.getExpiryDate() != null) {
+//				expiry = String.format("it expires on %s", DateTools.encode(license.getExpiryDate(), DateTools.ISO8601_DATE_WITH_MS_FORMAT));
+//			}
+//
+//			logger.trace(String.format("This product is licensed to '%s' (%s)", license.getLicensee(), expiry));
+//		}
 
 	}
 
@@ -162,66 +162,66 @@ public class GlfLicenseManager implements LicenseManager {
 		}
 	}
 
-	protected void syncLicenseInformation(License license, com.braintribe.model.license.License modelLicense, PersistenceGmSession session) {
-
-		try {
-			String systemLicenseIdLicense = license.getLicenseId();
-			String systemLicenseIdModel = modelLicense.getSystemLicenseId();
-			if (systemLicenseIdLicense != null) {
-				if (systemLicenseIdModel == null || !systemLicenseIdModel.equals(systemLicenseIdLicense)) {
-					modelLicense.setSystemLicenseId(systemLicenseIdLicense);
-				}
-			}
-
-			Date expiryDateLicense = license.getExpiryDate();
-			Date expiryDateModel = modelLicense.getExpiryDate();
-			if (expiryDateLicense != null) {
-				if ((expiryDateModel == null) || (!expiryDateModel.equals(expiryDateLicense))) {
-					modelLicense.setExpiryDate(expiryDateLicense);
-				}
-			} else {
-				if (expiryDateModel != null) {
-					modelLicense.setExpiryDate(null);
-				}
-			}
-
-			String licenseeLicense = license.getLicensee();
-			String licenseeModel = modelLicense.getLicensee();
-			if (licenseeLicense != null) {
-				if ((licenseeModel == null) || (!licenseeModel.equals(licenseeLicense))) {
-					modelLicense.setLicensee(licenseeLicense);
-				}
-			}
-
-			String licensorLicense = license.getLicensor();
-			String licensorModel = modelLicense.getLicensor();
-			if (licensorLicense != null) {
-				if ((licensorModel == null) || (!licensorModel.equals(licensorLicense))) {
-					modelLicense.setLicensor(licensorLicense);
-				}
-			}
-
-			String licenseeAccountLicense = license.getLicenseeAccount();
-			String licenseeAccountModel = modelLicense.getLicenseeAccount();
-			if (licenseeAccountLicense != null) {
-				if ((licenseeAccountModel == null) || (!licenseeAccountModel.equals(licenseeAccountLicense))) {
-					modelLicense.setLicenseeAccount(licenseeAccountLicense);
-				}
-			}
-
-			Date issueDateLicense = license.getIssueDate();
-			Date issueDateModel = modelLicense.getIssueDate();
-			if (issueDateLicense != null) {
-				if ((issueDateModel == null) || (!issueDateModel.equals(issueDateLicense))) {
-					modelLicense.setIssueDate(issueDateLicense);
-				}
-			}
-
-			session.commit();
-		} catch (Exception e) {
-			logger.debug("Could not sync the license.", e);
-		}
-	}
+//	private void syncLicenseInformation(License license, com.braintribe.model.license.License modelLicense, PersistenceGmSession session) {
+//
+//		try {
+//			String systemLicenseIdLicense = license.getLicenseId();
+//			String systemLicenseIdModel = modelLicense.getSystemLicenseId();
+//			if (systemLicenseIdLicense != null) {
+//				if (systemLicenseIdModel == null || !systemLicenseIdModel.equals(systemLicenseIdLicense)) {
+//					modelLicense.setSystemLicenseId(systemLicenseIdLicense);
+//				}
+//			}
+//
+//			Date expiryDateLicense = license.getExpiryDate();
+//			Date expiryDateModel = modelLicense.getExpiryDate();
+//			if (expiryDateLicense != null) {
+//				if ((expiryDateModel == null) || (!expiryDateModel.equals(expiryDateLicense))) {
+//					modelLicense.setExpiryDate(expiryDateLicense);
+//				}
+//			} else {
+//				if (expiryDateModel != null) {
+//					modelLicense.setExpiryDate(null);
+//				}
+//			}
+//
+//			String licenseeLicense = license.getLicensee();
+//			String licenseeModel = modelLicense.getLicensee();
+//			if (licenseeLicense != null) {
+//				if ((licenseeModel == null) || (!licenseeModel.equals(licenseeLicense))) {
+//					modelLicense.setLicensee(licenseeLicense);
+//				}
+//			}
+//
+//			String licensorLicense = license.getLicensor();
+//			String licensorModel = modelLicense.getLicensor();
+//			if (licensorLicense != null) {
+//				if ((licensorModel == null) || (!licensorModel.equals(licensorLicense))) {
+//					modelLicense.setLicensor(licensorLicense);
+//				}
+//			}
+//
+//			String licenseeAccountLicense = license.getLicenseeAccount();
+//			String licenseeAccountModel = modelLicense.getLicenseeAccount();
+//			if (licenseeAccountLicense != null) {
+//				if ((licenseeAccountModel == null) || (!licenseeAccountModel.equals(licenseeAccountLicense))) {
+//					modelLicense.setLicenseeAccount(licenseeAccountLicense);
+//				}
+//			}
+//
+//			Date issueDateLicense = license.getIssueDate();
+//			Date issueDateModel = modelLicense.getIssueDate();
+//			if (issueDateLicense != null) {
+//				if ((issueDateModel == null) || (!issueDateModel.equals(issueDateLicense))) {
+//					modelLicense.setIssueDate(issueDateLicense);
+//				}
+//			}
+//
+//			session.commit();
+//		} catch (Exception e) {
+//			logger.debug("Could not sync the license.", e);
+//		}
+//	}
 
 	/**
 	 * Computes the Adler-32 checksum of the class file specified in <code>c</code> by using the
@@ -258,8 +258,9 @@ public class GlfLicenseManager implements LicenseManager {
 	}
 
 	@Required
+	// Careful, this was originally com.auxilii.glf.client.LicenseLoader
 	public void setLicenseLoader(LicenseLoader licenseLoader) {
-		this.licenseLoader = licenseLoader;
+		// this.licenseLoader = licenseLoader;
 	}
 	@Required
 	public void setSessionProvider(Supplier<PersistenceGmSession> sessionProvider) {

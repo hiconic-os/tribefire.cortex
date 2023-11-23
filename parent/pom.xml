@@ -36,9 +36,6 @@ You should have received a copy of the GNU Lesser General Public License along w
         <V.com.braintribe.wire>[2.0,2.1)</V.com.braintribe.wire>
         <V.com.braintribe.xml>[2.0,2.1)</V.com.braintribe.xml>
 
-        <!-- Temporary because of js-deployment-model which brings UxModule entity -->
-	    <V.tribefire.extension.js>[3.0,3.1)</V.tribefire.extension.js>
-
         <!-- externals -->
         <V.com.auxilii>1.1</V.com.auxilii>
         <V.com.github.ben-manes.caffeine>2.8.8</V.com.github.ben-manes.caffeine>
@@ -49,19 +46,18 @@ You should have received a copy of the GNU Lesser General Public License along w
         <V.com.mchange_mchange-commons-java>0.2.19</V.com.mchange_mchange-commons-java>
         <V.com.microsoft.jdbc>4.0.2206.100</V.com.microsoft.jdbc>
         <V.com.microsoft.sqlserver>8.2.2.jre8</V.com.microsoft.sqlserver>
-        <V.com.oracle>11.2.0.3.0</V.com.oracle>
+        <V.com.oracle.database.jdbc>11.2.0.4</V.com.oracle.database.jdbc>
         <V.com.vladsch.flexmark>0.34.18</V.com.vladsch.flexmark>
         <V.commons-io>2.11.0</V.commons-io>
         <V.commons-lang>2.6</V.commons-lang>
         <V.io.dropwizard.metrics>4.0.5</V.io.dropwizard.metrics>
         <V.io.jsonwebtoken>0.11.2</V.io.jsonwebtoken>
-        <V.javax.servlet>3.0.1</V.javax.servlet>
+        <V.javax.servlet>3.1.0</V.javax.servlet>
         <V.javax.transaction>1.2</V.javax.transaction>
         <V.javax.websocket>1.1</V.javax.websocket>
         <V.mysql>5.1.36</V.mysql>
         <V.net.java.dev.jna>5.8.0</V.net.java.dev.jna>
         <V.net.lingala.zip4j>2.2.3</V.net.lingala.zip4j>
-        <V.org.antlr>4.4</V.org.antlr>
         <V.org.apache.ant_ant>1.8.2</V.org.apache.ant_ant>
         <V.org.apache.ant_ant-junit>1.10.5</V.org.apache.ant_ant-junit>
         <V.org.apache.commons>1.6</V.org.apache.commons>

@@ -121,17 +121,17 @@ public class LicenseUploadedProcessor implements StateChangeProcessor<Resource, 
 		Resource resource = context.getProcessEntity();
 		PersistenceGmSession session = context.getSession();
 
-		com.auxilii.glf.client.License glfLicense = null;
-		try {
-			ProvidedLicenseResourceLoader resourceLoader = new ProvidedLicenseResourceLoader(session, resource);
-			glfLicense = com.auxilii.glf.client.License.loadLicensePreliminary(GlfLicenseManager.LICENSE_KEY, resourceLoader);
-			if (!glfLicense.isValid()) {
-				throw new Exception("The uploaded license is not valid.");
-			}
-		} catch (Exception e) {
-			logger.warn("Could not validate the license file.", e);
-			return;
-		}
+//		com.auxilii.glf.client.License glfLicense = null;
+//		try {
+//			ProvidedLicenseResourceLoader resourceLoader = new ProvidedLicenseResourceLoader(session, resource);
+//			glfLicense = com.auxilii.glf.client.License.loadLicensePreliminary(GlfLicenseManager.LICENSE_KEY, resourceLoader);
+//			if (!glfLicense.isValid()) {
+//				throw new Exception("The uploaded license is not valid.");
+//			}
+//		} catch (Exception e) {
+//			logger.warn("Could not validate the license file.", e);
+//			return;
+//		}
 
 
 		License license = session.create(License.T);
@@ -146,30 +146,30 @@ public class LicenseUploadedProcessor implements StateChangeProcessor<Resource, 
 			logger.debug("Could not get the current user.", e);
 		}
 
-		try {
-			Date expiryDate = glfLicense.getExpiryDate();
-			if (expiryDate != null) {
-				license.setExpiryDate(expiryDate);
-			}
-			String licensee = glfLicense.getLicensee();
-			if (licensee != null) {
-				license.setLicensee(licensee);
-			}
-			String licensor = glfLicense.getLicensor();
-			if (licensor != null) {
-				license.setLicensor(licensor);
-			}
-			Date issueDate = glfLicense.getIssueDate();
-			if (issueDate != null) {
-				license.setIssueDate(issueDate);
-			}
-			String licenseeAccount = glfLicense.getLicenseeAccount();
-			if (licenseeAccount != null) {
-				license.setLicenseeAccount(licenseeAccount);
-			}
-		} catch(Exception e ) {
-			logger.warn("Could not get information from the license file.", e);
-		}
+//		try {
+//			Date expiryDate = glfLicense.getExpiryDate();
+//			if (expiryDate != null) {
+//				license.setExpiryDate(expiryDate);
+//			}
+//			String licensee = glfLicense.getLicensee();
+//			if (licensee != null) {
+//				license.setLicensee(licensee);
+//			}
+//			String licensor = glfLicense.getLicensor();
+//			if (licensor != null) {
+//				license.setLicensor(licensor);
+//			}
+//			Date issueDate = glfLicense.getIssueDate();
+//			if (issueDate != null) {
+//				license.setIssueDate(issueDate);
+//			}
+//			String licenseeAccount = glfLicense.getLicenseeAccount();
+//			if (licenseeAccount != null) {
+//				license.setLicenseeAccount(licenseeAccount);
+//			}
+//		} catch(Exception e ) {
+//			logger.warn("Could not get information from the license file.", e);
+//		}
 
 
 		try {

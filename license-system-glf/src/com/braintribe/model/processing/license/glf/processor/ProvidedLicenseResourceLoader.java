@@ -13,28 +13,27 @@ package com.braintribe.model.processing.license.glf.processor;
 
 import java.io.InputStream;
 
-import com.auxilii.glf.client.exception.SystemException;
-import com.auxilii.glf.client.loader.XMLLoader;
+//import com.auxilii.glf.client.loader.XMLLoader;
 import com.braintribe.logging.Logger;
 import com.braintribe.model.processing.license.glf.LicenseResourceLoader;
 import com.braintribe.model.processing.session.api.persistence.PersistenceGmSession;
 import com.braintribe.model.processing.session.api.resource.ResourceAccess;
 import com.braintribe.model.resource.Resource;
 
-public class ProvidedLicenseResourceLoader extends XMLLoader {
+public class ProvidedLicenseResourceLoader /*extends XMLLoader */ {
 
 	protected static Logger logger = Logger.getLogger(LicenseResourceLoader.class);
 	
 	protected Resource licenseResource = null;
 	protected PersistenceGmSession session = null;
 	
-	public ProvidedLicenseResourceLoader(PersistenceGmSession session, Resource licenseResource) throws SystemException {
+	public ProvidedLicenseResourceLoader(PersistenceGmSession session, Resource licenseResource) {
 		super();
 		this.session = session;
 		this.licenseResource = licenseResource;
 	}
 
-	@Override
+	//@Override
 	protected InputStream openLicenseStream() throws Exception {
 		
 		if (this.licenseResource == null)
@@ -49,12 +48,12 @@ public class ProvidedLicenseResourceLoader extends XMLLoader {
 		return is;
 	}
 
-	@Override
+	// @Override
 	protected void saveState() {
 		//Nothing to do here
 	}
 	
-	@Override
+	// @Override
 	protected boolean stateChanged() {
 		return false;
 	}

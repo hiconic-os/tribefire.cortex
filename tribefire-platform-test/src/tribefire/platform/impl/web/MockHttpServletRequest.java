@@ -36,19 +36,20 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpUpgradeHandler;
 import javax.servlet.http.Part;
 
 public class MockHttpServletRequest implements HttpServletRequest {
 
-	private Map<String,List<String>> headers = new HashMap<>();
-	
+	private final Map<String, List<String>> headers = new HashMap<>();
+
 	private String pathInfo;
-	private String method = "GET";
-	
+	private final String method = "GET";
+
 	public void setPathInfo(String pathInfo) {
 		this.pathInfo = pathInfo;
 	}
-	
+
 	@Override
 	public Object getAttribute(String name) {
 		return null;
@@ -66,7 +67,7 @@ public class MockHttpServletRequest implements HttpServletRequest {
 
 	@Override
 	public void setCharacterEncoding(String env) throws UnsupportedEncodingException {
-		//left empty for the moment
+		// left empty for the moment
 	}
 
 	@Override
@@ -141,12 +142,12 @@ public class MockHttpServletRequest implements HttpServletRequest {
 
 	@Override
 	public void setAttribute(String name, Object o) {
-		//left empty for the moment
+		// left empty for the moment
 	}
 
 	@Override
 	public void removeAttribute(String name) {
-		//left empty for the moment
+		// left empty for the moment
 	}
 
 	@Override
@@ -249,7 +250,7 @@ public class MockHttpServletRequest implements HttpServletRequest {
 	public String getHeader(String name) {
 		return null;
 	}
-	
+
 	public void addHeader(String name, String value) {
 		List<String> values = headers.computeIfAbsent(name, n -> new ArrayList<>());
 		values.add(value);
@@ -356,7 +357,7 @@ public class MockHttpServletRequest implements HttpServletRequest {
 		return false;
 	}
 
-	@Deprecated// needed by javax.servlet.http.HttpServletRequest
+	@Deprecated // needed by javax.servlet.http.HttpServletRequest
 	@Override
 	public boolean isRequestedSessionIdFromUrl() {
 		return false;
@@ -369,12 +370,12 @@ public class MockHttpServletRequest implements HttpServletRequest {
 
 	@Override
 	public void login(String username, String password) throws ServletException {
-		//left empty for the moment
+		// left empty for the moment
 	}
 
 	@Override
 	public void logout() throws ServletException {
-		//left empty for the moment
+		// left empty for the moment
 	}
 
 	@Override
@@ -384,6 +385,21 @@ public class MockHttpServletRequest implements HttpServletRequest {
 
 	@Override
 	public Part getPart(String name) throws IOException, ServletException {
+		return null;
+	}
+
+	@Override
+	public long getContentLengthLong() {
+		return 0;
+	}
+
+	@Override
+	public String changeSessionId() {
+		return null;
+	}
+
+	@Override
+	public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException {
 		return null;
 	}
 

@@ -42,7 +42,12 @@ You should have received a copy of the GNU Lesser General Public License along w
         </dependency>
         <dependency>
             <groupId>com.braintribe.gm</groupId>
-            <artifactId>collaborative-smood-access-test</artifactId>
+            <artifactId>collaborative-smood-access-test-base</artifactId>
+            <version>${V.com.braintribe.gm}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.braintribe.gm</groupId>
+            <artifactId>json-marshaller</artifactId>
             <version>${V.com.braintribe.gm}</version>
         </dependency>
         <dependency>
@@ -56,9 +61,9 @@ You should have received a copy of the GNU Lesser General Public License along w
             <version>${V.com.zaxxer}</version>
         </dependency>
         <dependency>
-            <groupId>com.oracle</groupId>
+			<groupId>com.oracle.database.jdbc</groupId>
             <artifactId>ojdbc6</artifactId>
-            <version>${V.com.oracle}</version>
+            <version>${V.com.oracle.database.jdbc}</version>
         </dependency>
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>

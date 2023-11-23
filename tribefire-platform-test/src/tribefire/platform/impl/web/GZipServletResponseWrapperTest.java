@@ -22,7 +22,6 @@ import java.util.zip.GZIPInputStream;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.braintribe.servlet.test.mock.MockHttpServletResponse;
 import com.braintribe.utils.IOTools;
 import com.braintribe.utils.StringTools;
 import com.braintribe.utils.date.NanoClock;

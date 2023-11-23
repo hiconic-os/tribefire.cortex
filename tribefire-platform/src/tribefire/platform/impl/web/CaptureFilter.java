@@ -24,6 +24,7 @@ import java.util.UUID;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
@@ -76,8 +77,8 @@ public class CaptureFilter implements HttpFilter {
 	}
 
 	private static class CaptureOutputStream extends ServletOutputStream {
-		private OutputStream out;
-		private OutputStream cOut;
+		private final OutputStream out;
+		private final OutputStream cOut;
 
 		public CaptureOutputStream(OutputStream out, OutputStream cOut) {
 			super();
@@ -96,14 +97,25 @@ public class CaptureFilter implements HttpFilter {
 			out.write(b, off, len);
 			cOut.write(b, off, len);
 		}
+
+		@Override
+		public boolean isReady() {
+			return true;
+		}
+
+		@Override
+		public void setWriteListener(WriteListener writeListener) {
+			throw new UnsupportedOperationException("Method 'CaptureFilter.CaptureOutputStream.setWriteListener' is not supported!");
+		}
+
 	}
 
 	private class CapturedHttpServletResponse extends HttpServletResponseWrapper implements AutoCloseable {
 		private CaptureOutputStream out;
 		private	OutputStream cOut;
 		private PrintWriter printWriter;
-		private String callId;
-		private String path;
+		private final String callId;
+		private final String path;
 
 		public CapturedHttpServletResponse(HttpServletResponse response, String path, String callId) {
 			super(response);

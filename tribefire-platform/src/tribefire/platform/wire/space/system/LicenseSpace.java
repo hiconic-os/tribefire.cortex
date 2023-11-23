@@ -31,7 +31,7 @@ public class LicenseSpace implements WireSpace {
 	@Managed
 	public LicenseManager manager() {
 		GlfLicenseManager bean = new GlfLicenseManager();
-		bean.setLicenseLoader(resourceLoader());
+		//bean.setLicenseLoader(resourceLoader());
 		bean.setSessionProvider(cortexAccess.sessionProvider());
 		return bean;
 	}

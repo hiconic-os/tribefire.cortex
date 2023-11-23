@@ -16,16 +16,16 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-import com.auxilii.glf.client.exception.SystemException;
-import com.auxilii.glf.client.loader.XMLLoader;
+//import com.auxilii.glf.client.exception.SystemException;
+//import com.auxilii.glf.client.loader.XMLLoader;
 import com.braintribe.model.generic.session.InputStreamProvider;
 import com.braintribe.utils.StringTools;
 
-public class LicenseLoader extends XMLLoader {
-	private InputStreamProvider inputStreamProvider;
+public class LicenseLoader /*extends XMLLoader*/ {
+	private final InputStreamProvider inputStreamProvider;
 	private MessageDigest digest;
 
-	public LicenseLoader(InputStreamProvider inputStreamProvider) throws SystemException {
+	public LicenseLoader(InputStreamProvider inputStreamProvider) /*throws SystemException*/ {
 		super();
 		this.inputStreamProvider = inputStreamProvider;
 		
@@ -36,7 +36,7 @@ public class LicenseLoader extends XMLLoader {
 		}
 	}
 	
-	@Override
+	// @Override
 	public InputStream openLicenseStream() throws Exception {
 		return new DigestInputStream(inputStreamProvider.openInputStream(), digest);
 	}
@@ -45,7 +45,7 @@ public class LicenseLoader extends XMLLoader {
 		return StringTools.toHex(digest.digest());
 	}
 	
-	@Override
+	// @Override
 	public boolean stateChanged() {
 		return false;
 	}

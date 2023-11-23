@@ -81,9 +81,9 @@ You should have received a copy of the GNU Lesser General Public License along w
             <version>${V.org.postgresql}</version>
         </dependency>
         <dependency>
-            <groupId>com.oracle</groupId>
+            <groupId>com.oracle.database.jdbc</groupId>
             <artifactId>ojdbc6</artifactId>
-            <version>${V.com.oracle}</version>
+            <version>${V.com.oracle.database.jdbc}</version>
         </dependency>
         <!-- excluded basic of crappy jna dependency in this mariadb -->
         <dependency>

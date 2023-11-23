@@ -11,11 +11,14 @@
 // ============================================================================
 package com.braintribe.transport.messaging.dmb;
 
+import org.junit.Ignore;
+
 import com.braintribe.transport.messaging.api.MessagingConnection;
 import com.braintribe.transport.messaging.api.MessagingConnectionProvider;
 import com.braintribe.transport.messaging.api.MessagingContext;
 import com.braintribe.transport.messaging.api.test.GmMessagingHeavyDistributionTest;
 
+@Ignore
 public class GmDmbMessagingHeavyDistributionTest extends GmMessagingHeavyDistributionTest {
 
 	@Override

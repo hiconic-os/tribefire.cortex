@@ -14,8 +14,8 @@ package com.braintribe.model.processing.license.glf;
 import java.io.InputStream;
 import java.util.function.Supplier;
 
-import com.auxilii.glf.client.exception.SystemException;
-import com.auxilii.glf.client.loader.XMLLoader;
+//import com.auxilii.glf.client.exception.SystemException;
+//import com.auxilii.glf.client.loader.XMLLoader;
 import com.braintribe.cfg.Required;
 import com.braintribe.logging.Logger;
 import com.braintribe.model.license.License;
@@ -27,7 +27,7 @@ import com.braintribe.model.processing.session.api.persistence.PersistenceGmSess
 import com.braintribe.model.processing.session.api.resource.ResourceAccess;
 import com.braintribe.model.resource.Resource;
 
-public class LicenseResourceLoader extends XMLLoader {
+public class LicenseResourceLoader /*extends XMLLoader*/ {
 
 	protected static Logger logger = Logger.getLogger(LicenseResourceLoader.class);
 	
@@ -35,62 +35,63 @@ public class LicenseResourceLoader extends XMLLoader {
 	protected long nextLicenseRefresh = -1L;
 	protected long refreshEveryMs = 10000L;
 	
-	public LicenseResourceLoader() throws SystemException {
+	public LicenseResourceLoader() {
 		super();
 	}
 
-	@Override
-	protected InputStream openLicenseStream() throws LicenseViolatedException {
+	//@Override
+	protected InputStream openLicenseStream() /*throws LicenseViolatedException*/ {
+		throw new UnsupportedOperationException("Method 'LicenseResourceLoader.openLicenseStream' is not supported!");
 		
-		if (this.sessionProvider == null) {
-			throw new SessionUnavailableException("No session provider is available.");
-		}
-		PersistenceGmSession session = null;
-		try {
-			session = this.sessionProvider.get();
-		} catch(Exception e) {
-			throw new SessionUnavailableException("Error while acquiring a session from the session provider.");
-		}
-		if (session == null) {
-			throw new SessionUnavailableException("The session provider returned no session.");
-		}
-		
-		License license = LicenseLoaderUtil.getLicenseResource(session);
-
-		Resource licenseResource = license.getLicenseResource();
-		if (licenseResource == null) {
-			throw new NoLicenseConfiguredException("The license does not reference a resource.");
-		}
-
-		String resourceId = licenseResource.getId();
-		
-		if (logger.isTraceEnabled())
-			logger.trace("Opening license resource "+resourceId);
-
-		InputStream is = null;
-
-		try {
-			ResourceAccess resourceAccess = session.resources();
-			is = resourceAccess.retrieve(licenseResource).stream();
-
-			if (logger.isTraceEnabled())
-				logger.trace("Successfully opened InputStream from resource "+resourceId);
-			
-			this.nextLicenseRefresh = System.currentTimeMillis() + this.refreshEveryMs;
-			
-		} catch(Throwable t) {
-			throw new LicenseLoadException("Could not load license resource "+resourceId, t);
-		}
-
-		return is;
+//		if (this.sessionProvider == null) {
+//			throw new SessionUnavailableException("No session provider is available.");
+//		}
+//		PersistenceGmSession session = null;
+//		try {
+//			session = this.sessionProvider.get();
+//		} catch(Exception e) {
+//			throw new SessionUnavailableException("Error while acquiring a session from the session provider.");
+//		}
+//		if (session == null) {
+//			throw new SessionUnavailableException("The session provider returned no session.");
+//		}
+//		
+//		License license = LicenseLoaderUtil.getLicenseResource(session);
+//
+//		Resource licenseResource = license.getLicenseResource();
+//		if (licenseResource == null) {
+//			throw new NoLicenseConfiguredException("The license does not reference a resource.");
+//		}
+//
+//		String resourceId = licenseResource.getId();
+//		
+//		if (logger.isTraceEnabled())
+//			logger.trace("Opening license resource "+resourceId);
+//
+//		InputStream is = null;
+//
+//		try {
+//			ResourceAccess resourceAccess = session.resources();
+//			is = resourceAccess.retrieve(licenseResource).stream();
+//
+//			if (logger.isTraceEnabled())
+//				logger.trace("Successfully opened InputStream from resource "+resourceId);
+//			
+//			this.nextLicenseRefresh = System.currentTimeMillis() + this.refreshEveryMs;
+//			
+//		} catch(Throwable t) {
+//			throw new LicenseLoadException("Could not load license resource "+resourceId, t);
+//		}
+//
+//		return is;
 	}
 
-	@Override
+	// @Override
 	protected void saveState() {
 		//Nothing to do here
 	}
 	
-	@Override
+	// @Override
 	protected boolean stateChanged() {
 		long now = System.currentTimeMillis();
 		if (now > this.nextLicenseRefresh) {

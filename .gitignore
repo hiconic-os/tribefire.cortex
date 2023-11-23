@@ -10,3 +10,4 @@
 **/target
 
 *.container.cfg.xml
+.gradle

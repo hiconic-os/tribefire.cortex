@@ -27,7 +27,6 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import com.braintribe.execution.queue.FifoEntry;
-import com.braintribe.execution.queue.TestableFifoEntry;
 import com.braintribe.model.processing.securityservice.api.UserSessionScope;
 import com.braintribe.model.processing.securityservice.api.UserSessionScoping;
 import com.braintribe.model.processing.securityservice.api.UserSessionScopingBuilder;
@@ -62,8 +61,6 @@ public class MultiThreadedSpInvocationTest {
 	public void testInvocationPriorityFifoWithIntegerOverflow() throws Exception {
 
 		PriorityBlockingQueue<FifoEntry<StateChangeProcessorInvocationPacket>> queue = new PriorityBlockingQueue<>();
-
-		TestableFifoEntry.overrideSequence(Integer.MAX_VALUE - 10);
 
 		// After 10 adds, the seq number should flip to a negative value
 		int count = 20;

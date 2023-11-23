@@ -18,6 +18,7 @@ import java.util.function.Consumer;
 import java.util.zip.GZIPOutputStream;
 
 import javax.servlet.ServletOutputStream;
+import javax.servlet.WriteListener;
 
 /**
  * This is an implementation of a {@link ServletOutputStream} that keeps the first n bytes
@@ -40,9 +41,9 @@ class GZipServletOutputStream extends ServletOutputStream {
 
 	boolean writingToBuffer = true; 
 	
-	private int zipThreshold;
-	private int zipBufferSize;
-	private Consumer<Boolean> switchToZipEventConsumer;
+	private final int zipThreshold;
+	private final int zipBufferSize;
+	private final Consumer<Boolean> switchToZipEventConsumer;
 	
 	/**
 	 * Initializes the GZipServletOutputStream object.
@@ -151,5 +152,16 @@ class GZipServletOutputStream extends ServletOutputStream {
 		writingToBuffer = false;
 		baos = null;
 	}
+
+	@Override
+	public boolean isReady() {
+		return true;
+	}
+
+	@Override
+	public void setWriteListener(WriteListener writeListener) {
+		throw new UnsupportedOperationException("Method 'GZipServletOutputStream.setWriteListener' is not supported!");
+	}
+
 	
 }
