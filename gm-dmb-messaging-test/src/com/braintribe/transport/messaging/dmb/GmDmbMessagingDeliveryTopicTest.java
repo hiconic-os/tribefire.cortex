@@ -15,8 +15,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 
-import org.junit.Ignore;
-
 import com.braintribe.model.messaging.Destination;
 import com.braintribe.transport.messaging.api.MessageProducer;
 import com.braintribe.transport.messaging.api.MessagingConnection;
@@ -25,7 +23,6 @@ import com.braintribe.transport.messaging.api.MessagingContext;
 import com.braintribe.transport.messaging.api.test.GmMessagingDeliveryTopicTest;
 import com.braintribe.transport.messaging.dbm.GmDmbMqMessageProducer;
 
-@Ignore
 public class GmDmbMessagingDeliveryTopicTest extends GmMessagingDeliveryTopicTest {
 
 	@Override
