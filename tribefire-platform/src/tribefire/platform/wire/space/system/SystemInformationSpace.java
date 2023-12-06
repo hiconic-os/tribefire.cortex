@@ -51,9 +51,6 @@ import tribefire.platform.wire.space.system.servlets.SystemServletsSpace;
 public class SystemInformationSpace implements WireSpace {
 
 	@Import
-	private LicenseSpace license;
-
-	@Import
 	private MasterResourcesSpace resources;
 
 	@Import
@@ -126,7 +123,6 @@ public class SystemInformationSpace implements WireSpace {
 		PlatformReflectionProcessor bean = new PlatformReflectionProcessor();
 
 		StandardTribefireInformationProvider tfInfoProvider = new StandardTribefireInformationProvider();
-		tfInfoProvider.setLicenseManager(license.manager());
 		tfInfoProvider.setPackagingProvider(packagingProvider());
 		tfInfoProvider.setSessionFactory(sessions.systemSessionFactory());
 		tfInfoProvider.setPlatformSetupSupplier(platformSetupAccess.platformSetupSupplier());

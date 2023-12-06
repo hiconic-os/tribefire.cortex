@@ -17,7 +17,6 @@ import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.generic.reflection.EntityTypes;
 import com.braintribe.model.platformreflection.request.PlatformReflectionResponse;
 import com.braintribe.model.platformreflection.streampipes.StreamPipesInfo;
-import com.braintribe.model.platformreflection.tf.License;
 import com.braintribe.model.platformreflection.tf.ModuleAssets;
 import com.braintribe.model.platformreflection.tf.SetupAssets;
 import com.braintribe.model.platformreflection.tf.TribefireServicesInfo;
@@ -31,9 +30,6 @@ public interface TribefireInfo extends PlatformReflectionResponse {
 
 	void setTribefireRuntimeProperties(Map<String, String> tribefireRuntimeProperties);
 	Map<String, String> getTribefireRuntimeProperties();
-
-	License getLicense();
-	void setLicense(License license);
 
 	SetupAssets getSetupAssets();
 	void setSetupAssets(SetupAssets setupAssets);

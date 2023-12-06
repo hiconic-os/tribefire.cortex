@@ -73,7 +73,6 @@ import tribefire.platform.wire.space.module.RequestUserRelatedSpace;
 import tribefire.platform.wire.space.rpc.RpcSpace;
 import tribefire.platform.wire.space.security.CurrentUserAuthContextSpace;
 import tribefire.platform.wire.space.security.MasterUserAuthContextSpace;
-import tribefire.platform.wire.space.system.LicenseSpace;
 import tribefire.platform.wire.space.system.SystemInformationSpace;
 import tribefire.platform.wire.space.system.TopologySpace;
 
@@ -90,7 +89,6 @@ public class SystemServletsSpace implements WireSpace {
 	@Import	private CurrentUserAuthContextSpace currentUserAuthContext;
 	@Import	private EnvironmentSpace environment;
 	@Import	private GmSessionsSpace gmSessions;
-	@Import	private LicenseSpace license;
 	@Import	private MasterUserAuthContextSpace masterUserAuthContext;
 	@Import	private PlatformSetupAccessSpace platformSetupAccess;
 	@Import	private RequestUserRelatedSpace requestUserRelated;
@@ -114,7 +112,6 @@ public class SystemServletsSpace implements WireSpace {
 		bean.setCortexSessionFactory(cortexAccess.sessionProvider());
 		bean.setSystemRequestEvaluator(rpc.systemServiceRequestEvaluator());
 		bean.setPackagingProvider(systemInformation.packagingProvider());
-		bean.setLicenseManager(license.manager());
 		bean.setGrantedRoles(set("tf-admin", "tf-locksmith"));
 		bean.setPlatformSetupSupplier(platformSetupAccess.platformSetupSupplier());
 

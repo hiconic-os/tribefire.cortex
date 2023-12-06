@@ -103,7 +103,6 @@ import com.braintribe.model.platformreflection.request.GetDiagnosticPackage;
 import com.braintribe.model.platformreflection.request.GetHeapDump;
 import com.braintribe.model.platformreflection.request.GetHostInformation;
 import com.braintribe.model.platformreflection.request.GetHotThreads;
-import com.braintribe.model.platformreflection.request.GetLicenseInformation;
 import com.braintribe.model.platformreflection.request.GetModulesFolder;
 import com.braintribe.model.platformreflection.request.GetPackagingInformation;
 import com.braintribe.model.platformreflection.request.GetProcesses;
@@ -120,7 +119,6 @@ import com.braintribe.model.platformreflection.request.ReflectPlatform;
 import com.braintribe.model.platformreflection.request.ReflectPlatformJson;
 import com.braintribe.model.platformreflection.tf.ClasspathContainer;
 import com.braintribe.model.platformreflection.tf.DeployablesInfo;
-import com.braintribe.model.platformreflection.tf.License;
 import com.braintribe.model.platformsetup.PlatformSetup;
 import com.braintribe.model.platformsetup.api.request.GetAssets;
 import com.braintribe.model.platformsetup.api.response.AssetCollection;
@@ -252,7 +250,6 @@ public class PlatformReflectionProcessor extends AbstractDispatchingServiceProce
 		dispatching.register(GetAccessDataFolder.T, this::getAccessDataFolder);
 		dispatching.register(GetSharedStorage.T, this::getSharedStorage);
 		dispatching.register(GetThreadDump.T, this::getThreadDump);
-		dispatching.register(GetLicenseInformation.T, this::getLicenseInformation);
 		dispatching.register(GetSetupDescriptor.T, this::getSetupDescriptor);
 		dispatching.register(GetRepositoryViewResolution.T, this::getRepositoryViewResolution);
 		dispatching.register(GetModulesFolder.T, this::getModulesFolder);
@@ -1431,11 +1428,6 @@ public class PlatformReflectionProcessor extends AbstractDispatchingServiceProce
 			this.indexString = indexString;
 			this.rbo = rbo;
 		}
-	}
-
-	@SuppressWarnings("unused")
-	protected License getLicenseInformation(ServiceRequestContext context, GetLicenseInformation request) {
-		return tribefireInformationProvider.getLicenseInformation();
 	}
 
 	@SuppressWarnings("unused")

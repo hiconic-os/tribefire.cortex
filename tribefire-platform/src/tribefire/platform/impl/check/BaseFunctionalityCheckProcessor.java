@@ -11,14 +11,10 @@
 // ============================================================================
 package tribefire.platform.impl.check;
 
-import java.text.SimpleDateFormat;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
@@ -31,7 +27,6 @@ import java.util.concurrent.locks.Lock;
 import com.braintribe.cfg.Configurable;
 import com.braintribe.cfg.LifecycleAware;
 import com.braintribe.cfg.Required;
-import com.braintribe.common.lcd.Numbers;
 import com.braintribe.exception.Exceptions;
 import com.braintribe.execution.monitoring.ThreadPoolMonitoring;
 import com.braintribe.execution.monitoring.ThreadPoolStatistics;
@@ -41,8 +36,6 @@ import com.braintribe.model.check.service.CheckResult;
 import com.braintribe.model.check.service.CheckResultEntry;
 import com.braintribe.model.check.service.CheckStatus;
 import com.braintribe.model.generic.eval.Evaluator;
-import com.braintribe.model.platformreflection.request.GetLicenseInformation;
-import com.braintribe.model.platformreflection.tf.License;
 import com.braintribe.model.processing.check.api.CheckProcessor;
 import com.braintribe.model.processing.lock.api.Locking;
 import com.braintribe.model.processing.service.api.ServiceRequestContext;
@@ -83,8 +76,6 @@ public class BaseFunctionalityCheckProcessor implements CheckProcessor, Lifecycl
 
 		Map<String, Future<List<CheckResultEntry>>> futures = new HashMap<>();
 		futures.put("Thread Pool", scheduledExecutorService.submit(this::checkThreadPools));
-
-		response.getEntries().addAll(checkLicense());
 
 		for (Map.Entry<String, Future<List<CheckResultEntry>>> futureSet : futures.entrySet()) {
 			String type = futureSet.getKey();
@@ -179,70 +170,6 @@ public class BaseFunctionalityCheckProcessor implements CheckProcessor, Lifecycl
 		}
 
 		return Collections.EMPTY_LIST;
-	}
-
-	private List<CheckResultEntry> checkLicense() {
-		List<CheckResultEntry> result = new ArrayList<>();
-
-		try {
-			GetLicenseInformation gli = GetLicenseInformation.T.create();
-			License license = gli.eval(requestEvaluator).get();
-
-			CheckResultEntry entry = CheckResultEntry.T.create();
-			result.add(entry);
-			entry.setName("License");
-
-			if (license != null) {
-				boolean active = license.getActive();
-				if (active) {
-
-					entry.setDetailsAsMarkdown(true);
-					entry.setCheckStatus(CheckStatus.ok);
-
-					StringBuilder sb = new StringBuilder();
-					sb.append("---|---\n");
-					sb.append("Issued to|" + license.getLicensee() + "\n");
-					sb.append("Issued by|" + license.getLicensor() + "\n");
-
-					Date expiryDate = license.getExpiryDate();
-					if (expiryDate != null) {
-
-						long exp = expiryDate.getTime();
-						long now = System.currentTimeMillis();
-						long untilExpInMs = exp - now;
-						long thresholdInMs = Numbers.MILLISECONDS_PER_DAY * 30l;
-						SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.ENGLISH);
-						String expiryString = sdf.format(expiryDate);
-						if (untilExpInMs < thresholdInMs) {
-							if (exp < now) {
-								sb.append("Expired|" + expiryString + "\n");
-								entry.setMessage("License has expired " + expiryString);
-								entry.setCheckStatus(CheckStatus.fail);
-							} else {
-								entry.setMessage("License will expire " + expiryString);
-								sb.append("Expiration|" + expiryString + "\n");
-								entry.setCheckStatus(CheckStatus.warn);
-							}
-						} else {
-							sb.append("Expiration|" + expiryString + "\n");
-						}
-
-					}
-					entry.setDetails(sb.toString());
-
-				} else {
-					entry.setMessage("Could not find an active license.");
-					entry.setCheckStatus(CheckStatus.fail);
-				}
-			} else {
-				entry.setMessage("Could not find a license.");
-				entry.setCheckStatus(CheckStatus.fail);
-			}
-		} catch (Exception e) {
-			logger.error("Error while trying to get license information", e);
-		}
-
-		return result;
 	}
 
 	private void performConcurrencyChecks() {

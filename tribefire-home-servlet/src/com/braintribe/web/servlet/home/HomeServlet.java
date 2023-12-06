@@ -59,14 +59,12 @@ import com.braintribe.model.extensiondeployment.WebTerminal;
 import com.braintribe.model.generic.GenericEntity;
 import com.braintribe.model.generic.eval.Evaluator;
 import com.braintribe.model.generic.reflection.EntityType;
-import com.braintribe.model.license.License;
 import com.braintribe.model.meta.GmMetaModel;
 import com.braintribe.model.meta.data.prompt.Visible;
 import com.braintribe.model.packaging.Packaging;
 import com.braintribe.model.platformreflection.request.GetRepositoryViewResolution;
 import com.braintribe.model.platformsetup.PlatformSetup;
 import com.braintribe.model.processing.bootstrapping.TribefireRuntime;
-import com.braintribe.model.processing.license.LicenseManager;
 import com.braintribe.model.processing.meta.cmd.CmdResolver;
 import com.braintribe.model.processing.meta.cmd.builders.ModelMdResolver;
 import com.braintribe.model.processing.packaging.PackagingProvider;
@@ -138,7 +136,7 @@ public class HomeServlet extends BasicTemplateBasedServlet {
 		}
 	}
 
-	private List<LinkConfigurerEntry> configurers = new ArrayList<>();
+	private final List<LinkConfigurerEntry> configurers = new ArrayList<>();
 
 	/* Packaging */
 	private Supplier<Packaging> packagingProvider = new PackagingProvider();
@@ -155,7 +153,6 @@ public class HomeServlet extends BasicTemplateBasedServlet {
 	protected int licenseWarningThresholdInD = 30;
 	protected String expirationWarning = "Your license expires %1$s.";
 	protected String expirationError = "Your license has expired on %1$s.";
-	private LicenseManager licenseManager = null;
 
 	/* Application Links */
 	private String tfJsUrl = TribefireRuntime.getTribefireJsUrl();
@@ -220,13 +217,6 @@ public class HomeServlet extends BasicTemplateBasedServlet {
 	@Configurable
 	public void setGrantedRoles(Set<String> grantedRoles) {
 		this.grantedRoles = grantedRoles;
-	}
-
-	/* Licensing */
-	@Configurable
-	@Required
-	public void setLicenseManager(LicenseManager licenseManager) {
-		this.licenseManager = licenseManager;
 	}
 
 	@Configurable
@@ -393,11 +383,6 @@ public class HomeServlet extends BasicTemplateBasedServlet {
 		/* Get Release Information */
 		Pair<List<VersionedArtifactIdentification>, Boolean> releaseArtifacts = getReleaseArtifacts();
 
-		/* Get license information and fill context */
-		License license = getLicensing(context);
-		/* Provide additional text in case license is invalid */
-		this.provideLicenseExpiryWarning(context, license);
-
 		/* Build full Context */
 		context.put("home", home);
 		context.put("packaging", packaging);
@@ -482,22 +467,6 @@ public class HomeServlet extends BasicTemplateBasedServlet {
 
 			scanForDisjunctReleases(solution.getDependencies(), visited, disjunctReleaseSolutions);
 		}
-	}
-
-	private License getLicensing(VelocityContext context) {
-		License license = null;
-		try {
-			license = this.licenseManager.getLicense();
-			context.put("license", license);
-			Date expiry = license.getExpiryDate();
-			if (expiry != null) {
-				SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
-				context.put("licenseExpiry", sdf.format(expiry));
-			}
-		} catch (Exception e) {
-			logger.error("Could not load license from license manager.", e);
-		}
-		return license;
 	}
 
 	private void handleGroup(UserSession userSession, Home home, boolean isAdminRequired, Supplier<LinkGroup> groupSupplier) {
@@ -1110,31 +1079,6 @@ public class HomeServlet extends BasicTemplateBasedServlet {
 			logger.error("Could not execute query " + query, e);
 		}
 
-	}
-
-	private void provideLicenseExpiryWarning(VelocityContext context, License license) {
-		if (license == null) {
-			context.put("licenseWarning", "No active license found.");
-		} else {
-			Date expiry = license.getExpiryDate();
-			if (expiry != null) {
-				long exp = expiry.getTime();
-				long now = System.currentTimeMillis();
-				long untilExpInMs = exp - now;
-				long thresholdInMs = ((long) this.licenseWarningThresholdInD) * 24 * 60 * 60 * 1000;
-				if (untilExpInMs < thresholdInMs) {
-					SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.ENGLISH);
-					String expiryString = sdf.format(expiry);
-					String message = null;
-					if (exp < now) {
-						message = String.format(expirationError, expiryString);
-					} else {
-						message = String.format(expirationWarning, expiryString);
-					}
-					context.put("licenseWarning", message);
-				}
-			}
-		}
 	}
 
 	private boolean isAdminAccessGranted(UserSession session) {

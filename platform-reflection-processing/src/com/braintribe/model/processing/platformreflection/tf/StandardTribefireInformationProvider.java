@@ -19,7 +19,6 @@ import static com.braintribe.utils.lcd.CollectionTools2.asSet;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -54,7 +53,6 @@ import com.braintribe.model.platformreflection.streampipes.PoolKind;
 import com.braintribe.model.platformreflection.streampipes.StreamPipeBlocksInfo;
 import com.braintribe.model.platformreflection.streampipes.StreamPipesInfo;
 import com.braintribe.model.platformreflection.tf.DeployablesInfo;
-import com.braintribe.model.platformreflection.tf.License;
 import com.braintribe.model.platformreflection.tf.ModuleAssets;
 import com.braintribe.model.platformreflection.tf.SetupAssets;
 import com.braintribe.model.platformreflection.tf.TribefireServicesInfo;
@@ -63,13 +61,11 @@ import com.braintribe.model.platformsetup.api.data.AssetNature;
 import com.braintribe.model.platformsetup.api.request.GetAssets;
 import com.braintribe.model.platformsetup.api.response.AssetCollection;
 import com.braintribe.model.processing.bootstrapping.TribefireRuntime;
-import com.braintribe.model.processing.license.LicenseManager;
 import com.braintribe.model.processing.query.fluent.EntityQueryBuilder;
 import com.braintribe.model.processing.session.api.persistence.PersistenceGmSession;
 import com.braintribe.model.processing.session.api.persistence.PersistenceGmSessionFactory;
 import com.braintribe.model.processing.tfconstants.TribefireConstants;
 import com.braintribe.model.query.EntityQuery;
-import com.braintribe.model.resource.Resource;
 import com.braintribe.utils.FileTools;
 import com.braintribe.utils.FolderSize;
 import com.braintribe.utils.lcd.CollectionTools2;
@@ -83,7 +79,6 @@ public class StandardTribefireInformationProvider implements TribefireInformatio
 
 	protected Supplier<Packaging> packagingProvider = null;
 	protected PersistenceGmSessionFactory sessionFactory = null;
-	protected LicenseManager licenseManager = null;
 	private Supplier<PlatformSetup> platformSetupSupplier;
 
 	private CompoundBlockPool compoundBlockPool;
@@ -157,11 +152,6 @@ public class StandardTribefireInformationProvider implements TribefireInformatio
 				setModuleAssets(tribefire);
 
 			}
-
-			logger.debug(() -> "Getting license information.");
-
-			// License
-			tribefire.setLicense(getLicenseInformation());
 
 			logger.debug(() -> "Getting runtime properties.");
 
@@ -397,46 +387,6 @@ public class StandardTribefireInformationProvider implements TribefireInformatio
 		return map;
 	}
 
-	@Override
-	public License getLicenseInformation() {
-		if (licenseManager != null) {
-			try {
-				com.braintribe.model.license.License license = this.licenseManager.getLicense();
-				if (license == null) {
-					return null;
-				}
-
-				License l = License.T.create();
-
-				l.setActive(license.getActive());
-				l.setExpiryDate(license.getExpiryDate());
-				Date issueDate = license.getIssueDate();
-				l.setIssueDate(issueDate);
-				l.setLicensee(license.getLicensee());
-				l.setLicenseeAccount(license.getLicenseeAccount());
-				Resource licenseResource = license.getLicenseResource();
-				if (licenseResource != null) {
-					l.setLicenseResourceId(licenseResource.getId());
-				}
-				l.setLicensor(license.getLicensor());
-				Date uploadDate = license.getUploadDate();
-				if (uploadDate.after(issueDate)) {
-					// This is not to confuse people when the license was simply replaced in the filesystem
-					l.setUploadDate(uploadDate);
-				}
-				l.setUploader(license.getUploader());
-
-				return l;
-
-			} catch (Exception e) {
-				logger.debug("Could not load license from license manager.", e);
-				return null;
-			}
-		} else {
-			return null;
-		}
-	}
-
 	protected List<DeployableInfo> prepareDeployableInfos(List<Deployable> ds) {
 		if (ds != null && ds.size() > 0) {
 			List<DeployableInfo> dInfos = new ArrayList<>();
@@ -545,10 +495,6 @@ public class StandardTribefireInformationProvider implements TribefireInformatio
 	@Configurable
 	public void setSessionFactory(PersistenceGmSessionFactory sessionFactory) {
 		this.sessionFactory = sessionFactory;
-	}
-	@Configurable
-	public void setLicenseManager(LicenseManager licenseManager) {
-		this.licenseManager = licenseManager;
 	}
 	@Required
 	@Configurable

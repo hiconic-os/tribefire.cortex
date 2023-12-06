@@ -67,21 +67,10 @@ import com.braintribe.model.meta.data.prompt.Visible;
 import com.braintribe.model.processing.access.service.api.registry.AccessRegistrationInfo;
 import com.braintribe.model.processing.access.service.api.registry.RegistryBasedAccessService;
 import com.braintribe.model.processing.access.service.impl.standard.OriginAwareAccessRegistrationInfo.Origin;
-import com.braintribe.model.processing.license.LicenseManager;
-import com.braintribe.model.processing.license.LicenseManagerRegistry;
-import com.braintribe.model.processing.license.exception.InvalidLicenseManagerConfigurationException;
-import com.braintribe.model.processing.license.exception.LicenseExpiredException;
-import com.braintribe.model.processing.license.exception.LicenseLoadException;
-import com.braintribe.model.processing.license.exception.LicenseViolatedException;
-import com.braintribe.model.processing.license.exception.NoLicenseConfiguredException;
-import com.braintribe.model.processing.license.exception.SessionUnavailableException;
-import com.braintribe.model.processing.license.glf.GlfLicenseManager;
-import com.braintribe.model.processing.license.glf.LicenseTools;
 import com.braintribe.model.processing.query.fluent.EntityQueryBuilder;
 import com.braintribe.model.processing.session.api.managed.ModelAccessory;
 import com.braintribe.model.processing.session.api.managed.ModelAccessoryFactory;
 import com.braintribe.model.processing.session.api.persistence.PersistenceGmSession;
-import com.braintribe.model.processing.tfconstants.TribefireConstants;
 import com.braintribe.model.query.EntityQuery;
 import com.braintribe.model.query.EntityQueryResult;
 import com.braintribe.model.query.PropertyQuery;
@@ -115,12 +104,6 @@ public class AccessServiceImpl implements RegistryBasedAccessService, AccessIden
 	private static Logger log = Logger.getLogger(AccessServiceImpl.class);
 
 	private final Map<String, OriginAwareAccessRegistrationInfo> accessRegistry = new ConcurrentHashMap<>();
-
-	private final Set<String> coreAccessIds = asSet(TribefireConstants.ACCESS_CORTEX); // Need at least this access because it holds the License
-																						// resource
-
-	private LicenseManager licenseManager;
-	private boolean initialLicenseCheckPerformed;
 
 	private Supplier<Set<String>> userRolesProvider;
 	private ModelAccessoryFactory sysMaFactory;
@@ -173,9 +156,6 @@ public class AccessServiceImpl implements RegistryBasedAccessService, AccessIden
 		OriginAwareAccessRegistrationInfo regInfo = new OriginAwareAccessRegistrationInfo(accessInfo, origin);
 
 		accessRegistry.put(deployable.getExternalId(), regInfo);
-
-		if (origin == Origin.CONFIGURATION)
-			coreAccessIds.add(deployable.getExternalId());
 	}
 
 	@Override
@@ -204,7 +184,6 @@ public class AccessServiceImpl implements RegistryBasedAccessService, AccessIden
 	// @formatter:off
 	@Required public void setUserRolesProvider(Supplier<Set<String>> userRolesProvider) { this.userRolesProvider = userRolesProvider; }
 	@Required public void setInternalCortexSessionSupplier(Supplier<PersistenceGmSession> internalCortexSessionSupplier) { this.internalCortexSessionSupplier = internalCortexSessionSupplier; }
-	@Required public void setLicenseManager(LicenseManager licenseManager) { this.licenseManager = licenseManager; }
 	@Required public void setSystemModelAccessoryFactory(ModelAccessoryFactory maFactory) { this.sysMaFactory = maFactory; }
 	@Required public void setUserModelAccessoryFactory(ModelAccessoryFactory maFactory) { this.userMaFactory = maFactory; }
 
@@ -233,54 +212,6 @@ public class AccessServiceImpl implements RegistryBasedAccessService, AccessIden
 	 *             In case there is no access registered for ID <code>accessId</code>
 	 */
 	public IncrementalAccess getAccessDelegate(String accessId) throws AccessServiceException {
-		if (!this.initialLicenseCheckPerformed) {
-			this.initialLicenseCheckPerformed = true;
-			try {
-				this.licenseManager.checkLicense();
-				LicenseTools.logLicense(this.licenseManager);
-
-			} catch (SessionUnavailableException sue) {
-				log.warn("Could not load the license because of problems with the session.", sue);
-
-			} catch (NoLicenseConfiguredException nlce) {
-				log.warn("No license has been configured.");
-				log.debug("No license has been configured.", nlce);
-
-			} catch (LicenseLoadException lle) {
-				log.warn("Could not load or access the license.");
-				log.debug("Could not load or access the license.", lle);
-
-			} catch (InvalidLicenseManagerConfigurationException ilmce) {
-				log.warn("The license manager could not be verified.");
-				log.debug("The license manager could not be verified.", ilmce);
-
-			} catch (LicenseExpiredException lee) {
-				log.warn("The license has expired.");
-				log.debug("The license has expired.", lee);
-
-			} catch (LicenseViolatedException lve) {
-				log.warn("Could not check the license: " + lve.getMessage());
-				log.debug("Could not check the license.", lve);
-
-			} catch (Throwable t) {
-				log.error("Unexpected error while checking the license.", t);
-			}
-
-		}
-
-		boolean isCoreAccess = this.coreAccessIds.contains(accessId);
-		if (!isCoreAccess) {
-			try {
-				this.licenseManager.checkLicense();
-				LicenseManager registeredLicenseManager = LicenseManagerRegistry.getRegisteredLicenseManager();
-				if (!(registeredLicenseManager instanceof GlfLicenseManager)) {
-					throw new InvalidLicenseManagerConfigurationException("Wrong license manager.");
-				}
-			} catch (LicenseViolatedException e) {
-				throw new AccessServiceException("Could not validate license for access: " + accessId, e);
-			}
-		}
-
 		OriginAwareAccessRegistrationInfo registrationInfo = getRegistrationInfo(accessId);
 		return registrationInfo.getAccess();
 	}

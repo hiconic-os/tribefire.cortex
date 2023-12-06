@@ -28,7 +28,6 @@ import tribefire.platform.wire.space.cortex.accesses.CortexAccessSpace;
 import tribefire.platform.wire.space.cortex.accesses.SystemAccessesSpace;
 import tribefire.platform.wire.space.cortex.deployment.DeploymentSpace;
 import tribefire.platform.wire.space.security.AuthContextSpace;
-import tribefire.platform.wire.space.system.LicenseSpace;
 
 @Managed
 public class AccessServiceSpace implements WireSpace {
@@ -41,7 +40,6 @@ public class AccessServiceSpace implements WireSpace {
 	@Import private DeploymentSpace deployment; 
 	@Import private EnvironmentSpace environment; 
 	@Import private GmSessionsSpace gmSessions; 
-	@Import private LicenseSpace license; 
 	@Import private SystemAccessesSpace systemAccesses; 
 	// @formatter:on
 
@@ -52,7 +50,6 @@ public class AccessServiceSpace implements WireSpace {
 	@Managed
 	public AccessServiceImpl service() {
 		AccessServiceImpl bean = new AccessServiceImpl();
-		bean.setLicenseManager(license.manager());
 		bean.setUserRolesProvider(authContext.currentUser().rolesProvider());
 		bean.setSystemModelAccessoryFactory(gmSessions.systemModelAccessoryFactory());
 		bean.setUserModelAccessoryFactory(gmSessions.userModelAccessoryFactory());

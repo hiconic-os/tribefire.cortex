@@ -16,13 +16,10 @@ import java.util.List;
 import com.braintribe.model.platformreflection.DeployableInfo;
 import com.braintribe.model.platformreflection.TribefireInfo;
 import com.braintribe.model.platformreflection.tf.DeployablesInfo;
-import com.braintribe.model.platformreflection.tf.License;
 
 public interface TribefireInformationProvider {
 
-	public TribefireInfo provide() throws RuntimeException;
-
-	License getLicenseInformation();
+	TribefireInfo provide() throws RuntimeException;
 
 	List<DeployableInfo> getDeployableInfos();
 

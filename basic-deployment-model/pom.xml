@@ -68,11 +68,6 @@ You should have received a copy of the GNU Lesser General Public License along w
         </dependency>
         <dependency>
             <groupId>tribefire.cortex</groupId>
-            <artifactId>license-system-model</artifactId>
-            <version>${V.tribefire.cortex}</version>
-        </dependency>
-        <dependency>
-            <groupId>tribefire.cortex</groupId>
             <artifactId>id-generator-deployment-model</artifactId>
             <version>${V.tribefire.cortex}</version>
         </dependency>

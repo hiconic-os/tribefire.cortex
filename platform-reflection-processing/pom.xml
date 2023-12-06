@@ -66,11 +66,6 @@ You should have received a copy of the GNU Lesser General Public License along w
             <version>${V.tribefire.cortex}</version>
         </dependency>
         <dependency>
-            <groupId>tribefire.cortex</groupId>
-            <artifactId>license-system-api</artifactId>
-            <version>${V.tribefire.cortex}</version>
-        </dependency>
-        <dependency>
             <groupId>com.braintribe.gm</groupId>
             <artifactId>tribefire-runtime</artifactId>
             <version>${V.com.braintribe.gm}</version>

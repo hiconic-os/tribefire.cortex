@@ -203,8 +203,6 @@ public class CortexAccessSpace extends CollaborativeSystemAccessSpaceBase {
 	@Override
 	protected List<StateChangeProcessorRule> stateChangeProcessorRules() {
 		return list( //
-				stateChangeProcessors.licenseUpload(), //
-				stateChangeProcessors.licenseActivated(), //
 				stateChangeProcessors.bidiProperty(), //
 				stateChangeProcessors.metadata(), //
 				stateChangeProcessors.cors(), //

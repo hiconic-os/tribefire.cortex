@@ -13,8 +13,6 @@ package tribefire.platform.wire.space.cortex.deployment;
 
 import com.braintribe.model.processing.deployment.processor.BidiPropertyStateChangeProcessor;
 import com.braintribe.model.processing.deployment.processor.MetaDataStateChangeProcessorRule;
-import com.braintribe.model.processing.license.glf.processor.LicenseActivatedProcessor;
-import com.braintribe.model.processing.license.glf.processor.LicenseUploadedProcessor;
 import com.braintribe.model.processing.web.cors.CortexCorsStateChangeProcessor;
 import com.braintribe.wire.api.annotation.Import;
 import com.braintribe.wire.api.annotation.Managed;
@@ -24,16 +22,12 @@ import tribefire.platform.impl.model.ModelChangeNotifier;
 import tribefire.platform.wire.space.rpc.RpcSpace;
 import tribefire.platform.wire.space.security.AuthContextSpace;
 import tribefire.platform.wire.space.security.servlets.SecurityServletSpace;
-import tribefire.platform.wire.space.system.LicenseSpace;
 
 @Managed
 public class StateChangeProcessorsSpace implements WireSpace {
 
 	@Import
 	private DeploymentSpace deployment;
-
-	@Import
-	private LicenseSpace license;
 
 	@Import
 	private AuthContextSpace authContext;
@@ -44,20 +38,6 @@ public class StateChangeProcessorsSpace implements WireSpace {
 	@Import
 	private RpcSpace rpc;
 	
-	@Managed
-	public LicenseUploadedProcessor licenseUpload() {
-		LicenseUploadedProcessor bean = new LicenseUploadedProcessor();
-		bean.setUsernameProvider(authContext.currentUser().userNameProvider());
-		return bean;
-	}
-
-	@Managed
-	public LicenseActivatedProcessor licenseActivated() {
-		LicenseActivatedProcessor bean = new LicenseActivatedProcessor();
-		bean.setLicenseManager(license.manager());
-		return bean;
-	}
-
 	@Managed
 	public BidiPropertyStateChangeProcessor bidiProperty() {
 		BidiPropertyStateChangeProcessor bean = new BidiPropertyStateChangeProcessor();

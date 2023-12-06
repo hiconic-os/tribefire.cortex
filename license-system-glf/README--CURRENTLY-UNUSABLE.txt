@@ -1,1 +1,0 @@
-A bunch of code was commented out because the dependency com.auxilii:glf-client is not available in maven central.

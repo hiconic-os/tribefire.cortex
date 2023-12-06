@@ -44,7 +44,6 @@ import com.braintribe.model.deploymentreflection.request.DeploymentReflectionReq
 import com.braintribe.model.exchangeapi.ExchangeRequest;
 import com.braintribe.model.execution.persistence.ExecutionPersistenceRequest;
 import com.braintribe.model.extensiondeployment.HardwiredWorker;
-import com.braintribe.model.license.service.AbstractLicenseRequest;
 import com.braintribe.model.logs.request.LogsRequest;
 import com.braintribe.model.messaging.Queue;
 import com.braintribe.model.modelnotification.InternalModelNotificationRequest;
@@ -138,7 +137,6 @@ import tribefire.platform.wire.space.streaming.MimeTypeSpace;
 import tribefire.platform.wire.space.streaming.ResourceAccessSpace;
 import tribefire.platform.wire.space.system.ChecksSpace;
 import tribefire.platform.wire.space.system.ExecutionPersistenceSpace;
-import tribefire.platform.wire.space.system.LicenseSpace;
 import tribefire.platform.wire.space.system.SystemInformationSpace;
 import tribefire.platform.wire.space.system.servlets.SystemServletsSpace;
 
@@ -160,7 +158,6 @@ public class RpcSpace implements WireSpace {
 	@Import private ExecutionPersistenceSpace executionPersistence;
 	@Import private GmSessionsSpace gmSessions;
 	@Import private HttpSpace http;
-	@Import private LicenseSpace license;
 	@Import private MarshallingSpace marshalling;
 	@Import private MessagingSpace messaging;
 	@Import private MimeTypeSpace mimeType;
@@ -317,7 +314,6 @@ public class RpcSpace implements WireSpace {
 		bean.bindServiceRequest(PersistenceReflectionRequest.T, persistenceReflectionProcessor());
 		bean.bindServiceRequest(AvailableAccessesRequest.T, availableAccessesProcessor());
 		bean.bindServiceRequest(PlatformReflectionRequest.T, systemInformation.platformReflectionProcessor());
-		bean.bindServiceRequest(AbstractLicenseRequest.T, license.licenseResourceProcessor());
 		bean.bindServiceRequest(CheckBundlesRequest.T, systemInformation.checkBundlesProcessor());
 		bean.bindServiceRequest(LogsRequest.T, systemServlets.logsProcessor());
 		bean.bindServiceRequest(CurrentUserInformationRequest.T, currentUserInformationProcessor());

@@ -37,12 +37,9 @@ import com.braintribe.model.generic.manipulation.DeleteManipulation;
 import com.braintribe.model.generic.manipulation.Manipulation;
 import com.braintribe.model.generic.reflection.StandardCloningContext;
 import com.braintribe.model.generic.value.PersistentEntityReference;
-import com.braintribe.model.license.License;
 import com.braintribe.model.meta.GmMetaModel;
 import com.braintribe.model.processing.access.service.api.registry.AccessRegistrationInfo;
 import com.braintribe.model.processing.access.service.impl.standard.OriginAwareAccessRegistrationInfo.Origin;
-import com.braintribe.model.processing.license.LicenseManagerRegistry;
-import com.braintribe.model.processing.license.glf.GlfLicenseManager;
 import com.braintribe.model.processing.session.api.persistence.PersistenceGmSession;
 import com.braintribe.model.processing.session.impl.persistence.BasicPersistenceGmSession;
 import com.braintribe.model.query.EntityQuery;
@@ -55,8 +52,6 @@ import com.braintribe.testing.tools.gm.session.TestModelAccessoryFactory;
 
 /**
  * Tests for {@link AccessServiceImpl}
- * 
- * 
  */
 public class AccessServiceImplTest {
 
@@ -84,17 +79,6 @@ public class AccessServiceImplTest {
 
 		impl.setHardwiredAccessRegistrations(hardwiredAccessRegistrations);
 		impl.setInternalCortexSessionSupplier(() -> new BasicPersistenceGmSession(this.cortexAccess));
-
-		GlfLicenseManager manager = new GlfLicenseManager() {
-			// @formatter:off
-			@Override public void reloadLicense() { /*NOOP*/ }
-			@Override public License getLicense() { return null; }
-			@Override public void checkLicense() { /*NOOP*/ }
-			// @formatter:on
-		};
-		impl.setLicenseManager(manager);
-
-		LicenseManagerRegistry.setRegisteredLicenseManager(manager);
 	}
 
 	private IncrementalAccess mockHardwiredAccess(String accessId) {
