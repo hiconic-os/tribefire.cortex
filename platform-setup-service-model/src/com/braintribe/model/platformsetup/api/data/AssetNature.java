@@ -29,7 +29,6 @@ public enum AssetNature implements EnumBase {
 	ModelPriming,
 	PlatformLibrary,
 	RuntimeProperties,
-	LicensePriming,
 	TribefireModule,
 	PrimingModule,
 	ManipulationPriming,

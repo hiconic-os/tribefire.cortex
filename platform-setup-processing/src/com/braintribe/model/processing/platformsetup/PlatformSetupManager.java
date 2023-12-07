@@ -35,7 +35,6 @@ import com.braintribe.model.asset.PlatformAsset;
 import com.braintribe.model.asset.PlatformAssetDependency;
 import com.braintribe.model.asset.natures.AssetAggregator;
 import com.braintribe.model.asset.natures.ContainerProjection;
-import com.braintribe.model.asset.natures.LicensePriming;
 import com.braintribe.model.asset.natures.ManipulationPriming;
 import com.braintribe.model.asset.natures.MarkdownDocumentation;
 import com.braintribe.model.asset.natures.MarkdownDocumentationConfig;
@@ -1001,7 +1000,6 @@ public class PlatformSetupManager implements AccessRequestProcessor<AccessReques
 		// TODO create enum switch
 		natureToSignature.put(AssetNature.AssetAggregator, AssetAggregator.T.getTypeSignature());
 		natureToSignature.put(AssetNature.ContainerProjection, ContainerProjection.T.getTypeSignature());
-		natureToSignature.put(AssetNature.LicensePriming, LicensePriming.T.getTypeSignature());
 		natureToSignature.put(AssetNature.ManipulationPriming, ManipulationPriming.T.getTypeSignature());
 		natureToSignature.put(AssetNature.MarkdownDocumentation, MarkdownDocumentation.T.getTypeSignature());
 		natureToSignature.put(AssetNature.MarkdownDocumentationConfig, MarkdownDocumentationConfig.T.getTypeSignature());

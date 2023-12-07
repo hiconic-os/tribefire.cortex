@@ -31,7 +31,6 @@ import com.braintribe.model.asset.PlatformAsset;
 import com.braintribe.model.asset.PlatformAssetDependency;
 import com.braintribe.model.asset.natures.AssetAggregator;
 import com.braintribe.model.asset.natures.ContainerProjection;
-import com.braintribe.model.asset.natures.LicensePriming;
 import com.braintribe.model.asset.natures.ManipulationPriming;
 import com.braintribe.model.asset.natures.PlatformAssetNature;
 import com.braintribe.model.asset.natures.RepositoryView;
@@ -90,7 +89,6 @@ import com.braintribe.utils.xml.parser.DomParserException;
 				AssetAggregator.T, //
 				ContainerProjection.T, //
 				RuntimeProperties.T, //
-				LicensePriming.T, //
 				RepositoryView.T //
 		);
 
