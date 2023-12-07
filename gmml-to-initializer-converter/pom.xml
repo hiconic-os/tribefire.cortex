@@ -16,7 +16,7 @@ You should have received a copy of the GNU Lesser General Public License along w
         <version>[3.0,3.1)</version>
     </parent>
     <artifactId>gmml-to-initializer-converter</artifactId>
-    <version>3.0.15</version>
+    <version>3.0.16</version>
     <properties/>
     <licenses>
         <license>

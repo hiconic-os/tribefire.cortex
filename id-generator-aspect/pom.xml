@@ -16,7 +16,7 @@ You should have received a copy of the GNU Lesser General Public License along w
         <version>[3.0,3.1)</version>
     </parent>
     <artifactId>id-generator-aspect</artifactId>
-    <version>3.0.12</version>
+    <version>3.0.13</version>
     <properties>
         <archetype>library</archetype>
     </properties>
