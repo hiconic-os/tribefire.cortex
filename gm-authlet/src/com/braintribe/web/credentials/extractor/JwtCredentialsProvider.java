@@ -17,6 +17,7 @@ import com.braintribe.gm.model.reason.essential.NotFound;
 import com.braintribe.logging.Logger;
 import com.braintribe.model.securityservice.credentials.Credentials;
 import com.braintribe.model.securityservice.credentials.JwtTokenCredentials;
+import com.braintribe.utils.lcd.StringTools;
 
 public class JwtCredentialsProvider implements CredentialFromAuthorizationHeaderProvider {
 
@@ -37,7 +38,7 @@ public class JwtCredentialsProvider implements CredentialFromAuthorizationHeader
 
 		if (tokenType.equals("bearer")) {
 			String encodedToken = authHeader.substring(typeSeparatorIndex + 1).trim();
-			logger.trace(() -> "Identified JWT token " + encodedToken + " in the Authorization header of the request.");
+			logger.trace(() -> "Identified JWT token " + StringTools.simpleObfuscatePassword(encodedToken) + " in the Authorization header of the request.");
 
 			JwtTokenCredentials credentials = JwtTokenCredentials.of(encodedToken);
 			credentials.setAcquire(true);
