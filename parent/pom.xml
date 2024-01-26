@@ -21,17 +21,14 @@ You should have received a copy of the GNU Lesser General Public License along w
         <V.com.braintribe.codec>[2.0,2.1)</V.com.braintribe.codec>
         <V.com.braintribe.common>[2.0,2.1)</V.com.braintribe.common>
         <V.com.braintribe.devrock>[2.0,2.1)</V.com.braintribe.devrock>
-        <V.com.braintribe.devrock.ant>[1.0,1.1)</V.com.braintribe.devrock.ant>
         <V.com.braintribe.execution>[2.0,2.1)</V.com.braintribe.execution>
         <V.com.braintribe.gm>[2.0,2.1)</V.com.braintribe.gm>
         <V.com.braintribe.logging>[2.0,2.1)</V.com.braintribe.logging>
         <V.com.braintribe.security>[2.0,2.1)</V.com.braintribe.security>
         <V.com.braintribe.servlet>[2.0,2.1)</V.com.braintribe.servlet>
         <V.com.braintribe.systemtools>[2.0,2.1)</V.com.braintribe.systemtools>
-        <V.com.braintribe.templatetools>[2.0,2.1)</V.com.braintribe.templatetools>
         <V.com.braintribe.testing>[2.0,2.1)</V.com.braintribe.testing>
         <V.com.braintribe.velocity>[2.0,2.1)</V.com.braintribe.velocity>
-        <V.com.braintribe.web.multipart>[2.0,2.1)</V.com.braintribe.web.multipart>
         <V.com.braintribe.wire>[2.0,2.1)</V.com.braintribe.wire>
         <V.com.braintribe.xml>[2.0,2.1)</V.com.braintribe.xml>
 
