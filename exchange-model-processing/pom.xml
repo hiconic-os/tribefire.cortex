@@ -55,6 +55,11 @@ You should have received a copy of the GNU Lesser General Public License along w
             <version>${V.com.braintribe.gm}</version>
         </dependency>
         <dependency>
+            <groupId>com.braintribe.gm</groupId>
+            <artifactId>collaborative-access-api</artifactId>
+            <version>${V.com.braintribe.gm}</version>
+        </dependency>
+        <dependency>
             <groupId>tribefire.cortex</groupId>
             <artifactId>exchange-model-processing-api</artifactId>
             <version>${V.tribefire.cortex}</version>
