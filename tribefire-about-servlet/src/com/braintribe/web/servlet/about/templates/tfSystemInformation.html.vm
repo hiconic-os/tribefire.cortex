@@ -737,22 +737,6 @@
 	  					#end <!-- Runtime Properties -->
 
 
-	  					<!-- License -->
-	  					#if(${tf.license})
-	  					#set($lic = ${tf.license})
-	  					<li><span class="key">License</span>
-	  					<span class="value">
-  							#if(${lic.licensee})Issued To: ${lic.licensee}<br />#end
-  							#if(${lic.licenseeAccount})Account: ${lic.licenseeAccount}<br />#end
-  							#if(${lic.expiryDate})Expiry: ${lic.expiryDate}<br />#end
-  							Active: ${lic.active}<br />
-  							#if(${lic.issueDate})Created: ${lic.issueDate}<br />#end
-  							#if(${lic.licenseResourceId})License Resource: ${lic.licenseResourceId}<br />#end
-  							#if(${lic.uploadDate})Upload Date: ${lic.uploadDate}<br />#end
-  							#if(${lic.uploader})Uploaded By: ${lic.uploader}<br />#end
-	  					</span></li>
-	  					#end <!-- License -->
-	  					
 	  					<!-- Blocks -->
 	  					#if(${tf.streamPipeInfo})
 	  					#set($spi = ${tf.streamPipeInfo})

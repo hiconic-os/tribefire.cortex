@@ -12,16 +12,13 @@
 package com.braintribe.web.servlet.home;
 
 import java.net.URLEncoder;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
-import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -101,9 +98,6 @@ import tribefire.cortex.model.check.CheckCoverage;
  * so that the user can authenticate himself/herself with the server. <br>
  * <br>
  * If available (and deployed), Accesses and WebTerminals are also displayed. <br>
- * <br>
- * If a license is available in the system, it also shown on this page. A warning header will appear if the license
- * expiry date is near (i.e., < 30 days in advance).
  */
 public class HomeServlet extends BasicTemplateBasedServlet {
 
@@ -148,11 +142,6 @@ public class HomeServlet extends BasicTemplateBasedServlet {
 
 	/* Privileges */
 	private Set<String> grantedRoles = Collections.singleton("tf-admin");
-
-	/* Licensing */
-	protected int licenseWarningThresholdInD = 30;
-	protected String expirationWarning = "Your license expires %1$s.";
-	protected String expirationError = "Your license has expired on %1$s.";
 
 	/* Application Links */
 	private String tfJsUrl = TribefireRuntime.getTribefireJsUrl();
@@ -222,21 +211,6 @@ public class HomeServlet extends BasicTemplateBasedServlet {
 	@Configurable
 	public void setPackagingProvider(Supplier<Packaging> packagingProvider) {
 		this.packagingProvider = packagingProvider;
-	}
-
-	@Configurable
-	public void setLicenseWarningThresholdInD(int licenseWarningThresholdInD) {
-		this.licenseWarningThresholdInD = licenseWarningThresholdInD;
-	}
-
-	@Configurable
-	public void setExpirationWarning(String expirationWarning) {
-		this.expirationWarning = expirationWarning;
-	}
-
-	@Configurable
-	public void setExpirationError(String expirationError) {
-		this.expirationError = expirationError;
 	}
 
 	/* Default AccessIds */

@@ -350,15 +350,12 @@ function logout() {
 		#end		
 	
 	<div id="tf_footer">
-			#if ($licenseWarning)
-				<div id="headerMessage">
-					${licenseWarning}
-				</div> 
-			#end
 			<div class="tf_footer_content">
+				<!--
 				<div>
 				<a href="$!{company_url}" target="_new"><img id="tf_footer-img" src="$!{company_image_url}" id="tf_logo" alt="logo" width="100"></a>	
 				</div>
+				-->
 				<div style="margin-left:25px; margin-right:25px;">
 
 				#if ($releaseArtifacts)
@@ -375,18 +372,14 @@ function logout() {
 				#end
 					
 				<br/>
-				&copy; <a href="http://www.braintribe.com" target="_blank">Braintribe Technology GmbH</a> $current_year
-				
-				#if ($license)
-				 | License issued to: <em>$license.getLicensee()#if ($licenseExpiry) (Expiry: $licenseExpiry)</em> #end
-				#else
-				<em>| No valid license found.</em>
-				#end
+				<a href="https://github.com/hiconic-os" target="_blank">Hiconic OS</a>
 				
 				</div>
+				<!--
 				<div>
 				<a href="$!{academy_url}" target="_new"><img id="tf_footer-img" src="$!{academy_image_url}" id="tf_logo" alt="logo" width="100"></a>	
 				</div>
+				-->
 				
 			</div>
 	</div>
