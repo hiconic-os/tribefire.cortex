@@ -11,8 +11,6 @@
 // ============================================================================
 package tribefire.platform.impl.deployment;
 
-import java.util.function.Consumer;
-
 import com.braintribe.model.deployment.Deployable;
 import com.braintribe.processing.async.impl.HubPromise;
 
@@ -24,14 +22,11 @@ public class DeploymentPromise extends HubPromise<Void> {
 	private final Object statusMonitor = new Object();
 	private final Deployable deployable;
 	private final Deployable originalDeployable;
-	private final Consumer<? super DeploymentPromise> eagerAccessCallback;
 	private final PromiseStatistics promiseStats;
 
-	public DeploymentPromise(Deployable deployable, Deployable originalDeployable, Consumer<? super DeploymentPromise> eagerAccessCallback,
-			ParallelDeploymentStatistics stats) {
+	public DeploymentPromise(Deployable deployable, Deployable originalDeployable, ParallelDeploymentStatistics stats) {
 		this.deployable = deployable;
 		this.originalDeployable = originalDeployable;
-		this.eagerAccessCallback = eagerAccessCallback;
 		this.promiseStats = stats.acquirePromiseStats(deployable);
 	}
 
@@ -53,10 +48,6 @@ public class DeploymentPromise extends HubPromise<Void> {
 
 	public Object getStatusMonitor() {
 		return statusMonitor;
-	}
-
-	public void notifyEagerAccess() {
-		eagerAccessCallback.accept(this);
 	}
 
 	public PromiseStatistics getPromiseStatistics() {

@@ -20,7 +20,6 @@ import static com.braintribe.model.generic.typecondition.basic.TypeKind.collecti
 import static com.braintribe.model.generic.typecondition.basic.TypeKind.entityType;
 import static java.util.Objects.requireNonNull;
 
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,7 +31,6 @@ import java.util.stream.Collectors;
 
 import com.braintribe.cfg.Configurable;
 import com.braintribe.cfg.Required;
-import com.braintribe.common.lcd.Numbers;
 import com.braintribe.execution.virtual.VirtualThreadExecutorBuilder;
 import com.braintribe.logging.Logger;
 import com.braintribe.model.deployment.Deployable;
@@ -75,7 +73,6 @@ import com.braintribe.model.processing.meta.cmd.builders.ModelMdResolver;
 import com.braintribe.model.processing.meta.cmd.extended.EntityMdDescriptor;
 import com.braintribe.model.processing.session.api.persistence.PersistenceGmSession;
 import com.braintribe.thread.api.ThreadContextScoping;
-import com.braintribe.utils.StringTools;
 import com.braintribe.utils.lcd.StopWatch;
 
 import tribefire.platform.impl.deployment.ParallelDeploymentStatistics.PromiseStatistics;
@@ -157,7 +154,6 @@ public class ParallelDeploymentService implements DeploymentService {
 		// TODO this brings dependency to com.braintribe.execution:execution.
 		// Thread pool should injected (or rather ThreadPoolFactory that takes params like thread name should be injected)
 		private final ExecutorService standardDeploymentThreadPool;
-		private ExecutorService eagerDeploymentThreadPool;
 		private final DeployContext context;
 		private final ParallelDeploymentStatistics stats;
 
@@ -166,15 +162,11 @@ public class ParallelDeploymentService implements DeploymentService {
 			this.stats = stats;
 
 			int threadCount = Math.min(deployableAmount, standardParallelDeployments);
-			standardDeploymentThreadPool = VirtualThreadExecutorBuilder.newPool().concurrency(threadCount).threadNamePrefix("Deployer")
+			standardDeploymentThreadPool = VirtualThreadExecutorBuilder.newPool().concurrency(Integer.MAX_VALUE).threadNamePrefix("Deployer")
 					.description("Deployer").build();
 			stats.standardThreadCount = threadCount;
 
-			if (deployableAmount > standardParallelDeployments) {
-
-				eagerDeploymentThreadPool = VirtualThreadExecutorBuilder.newPool().concurrency(Integer.MAX_VALUE).threadNamePrefix("EagerDeployer")
-						.description("Eager Deployer").build();
-			}
+			/* Note(RKU): Since we're using virtual threads now, there seems to be no need for 2 different thread pools */
 		}
 
 		private class ErrorCatcher implements Runnable {
@@ -206,43 +198,6 @@ public class ParallelDeploymentService implements DeploymentService {
 			ContextClassLoaderTransfer classLoaderTransfer = new ContextClassLoaderTransfer(deployer);
 			promise.getPromiseStatistics().enqueuedStandard();
 			standardDeploymentThreadPool.execute(new ErrorCatcher(threadContextScoping.bindContext(classLoaderTransfer), promise));
-		}
-
-		void ensureEagerDeployment(DeploymentPromise promise) {
-			// standard pool is sufficient to handle all deployments without eager deployment deadlocks
-			if (eagerDeploymentThreadPool == null)
-				return;
-
-			PromiseStatistics promiseStats = promise.getPromiseStatistics();
-
-			promiseStats.eagerMonitorAcquisition();
-			// moving deployment to queue that is able to grow indefinitely and therefore resolves eager deployment
-			// deadlocks
-			Object statusMonitor = promise.getStatusMonitor();
-			synchronized (statusMonitor) {
-				promiseStats.eagerMonitorAcquired();
-
-				if (promise.getQueueStatus() == QueueStatus.pending) {
-					promise.setQueueStatus(QueueStatus.movedToExtraQueue);
-
-					log.debug(() -> "Moving deployable " + promise.getDeployable().getExternalId() + " to extra deployment queue.");
-
-					SingleDeployer deployer = new SingleDeployer(context, promise.getDeployable(), promise, QueueStatus.movedToExtraQueue);
-					ContextClassLoaderTransfer classLoaderTransfer = new ContextClassLoaderTransfer(deployer);
-
-					long bindStart = System.nanoTime();
-					Runnable bindContext = threadContextScoping.bindContext(classLoaderTransfer);
-					long bindStop = System.nanoTime();
-					long bindDuration = bindStop - bindStart;
-					if (bindDuration > Numbers.NANOSECONDS_PER_SECOND) {
-						log.debug(() -> "Scoping the thread context took "
-								+ StringTools.prettyPrintDuration(bindDuration / Numbers.NANOSECONDS_PER_SECOND, true, ChronoUnit.MILLIS));
-					}
-
-					promiseStats.enqueuedEager();
-					eagerDeploymentThreadPool.execute(new ErrorCatcher(bindContext, promise));
-				}
-			}
 		}
 
 		void waitForFinishedDeployment() {
@@ -357,7 +312,7 @@ public class ParallelDeploymentService implements DeploymentService {
 		stats.stopWatch.intermediate("Controller Init");
 
 		for (Deployable deployable : deployContext.deployables()) {
-			DeploymentPromise deploymentPromise = new DeploymentPromise(deployable, deployable, controller::ensureEagerDeployment, stats);
+			DeploymentPromise deploymentPromise = new DeploymentPromise(deployable, deployable, stats);
 
 			String externalId = deployable.getExternalId();
 			if (externalId == null) {
@@ -663,7 +618,6 @@ public class ParallelDeploymentService implements DeploymentService {
 		if (deploymentPromise == null)
 			return;
 
-		deploymentPromise.notifyEagerAccess();
 		deploymentPromise.waitFor();
 	}
 
