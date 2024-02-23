@@ -18,7 +18,7 @@ import java.nio.file.Path;
 import com.braintribe.exception.Exceptions;
 import com.braintribe.model.resource.AdaptiveIcon;
 import com.braintribe.model.resource.Resource;
-import com.braintribe.model.resource.source.FileUploadSource;
+import com.braintribe.model.resource.source.FileSystemSource;
 import com.braintribe.wire.api.annotation.Import;
 import com.braintribe.wire.api.annotation.Managed;
 import com.braintribe.wire.api.space.WireSpace;
@@ -384,8 +384,8 @@ public class IconsSpace implements WireSpace {
 			throw Exceptions.unchecked(e, "Failed to resolve " + filePath);
 		}
 
-		FileUploadSource source = FileUploadSource.T.create();
-		source.setLocalFilePath(path.toString());
+		FileSystemSource source = FileSystemSource.T.create();
+		source.setPath(path.toString());
 
 		Resource resource = Resource.T.create();
 		resource.setResourceSource(source);

@@ -24,7 +24,7 @@ import com.braintribe.model.resource.AdaptiveIcon;
 import com.braintribe.model.resource.Icon;
 import com.braintribe.model.resource.Resource;
 import com.braintribe.model.resource.SimpleIcon;
-import com.braintribe.model.resource.source.FileUploadSource;
+import com.braintribe.model.resource.source.FileSystemSource;
 import com.braintribe.model.style.Color;
 import com.braintribe.model.style.Font;
 import com.braintribe.model.uitheme.UiTheme;
@@ -47,7 +47,6 @@ import tribefire.platform.wire.space.MasterResourcesSpace;
 @Managed
 public class WorkbenchSpace implements WireSpace {
 
-	
 	@Import
 	protected MasterResourcesSpace resources;
 
@@ -61,10 +60,10 @@ public class WorkbenchSpace implements WireSpace {
 	protected static final Color color_lightslategray = color("#778899");
 	protected static final Color color_slategray = color("#708090");
 	protected static final Color color_gainsboro = color("#DCDCDC");
-	
-	protected static final Font font_openSans_black = font("Open Sans",color_black);
-	protected static final Font font_openSans_white = font("Open Sans",color_white);
-	protected static final Font font_openSans_gray = font("Open Sans",color_gray);
+
+	protected static final Font font_openSans_black = font("Open Sans", color_black);
+	protected static final Font font_openSans_white = font("Open Sans", color_white);
+	protected static final Font font_openSans_gray = font("Open Sans", color_gray);
 
 	@Managed
 	public List<WorkbenchInstruction> defaultInstructions() {
@@ -80,7 +79,7 @@ public class WorkbenchSpace implements WireSpace {
 		instructions.add(addTabActionbarFolders());
 		return instructions;
 	}
-	
+
 	@Managed
 	public List<WorkbenchInstruction> grayishBlueStyleInstructions() {
 		List<WorkbenchInstruction> instructions = new ArrayList<>();
@@ -91,7 +90,7 @@ public class WorkbenchSpace implements WireSpace {
 		instructions.add(updateUiStyle(uiThemeGrayishBlue));
 		return instructions;
 	}
-	
+
 	@Managed
 	public List<WorkbenchInstruction> tribefireOrangeStyleInstructions() {
 		List<WorkbenchInstruction> instructions = new ArrayList<>();
@@ -101,14 +100,14 @@ public class WorkbenchSpace implements WireSpace {
 		instructions.add(updateUiStyle(null));
 		return instructions;
 	}
-	
-	@Managed	
+
+	@Managed
 	private WorkbenchInstruction ensureUiStyle() {
 		UpdateUiStyle instruction = UpdateUiStyle.T.create();
 		instruction.setEnsureWorkbenchConfiguration(true);
 		return instruction;
 	}
-	
+
 	private WorkbenchInstruction ensurePerspectives() {
 		EnsurePerspectives ensure = EnsurePerspectives.T.create();
 		return ensure;
@@ -120,17 +119,17 @@ public class WorkbenchSpace implements WireSpace {
 		updateFolder.setPath("headerbar/tb_Logo");
 		updateFolder.setProperty("icon");
 		updateFolder.setNewValue(icon("logo.png"));
-		
+
 		return updateFolder;
 	}
-	
+
 	private WorkbenchInstruction clearHeaderBarIcon() {
 
 		UpdateFolder updateFolder = UpdateFolder.T.create();
 		updateFolder.setPath("headerbar/tb_Logo");
 		updateFolder.setProperty("icon");
 		updateFolder.setNewValue(null);
-		
+
 		return updateFolder;
 	}
 	private WorkbenchInstruction updateGlobalActionBar() {
@@ -160,17 +159,16 @@ public class WorkbenchSpace implements WireSpace {
 		updateFolderCommit.setProperty("icon");
 		updateFolderCommit.setNewValue(icon("commit-32.png"));
 
-		
 		List<WorkbenchInstruction> instructions = new ArrayList<>();
 		instructions.add(updateFolderHomeNew);
 		instructions.add(updateFolderUpload);
 		instructions.add(updateFolderUndo);
 		instructions.add(updateFolderRedo);
 		instructions.add(updateFolderCommit);
-		
+
 		CompoundInstruction instruction = CompoundInstruction.T.create();
 		instruction.setInstructions(instructions);
-		
+
 		return instruction;
 	}
 
@@ -201,17 +199,16 @@ public class WorkbenchSpace implements WireSpace {
 		updateFolderCommit.setProperty("icon");
 		updateFolderCommit.setNewValue(null);
 
-		
 		List<WorkbenchInstruction> instructions = new ArrayList<>();
 		instructions.add(updateFolderHomeNew);
 		instructions.add(updateFolderUpload);
 		instructions.add(updateFolderUndo);
 		instructions.add(updateFolderRedo);
 		instructions.add(updateFolderCommit);
-		
+
 		CompoundInstruction instruction = CompoundInstruction.T.create();
 		instruction.setInstructions(instructions);
-		
+
 		return instruction;
 	}
 
@@ -241,7 +238,7 @@ public class WorkbenchSpace implements WireSpace {
 		updateFolderNotificationsExplorer.setPath("tab-actionbar/$explorer/$notificationsConstellation");
 		updateFolderNotificationsExplorer.setProperty("icon");
 		updateFolderNotificationsExplorer.setNewValue(icon("notification-16.png"));
-		
+
 		UpdateFolder updateFolderHomeSelection = UpdateFolder.T.create();
 		updateFolderHomeSelection.setPath("tab-actionbar/$selection/$homeConstellation");
 		updateFolderHomeSelection.setProperty("icon");
@@ -278,15 +275,13 @@ public class WorkbenchSpace implements WireSpace {
 		instructions.add(updateFolderTransientChangesSelection);
 		instructions.add(updateFolderClipboardSelection);
 		instructions.add(updateFolderQuickAccssSelection);
-		
-		
+
 		CompoundInstruction instruction = CompoundInstruction.T.create();
 		instruction.setInstructions(instructions);
-		
-		
+
 		return instruction;
 	}
-	
+
 	private WorkbenchInstruction clearTabActionBarIcons() {
 
 		UpdateFolder updateFolderHomeExplorer = UpdateFolder.T.create();
@@ -309,8 +304,6 @@ public class WorkbenchSpace implements WireSpace {
 		updateFolderNotificationsExplorer.setProperty("icon");
 		updateFolderNotificationsExplorer.setNewValue(null);
 
-		
-		
 		UpdateFolder updateFolderHomeSelection = UpdateFolder.T.create();
 		updateFolderHomeSelection.setPath("tab-actionbar/$selection/$homeConstellation");
 		updateFolderHomeSelection.setProperty("icon");
@@ -336,7 +329,6 @@ public class WorkbenchSpace implements WireSpace {
 		updateFolderExpertUiSelection.setProperty("icon");
 		updateFolderExpertUiSelection.setNewValue(null);
 
-		
 		List<WorkbenchInstruction> instructions = new ArrayList<>();
 		instructions.add(updateFolderHomeExplorer);
 		instructions.add(updateFolderChangesExplorer);
@@ -347,12 +339,10 @@ public class WorkbenchSpace implements WireSpace {
 		instructions.add(updateFolderClipboardSelection);
 		instructions.add(updateFolderQuickAccssSelection);
 		instructions.add(updateFolderExpertUiSelection);
-		
-		
+
 		CompoundInstruction instruction = CompoundInstruction.T.create();
 		instruction.setInstructions(instructions);
-		
-		
+
 		return instruction;
 	}
 
@@ -361,17 +351,16 @@ public class WorkbenchSpace implements WireSpace {
 		Folder folderToAdd = Folder.T.create();
 		folderToAdd.setName(KnownWorkenchPerspective.root.toString());
 		folderToAdd.setDisplayName(I18nTools.createLs("Entry Points"));
-		
+
 		AddFolderToPerspective addFolder = AddFolderToPerspective.T.create();
 		addFolder.setPerspectiveName(KnownWorkenchPerspective.root.toString());
 		addFolder.setOverrideExisting(false);
 		addFolder.setUseExistingFolder(true);
 		addFolder.setFolderToAdd(folderToAdd);
-		
+
 		return addFolder;
 	}
 
-	
 	@Managed
 	private WorkbenchInstruction addActionbarFolders() {
 		Folder folderToAdd = Folder.T.create();
@@ -382,7 +371,7 @@ public class WorkbenchSpace implements WireSpace {
 		addFolder.setOverrideExisting(false);
 		addFolder.setUseExistingFolder(true);
 		addFolder.setFolderToAdd(folderToAdd);
-		
+
 		return addFolder;
 	}
 
@@ -391,29 +380,29 @@ public class WorkbenchSpace implements WireSpace {
 		Folder folderToAdd = Folder.T.create();
 		folderToAdd.setName(KnownWorkenchPerspective.headerBar.toString());
 		folderToAdd.setDisplayName(I18nTools.createLs("Header Bar"));
-		
+
 		AddFolderToPerspective addFolder = AddFolderToPerspective.T.create();
 		addFolder.setPerspectiveName(KnownWorkenchPerspective.headerBar.toString());
 		addFolder.setOverrideExisting(false);
 		addFolder.setUseExistingFolder(true);
 		addFolder.setFolderToAdd(folderToAdd);
-		
+
 		return addFolder;
-		
+
 	}
-	
+
 	@Managed
 	private WorkbenchInstruction addGlobalActionbarFolders() {
 		Folder folderToAdd = Folder.T.create();
 		folderToAdd.setName(KnownWorkenchPerspective.globalActionBar.toString());
 		folderToAdd.setDisplayName(I18nTools.createLs("Global Action Bar"));
-		
+
 		AddFolderToPerspective addFolder = AddFolderToPerspective.T.create();
 		addFolder.setPerspectiveName(KnownWorkenchPerspective.globalActionBar.toString());
 		addFolder.setOverrideExisting(false);
 		addFolder.setUseExistingFolder(true);
 		addFolder.setFolderToAdd(folderToAdd);
-		
+
 		return addFolder;
 	}
 
@@ -422,16 +411,16 @@ public class WorkbenchSpace implements WireSpace {
 		Folder folderToAdd = Folder.T.create();
 		folderToAdd.setName(KnownWorkenchPerspective.tabActionBar.toString());
 		folderToAdd.setDisplayName(I18nTools.createLs("Tab Action Bar"));
-		
+
 		AddFolderToPerspective addFolder = AddFolderToPerspective.T.create();
 		addFolder.setPerspectiveName(KnownWorkenchPerspective.tabActionBar.toString());
 		addFolder.setOverrideExisting(false);
 		addFolder.setUseExistingFolder(true);
 		addFolder.setFolderToAdd(folderToAdd);
-		
+
 		return addFolder;
 	}
-	
+
 	private UpdateFolder updateFolder(String path, String propertyName, Icon newValue, boolean overrideExisting) {
 
 		UpdateFolder updateFolder = UpdateFolder.T.create();
@@ -439,38 +428,37 @@ public class WorkbenchSpace implements WireSpace {
 		updateFolder.setProperty(propertyName);
 		updateFolder.setNewValue(newValue);
 		updateFolder.setOverrideExisting(overrideExisting);
-		
+
 		return updateFolder;
 
 	}
-	
+
 	private UpdateFolder updateFolder(String path, String propertyName, String newValue, boolean overrideExisting) {
-		
+
 		UpdateFolder updateFolder = UpdateFolder.T.create();
 		updateFolder.setPath(path);
 		updateFolder.setProperty(propertyName);
 		updateFolder.setNewValue(I18nTools.createLs(newValue));
 		updateFolder.setOverrideExisting(overrideExisting);
-		
+
 		return updateFolder;
-		
+
 	}
-	
+
 	private WorkbenchInstruction updateSystemFoldersDisplayName() {
-		
+
 		List<WorkbenchInstruction> instructions = new ArrayList<>();
 		instructions.add(updateFolder("actionbar", "displayName", "Action Bar", true));
 		instructions.add(updateFolder("headerbar", "displayName", "Header Bar", true));
 		instructions.add(updateFolder("tab-actionbar", "displayName", "Tab Action Bar", true));
 		instructions.add(updateFolder("global-actionbar", "displayName", "Global Action Bar", true));
-		
-		
+
 		instructions.add(updateFolder("actionbar/$workWithEntity", "displayName", "Open", true));
 		instructions.add(updateFolder("actionbar/$gimaOpener", "displayName", "Edit", true));
 		instructions.add(updateFolder("actionbar/$deleteEntity", "displayName", "Delete", true));
 		instructions.add(updateFolder("actionbar/$changeInstance", "displayName", "Assign", true));
 		instructions.add(updateFolder("actionbar/$clearEntityToNull", "displayName", "Remove", true));
-		
+
 		instructions.add(updateFolder("actionbar/$addToCollection", "displayName", "Add", true));
 		instructions.add(updateFolder("actionbar/$insertBeforeToList", "displayName", "Insert Before", true));
 		instructions.add(updateFolder("actionbar/$removeFromCollection", "displayName", "Remove", true));
@@ -480,20 +468,20 @@ public class WorkbenchSpace implements WireSpace {
 		instructions.add(updateFolder("actionbar/$refreshEntities", "displayName", "Refresh", true));
 		instructions.add(updateFolder("actionbar/$ResourceDownload", "displayName", "Download", true));
 		instructions.add(updateFolder("actionbar/$executeServiceRequest", "displayName", "Execute", true));
-		instructions.add(updateFolder("actionbar/$executeServiceRequest", "icon", icon("run-16.png","run-32.png"), true));
-		
+		instructions.add(updateFolder("actionbar/$executeServiceRequest", "icon", icon("run-16.png", "run-32.png"), true));
+
 		CompoundInstruction ci = CompoundInstruction.T.create();
 		ci.setInstructions(instructions);
-		
+
 		return ci;
-		
+
 	}
 
 	private WorkbenchInstruction ensureSystemFolders() {
 
 		List<String> paths = new ArrayList<>();
-		
-		// System folders in Actionbar	
+
+		// System folders in Actionbar
 		paths.add("actionbar");
 		paths.add("actionbar/$exchangeContentView");
 		paths.add("actionbar/$workWithEntity");
@@ -510,29 +498,27 @@ public class WorkbenchSpace implements WireSpace {
 		paths.add("actionbar/$executeServiceRequest");
 		paths.add("actionbar/$addToClipboard");
 
-		 
 		// System folders in Headerbar
 		paths.add("headerbar");
 		paths.add("headerbar/tb_Logo");
-		
+
 		paths.add("headerbar/$quickAccess-slot");
 		paths.add("headerbar/$globalState-slot");
-		
+
 		paths.add("headerbar/$settingsMenu");
-		//paths.add("headerbar/$settingsMenu/$switchTo");
+		// paths.add("headerbar/$settingsMenu/$switchTo");
 		paths.add("headerbar/$settingsMenu/$reloadSession");
 		paths.add("headerbar/$settingsMenu/$showSettings");
 		paths.add("headerbar/$settingsMenu/$uiTheme");
-		//paths.add("headerbar/$settingsMenu/$persistActionGroup");
-		//paths.add("headerbar/$settingsMenu/$persistHeaderBar");
-		//paths.add("headerbar/$settingsMenu/$automaticFoldersImporter");
+		// paths.add("headerbar/$settingsMenu/$persistActionGroup");
+		// paths.add("headerbar/$settingsMenu/$persistHeaderBar");
+		// paths.add("headerbar/$settingsMenu/$automaticFoldersImporter");
 		paths.add("headerbar/$settingsMenu/$showAbout");
-		
+
 		paths.add("headerbar/$userMenu");
 		paths.add("headerbar/$userMenu/$showUserProfile");
 		paths.add("headerbar/$userMenu/$showLogout");
 
-		
 		// System folders in Tab-Bar
 		paths.add("tab-actionbar");
 		paths.add("tab-actionbar/$explorer");
@@ -541,7 +527,7 @@ public class WorkbenchSpace implements WireSpace {
 		paths.add("tab-actionbar/$explorer/$transientChangesConstellation");
 		paths.add("tab-actionbar/$explorer/$clipboardConstellation");
 		paths.add("tab-actionbar/$explorer/$notificationsConstellation");
-		
+
 		paths.add("tab-actionbar/$selection");
 		paths.add("tab-actionbar/$selection/$homeConstellation");
 		paths.add("tab-actionbar/$selection/$changesConstellation");
@@ -549,7 +535,7 @@ public class WorkbenchSpace implements WireSpace {
 		paths.add("tab-actionbar/$selection/$clipboardConstellation");
 		paths.add("tab-actionbar/$selection/$quickAccessConstellation");
 		paths.add("tab-actionbar/$selection/$expertUI");
-		
+
 		// System folders in GlobalAction-Bar
 		paths.add("global-actionbar");
 		paths.add("global-actionbar/$new");
@@ -558,47 +544,39 @@ public class WorkbenchSpace implements WireSpace {
 		paths.add("global-actionbar/$undo");
 		paths.add("global-actionbar/$redo");
 		paths.add("global-actionbar/$commit");
-		
-		
+
 		EnsureFolders ensure = EnsureFolders.T.create();
 		ensure.setWithDisplayName(true);
 		ensure.setPaths(paths);
 		return ensure;
 	}
 
+	// ##################### UI Style ###################
 
-	//##################### UI Style ###################
-	
-	
-	
 	private WorkbenchInstruction updateUiStyle(UiTheme uiTheme) {
-		
+
 		UpdateUiStyle updateUiStyle = UpdateUiStyle.T.create();
 		updateUiStyle.setOverrideExisting(true);
-		
+
 		Resource dynamicStylesheet = Resource.T.create();
 		dynamicStylesheet.setName("dynamic-stylesheet");
 		dynamicStylesheet.setMimeType("text/css");
 		dynamicStylesheet.setCreator("cortex");
 		dynamicStylesheet.setCreated(new Date());
-		
+
 		UiThemeTemplateSource dynamicStylesheetSource = UiThemeTemplateSource.T.create();
 		dynamicStylesheetSource.setTemplate(resource("explorer-style-template.css"));
 		dynamicStylesheetSource.setUiTheme(uiTheme);
 		dynamicStylesheet.setResourceSource(dynamicStylesheetSource);
-		
+
 		updateUiStyle.setStylesheet(dynamicStylesheet);
-		updateUiStyle.setColorsToEnsure(
-					set(color_black,color_white,color_blue,color_red,color_green,color_yellow,color_gray)
-				);
-		
+		updateUiStyle.setColorsToEnsure(set(color_black, color_white, color_blue, color_red, color_green, color_yellow, color_gray));
 
 		return updateUiStyle;
 	}
 
-	
 	private UiTheme uiThemeGrayishBlue() {
-		
+
 		UiTheme theme = UiTheme.T.create();
 		theme.setSelectColor(color_lightslategray);
 		theme.setSelectInactiveColor(color_gainsboro);
@@ -610,70 +588,68 @@ public class WorkbenchSpace implements WireSpace {
 		theme.setTabFont(font_openSans_white);
 		theme.setTetherFont(font_openSans_black);
 		theme.setGlobalId("tribefire.demo.cartridge.wb.uiTheme.grayish");
-				
+
 		return theme;
 	}
-	
-	
-	protected AdaptiveIcon icon (String... names) {
+
+	protected AdaptiveIcon icon(String... names) {
 		AdaptiveIcon icon = AdaptiveIcon.T.create();
-		icon.setName(names[0]+" Icon");
+		icon.setName(names[0] + " Icon");
 		for (String name : names) {
 			Resource rep = resource(name);
 			icon.getRepresentations().add(rep);
 		}
 		return icon;
 	}
-	
+
 	protected SimpleIcon icon(String name) {
 		SimpleIcon newIcon = SimpleIcon.T.create();
-		newIcon.setName(name+" Icon");
+		newIcon.setName(name + " Icon");
 		newIcon.setImage(resource(name));
 		return newIcon;
 	}
-	
+
 	protected Resource resource(String filePath) {
 
 		Path path = null;
 		try {
-			path = resources.webInf("Resources/Icons/workbench/"+filePath).asPath();
+			path = resources.webInf("Resources/Icons/workbench/" + filePath).asPath();
 		} catch (Exception e) {
 			throw Exceptions.unchecked(e, "Failed to resolve " + filePath);
 		}
 
-		FileUploadSource source = FileUploadSource.T.create();
-		source.setLocalFilePath(path.toString());
+		FileSystemSource source = FileSystemSource.T.create();
+		source.setPath(path.toString());
 
 		Resource resource = Resource.T.create();
 		resource.setResourceSource(source);
 		return resource;
 
 	}
-	
-	
-	protected static Color color (String hex) {
+
+	protected static Color color(String hex) {
 		String cut = cutHex(hex);
 		Color c = Color.T.create();
 		c.setRed(hexToR(cut));
 		c.setGreen(hexToG(cut));
 		c.setBlue(hexToB(cut));
-		return c;		
+		return c;
 	}
 
 	private static int hexToR(String h) {
-		return Integer.parseInt(h.substring(0,2),16);
+		return Integer.parseInt(h.substring(0, 2), 16);
 	}
-	private static  int hexToG(String h) {
-		return Integer.parseInt(h.substring(2,4),16);
+	private static int hexToG(String h) {
+		return Integer.parseInt(h.substring(2, 4), 16);
 	}
 	private static int hexToB(String h) {
-		return Integer.parseInt(h.substring(4,6),16);
+		return Integer.parseInt(h.substring(4, 6), 16);
 	}
-	
+
 	private static String cutHex(String h) {
-		return (h.startsWith("#")) ? h.substring(1,7): h;
+		return (h.startsWith("#")) ? h.substring(1, 7) : h;
 	}
-	
+
 	protected static Font font(String family, Color color) {
 		Font font = Font.T.create();
 		font.setFamily(family);

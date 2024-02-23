@@ -54,8 +54,8 @@ import tribefire.platform.impl.denotrans.CleanupUserSessionsProcessorEnricher;
 import tribefire.platform.impl.denotrans.UserSessionServiceEnricher;
 
 /**
- * Final initializer that configures default deployables on {@link CortexConfiguration} (CC) where none has bean configured by any initializer or
- * {@link Edr2ccPostInitializer}.
+ * Final initializer that configures default deployables on {@link CortexConfiguration} (CC) where none has bean
+ * configured by any initializer or {@link Edr2ccPostInitializer}.
  * <p>
  * In other words, ensures system components on {@link CortexConfiguration} are not <tt>null</tt>.
  * <p>
@@ -137,10 +137,10 @@ public class CortexConfigurationPostInitializer extends SimplePersistenceInitial
 			Locking bean = session.create(Locking.T, "default:locking/" + DEFAULT_LOCKING_EXTERNAL_ID);
 			bean.setExternalId(DEFAULT_LOCKING_EXTERNAL_ID);
 			bean.setName("DMB Locking (Default)");
-			
+
 			return logDefaultCcComponent(bean, "locking");
 		}
-		
+
 		// ################################################
 		// ## . . . . . . . . Messaging . . . . . . . . .##
 		// ################################################
@@ -170,6 +170,14 @@ public class CortexConfigurationPostInitializer extends SimplePersistenceInitial
 
 			else if (access.getAspectConfiguration() == null)
 				access.setAspectConfiguration(authAspectConfiguration());
+
+			if (access != null && access.getWorkbenchAccess() == null) {
+				access.setWorkbenchAccess(authWorkbench());
+			}
+		}
+
+		private IncrementalAccess authWorkbench() {
+			return session.getEntityByGlobalId("hardwired:access/auth.wb");
 		}
 
 		private CollaborativeSmoodAccess authAccessDenotation() {
