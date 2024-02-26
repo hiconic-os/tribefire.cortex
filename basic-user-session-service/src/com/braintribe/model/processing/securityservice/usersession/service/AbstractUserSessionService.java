@@ -42,6 +42,7 @@ import com.braintribe.model.processing.securityservice.impl.Roles;
 import com.braintribe.model.processing.time.TimeSpanCodec;
 import com.braintribe.model.time.TimeSpan;
 import com.braintribe.model.time.TimeUnit;
+import com.braintribe.model.user.Role;
 import com.braintribe.model.user.User;
 import com.braintribe.model.usersession.UserSession;
 import com.braintribe.model.usersession.UserSessionType;
@@ -316,6 +317,11 @@ public abstract class AbstractUserSessionService implements UserSessionService, 
 		user.setFirstName(pUserSession.getUserFirstName());
 		user.setLastName(pUserSession.getUserLastName());
 		user.setEmail(pUserSession.getUserEmail());
+		user.getRoles().addAll(userSession.getEffectiveRoles().stream().map(r -> {
+			Role role = Role.T.create();
+			role.setName(r);
+			return role;
+		}).toList());
 		userSession.setUser(user);
 
 		return userSession;
