@@ -70,6 +70,7 @@ import com.braintribe.model.processing.access.service.api.registry.AccessRegistr
 import com.braintribe.model.processing.access.service.api.registry.RegistryBasedAccessService;
 import com.braintribe.model.processing.access.service.impl.standard.OriginAwareAccessRegistrationInfo.Origin;
 import com.braintribe.model.processing.query.fluent.EntityQueryBuilder;
+import com.braintribe.model.processing.service.common.context.UserSessionAspect;
 import com.braintribe.model.processing.session.api.managed.ModelAccessory;
 import com.braintribe.model.processing.session.api.managed.ModelAccessoryFactory;
 import com.braintribe.model.processing.session.api.persistence.PersistenceGmSession;
@@ -82,10 +83,12 @@ import com.braintribe.model.query.QueryResult;
 import com.braintribe.model.query.SelectQuery;
 import com.braintribe.model.query.SelectQueryResult;
 import com.braintribe.model.resource.Resource;
+import com.braintribe.model.usersession.UserSession;
 import com.braintribe.model.workbench.WorkbenchConfiguration;
 import com.braintribe.model.workbench.WorkbenchPerspective;
 import com.braintribe.utils.CollectionTools;
 import com.braintribe.utils.StringTools;
+import com.braintribe.utils.collection.impl.AttributeContexts;
 import com.braintribe.utils.genericmodel.GMCoreTools;
 import com.braintribe.utils.lcd.NullSafe;
 import com.braintribe.utils.lcd.StopWatch;
@@ -391,6 +394,22 @@ public class AccessServiceImpl implements RegistryBasedAccessService, AccessIden
 
 			WorkbenchConfiguration workbenchConfiguration = queryWorkbenchConfiguration(workbenchAccessId);
 			modelEnvironment.setWorkbenchConfiguration(workbenchConfiguration);
+		}
+
+		// Add support for automatically detecting the locale for the workbench based on the user session locale
+		WorkbenchConfiguration workbenchConfiguration = modelEnvironment.getWorkbenchConfiguration();
+		if (workbenchConfiguration != null) {
+			String wbLocale = workbenchConfiguration.getLocale();
+			if ("auto".equalsIgnoreCase(wbLocale)) {
+				UserSession userSession = AttributeContexts.peek().findOrNull(UserSessionAspect.class);
+				if (userSession != null) {
+					String propLocale = userSession.locale();
+					if (!StringTools.isBlank(propLocale)) {
+						log.trace(() -> "Setting locale " + propLocale + " for session " + userSession.getSessionId());
+						workbenchConfiguration.setLocale(propLocale);
+					}
+				}
+			}
 		}
 
 		return modelEnvironment;
