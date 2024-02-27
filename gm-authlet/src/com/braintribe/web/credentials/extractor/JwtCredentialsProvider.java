@@ -38,9 +38,11 @@ public class JwtCredentialsProvider implements CredentialFromAuthorizationHeader
 
 		if (tokenType.equals("bearer")) {
 			String encodedToken = authHeader.substring(typeSeparatorIndex + 1).trim();
-			logger.trace(() -> "Identified JWT token " + StringTools.simpleObfuscatePassword(encodedToken) + " in the Authorization header of the request.");
+			logger.trace(() -> "Identified JWT token " + StringTools.simpleObfuscatePassword(encodedToken)
+					+ " in the Authorization header of the request.");
 
 			JwtTokenCredentials credentials = JwtTokenCredentials.of(encodedToken);
+			// This ensures that we can reuse a session when the same token is received again.
 			credentials.setAcquire(true);
 			return Maybe.complete(credentials);
 		}
