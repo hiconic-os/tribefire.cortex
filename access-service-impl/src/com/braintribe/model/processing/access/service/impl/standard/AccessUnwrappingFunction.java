@@ -11,20 +11,22 @@
 // ============================================================================
 package com.braintribe.model.processing.access.service.impl.standard;
 
+import java.util.function.Function;
+
 import com.braintribe.common.lcd.annotations.Nullable;
 import com.braintribe.model.access.IncrementalAccess;
-import com.google.common.base.Function;
 
 /**
- * {@link Function} implementation for unwrapping an {@link IncrementalAccess} from an {@link OriginAwareAccessRegistrationInfo}.
+ * {@link Function} implementation for unwrapping an {@link IncrementalAccess} from an
+ * {@link OriginAwareAccessRegistrationInfo}.
  * 
  * 
  */
 public class AccessUnwrappingFunction implements Function<OriginAwareAccessRegistrationInfo, IncrementalAccess> {
 
 	/**
-	 * Unwraps the {@link IncrementalAccess} from an {@link OriginAwareAccessRegistrationInfo}. In case <code>access</code> is
-	 * <code>null</code>, this method returns <code>null</code>.
+	 * Unwraps the {@link IncrementalAccess} from an {@link OriginAwareAccessRegistrationInfo}. In case <code>access</code>
+	 * is <code>null</code>, this method returns <code>null</code>.
 	 */
 	@Override
 	@Nullable

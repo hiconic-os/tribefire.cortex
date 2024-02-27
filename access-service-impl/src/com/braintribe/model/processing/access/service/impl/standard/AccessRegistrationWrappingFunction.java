@@ -11,10 +11,11 @@
 // ============================================================================
 package com.braintribe.model.processing.access.service.impl.standard;
 
+import java.util.function.Function;
+
 import com.braintribe.common.lcd.annotations.NonNull;
 import com.braintribe.model.processing.access.service.api.registry.AccessRegistrationInfo;
 import com.braintribe.model.processing.access.service.impl.standard.OriginAwareAccessRegistrationInfo.Origin;
-import com.google.common.base.Function;
 
 /**
  * {@link Function} implementation for wrapping an {@link AccessRegistrationInfo} in an
@@ -23,8 +24,7 @@ import com.google.common.base.Function;
  * 
  * 
  */
-public class AccessRegistrationWrappingFunction implements
-		Function<AccessRegistrationInfo, OriginAwareAccessRegistrationInfo> {
+public class AccessRegistrationWrappingFunction implements Function<AccessRegistrationInfo, OriginAwareAccessRegistrationInfo> {
 
 	private Origin originOfAccesses;
 

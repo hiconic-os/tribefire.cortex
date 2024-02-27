@@ -11,8 +11,9 @@
 // ============================================================================
 package com.braintribe.model.processing.access.service.impl.standard;
 
+import java.util.function.Function;
+
 import com.braintribe.common.lcd.annotations.NonNull;
-import com.google.common.base.Function;
 
 /**
  * {@link Function} implementation for indexing an {@link OriginAwareAccessRegistrationInfo} based on its

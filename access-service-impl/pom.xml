@@ -45,11 +45,6 @@ You should have received a copy of the GNU Lesser General Public License along w
 			<version>${V.com.braintribe.gm}</version>
         </dependency>
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-			<version>${V.com.google.guava}</version>
-        </dependency>
-        <dependency>
             <groupId>com.braintribe.gm</groupId>
             <artifactId>query-model-processing</artifactId>
             <version>${V.com.braintribe.gm}</version>
@@ -74,5 +69,10 @@ You should have received a copy of the GNU Lesser General Public License along w
             <artifactId>model-accessory-api-model</artifactId>
             <version>${V.com.braintribe.gm}</version>
         </dependency>
+		<dependency>
+			<groupId>com.braintribe.gm</groupId>
+			<artifactId>service-api-commons</artifactId>
+			<version>${V.com.braintribe.gm}</version>
+		</dependency>         
     </dependencies>
 </project>

@@ -24,12 +24,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import com.braintribe.cfg.Configurable;
 import com.braintribe.cfg.Required;
@@ -87,12 +89,10 @@ import com.braintribe.utils.StringTools;
 import com.braintribe.utils.genericmodel.GMCoreTools;
 import com.braintribe.utils.lcd.NullSafe;
 import com.braintribe.utils.lcd.StopWatch;
-import com.google.common.collect.Collections2;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 
 /**
- * The implementation of the {@link AccessService} interface that acts as a delegate service for different {@link IncrementalAccess}es.
+ * The implementation of the {@link AccessService} interface that acts as a delegate service for different
+ * {@link IncrementalAccess}es.
  * 
  * @author gunther.schenk
  * 
@@ -198,11 +198,15 @@ public class AccessServiceImpl implements RegistryBasedAccessService, AccessIden
 	}
 
 	private static Collection<OriginAwareAccessRegistrationInfo> wrapHardwiredAccessRegistrations(Set<AccessRegistrationInfo> hardwiredAccesses) {
-		return Collections2.transform(hardwiredAccesses, new AccessRegistrationWrappingFunction(Origin.CONFIGURATION));
+		AccessRegistrationWrappingFunction wrappingFunction = new AccessRegistrationWrappingFunction(Origin.CONFIGURATION);
+		return hardwiredAccesses.stream().map(wrappingFunction::apply).collect(Collectors.toSet());
 	}
 
-	private static ImmutableMap<String, OriginAwareAccessRegistrationInfo> buildIdMap(Collection<OriginAwareAccessRegistrationInfo> wrappers) {
-		return Maps.uniqueIndex(wrappers, new RegistrationWrapperIndexingFunction());
+	private static Map<String, OriginAwareAccessRegistrationInfo> buildIdMap(Collection<OriginAwareAccessRegistrationInfo> wrappers) {
+		RegistrationWrapperIndexingFunction keyFunction = new RegistrationWrapperIndexingFunction();
+		Map<String, OriginAwareAccessRegistrationInfo> map = new LinkedHashMap<>();
+		wrappers.stream().forEach(w -> map.put(keyFunction.apply(w), w));
+		return Collections.unmodifiableMap(map);
 	}
 
 	/**
