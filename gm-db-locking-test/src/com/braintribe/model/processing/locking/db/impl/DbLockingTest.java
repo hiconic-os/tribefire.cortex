@@ -34,8 +34,6 @@ import com.google.common.util.concurrent.TimeLimiter;
  */
 public class DbLockingTest extends AbstractDbLockingTestBase {
 
-	public static final String IDENTIFIER = "someIdentifier";
-
 	public DbLockingTest(DbVendor vendor) {
 		super(vendor);
 	}
@@ -44,17 +42,18 @@ public class DbLockingTest extends AbstractDbLockingTestBase {
 	// ## . . . . . . . . . Tests . . . . . . . . . ##
 	// ###############################################
 
-	@Test(timeout = 5000)
+	@Test(timeout = TIMEOUT_MS)
 	public void testLockTryLock() throws Exception {
 		Lock lock = createLock();
 		lock.lock();
 		lock.unlock();
 
 		assertThat(lock.tryLock()).isTrue();
+		lock.unlock();
 	}
 
 	/* Test a long identifier */
-	@Test(timeout = 5000)
+	@Test(timeout = TIMEOUT_MS)
 	public void testLockWithLongIdentifier() throws Exception {
 		String id = "MoreThan300Chars" + StringTools.repeat("1234567890", 30);
 		Lock lock = createLock(id);
@@ -62,27 +61,30 @@ public class DbLockingTest extends AbstractDbLockingTestBase {
 		lock.unlock();
 
 		assertThat(lock.tryLock()).isTrue();
+		lock.unlock();
 	}
+
 	/**
 	 * Simulate that a lock is stuck because of e.g. a crash; check if tryLock without parameter works
 	 */
-	@Test(timeout = 5000)
+	@Test(timeout = TIMEOUT_MS)
 	public void testLockRecover1() throws Exception {
 		Lock lock = createLock();
 		lock.lock();
 
-		assertThat(lock.tryLock()).isFalse();
+		boolean tryLock = createLock().tryLock();
+		assertThat(tryLock).isFalse();
 	}
 
 	/**
 	 * Simulate that a lock is stuck because of e.g. a crash; there is a lock - check if tryLock with parameter works
 	 */
-	@Test(timeout = 5000)
+	@Test(timeout = TIMEOUT_MS)
 	public void testLockRecover2() throws Exception {
 		Lock lock = createLock();
 		lock.lock();
 
-		boolean tryLock = lock.tryLock(1, TimeUnit.SECONDS);
+		boolean tryLock = createLock().tryLock(1, TimeUnit.SECONDS);
 		assertThat(tryLock).isFalse();
 	}
 
@@ -93,7 +95,7 @@ public class DbLockingTest extends AbstractDbLockingTestBase {
 
 		// This will time-out, because the lock is already locked
 		// And thus also tests the refresher, as the lock expires after 2 seconds
-		runInParallelWithTimeout(3, TimeUnit.SECONDS, lock::lock);
+		runInParallelWithTimeout(3, TimeUnit.SECONDS, createLock()::lock);
 	}
 
 	// ###############################################
@@ -113,11 +115,11 @@ public class DbLockingTest extends AbstractDbLockingTestBase {
 	}
 
 	private Lock createLock() {
-		return createLock(IDENTIFIER);
+		return createLock(LOCK_ID);
 	}
 
 	private Lock createLock(String identifier) {
-		return locking.forIdentifier(identifier).readLock();
+		return locking.forIdentifier(identifier).writeLock();
 	}
 
 }

@@ -63,8 +63,7 @@ import tribefire.platform.impl.denotrans.UserSessionServiceEnricher;
  * 
  * Vitals:
  * <ul>
- * <li>{@link CortexConfiguration#getLeadershipManager() Leadership Manager}
- * <li>{@link CortexConfiguration#getLockManager() Lock Manager}
+ * <li>{@link CortexConfiguration#getLocking() Locking}
  * <li>{@link CortexConfiguration#getMessaging() Messaging}
  * </ul>
  * 

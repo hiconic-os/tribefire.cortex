@@ -20,7 +20,7 @@ import com.braintribe.model.cortex.deployment.CortexConfiguration;
 import com.braintribe.model.processing.deployment.api.DcProxyListener;
 import com.braintribe.model.processing.deployment.api.SchrodingerBean;
 import com.braintribe.model.processing.lock.api.Locking;
-import com.braintribe.model.processing.lock.dmb.impl.DmbLocking;
+import com.braintribe.model.processing.lock.impl.SimpleCdlLocking;
 import com.braintribe.wire.api.annotation.Import;
 import com.braintribe.wire.api.annotation.Managed;
 
@@ -114,7 +114,7 @@ public class ClusterSpace implements ClusterContract {
 	@Managed
 	public Locking defaultLocking() {
 		try {
-			return new DmbLocking();
+			return new SimpleCdlLocking();
 
 		} catch (Exception e) {
 			throw Exceptions.unchecked(e, "Failed to create LockManager.");

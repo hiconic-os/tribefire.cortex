@@ -14,6 +14,7 @@ package tribefire.platform.wire.space.common;
 import javax.sql.DataSource;
 
 import com.braintribe.cartridge.common.processing.deployment.ReflectBeansForDeployment;
+import com.braintribe.common.DeprecatedCode;
 import com.braintribe.model.accessdeployment.CollaborativeAccess;
 import com.braintribe.model.dcsadeployment.DcsaSharedStorage;
 import com.braintribe.model.deployment.Deployable;
@@ -138,6 +139,7 @@ public class BindersSpace implements WebPlatformBindersContract, ReflectBeansFor
 	@Managed
 	@Deprecated
 	public ComponentBinder<LockManager, com.braintribe.model.processing.lock.api.LockManager> lockingManager() {
+		DeprecatedCode.logWarn();
 		return binder(LockManager.T, com.braintribe.model.processing.lock.api.LockManager.class);
 	}
 

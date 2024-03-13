@@ -12,8 +12,6 @@
 package com.braintribe.model.processing.locking.db.impl;
 
 import static com.braintribe.utils.lcd.CollectionTools2.asList;
-import static com.braintribe.utils.lcd.CollectionTools2.first;
-import static com.braintribe.utils.lcd.CollectionTools2.newList;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -21,10 +19,10 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Supplier;
 
 import javax.sql.DataSource;
@@ -37,14 +35,15 @@ import com.braintribe.logging.Logger;
 import com.braintribe.model.messaging.Message;
 import com.braintribe.model.messaging.Topic;
 import com.braintribe.model.processing.lock.api.Locking;
+import com.braintribe.model.processing.lock.api.ReentrableLocking;
+import com.braintribe.model.processing.lock.api.ReentrableReadWriteLock;
 import com.braintribe.provider.Box;
 import com.braintribe.transport.messaging.api.MessageConsumer;
 import com.braintribe.transport.messaging.api.MessageProducer;
 import com.braintribe.transport.messaging.api.MessagingException;
 import com.braintribe.transport.messaging.api.MessagingSession;
-import com.braintribe.util.jdbc.DatabaseTypes;
 import com.braintribe.util.jdbc.JdbcTools;
-import com.braintribe.util.jdbc.JdbcTypeSupport;
+import com.braintribe.util.jdbc.dialect.JdbcDialect;
 import com.braintribe.utils.DigestGenerator;
 import com.braintribe.utils.lcd.NullSafe;
 
@@ -152,11 +151,14 @@ public class DbLocking implements Locking, LifecycleAware {
 	// TABLE
 
 	private String createTableSql() {
-		DatabaseTypes dbTypes = JdbcTypeSupport.getDatabaseTypes(dataSource);
-		String dateType = dbTypes.getTimestampType();
+		JdbcDialect jdbcDialect = JdbcDialect.detectDialect(dataSource);
+		String dateType = jdbcDialect.timestampType();
+		String intType = jdbcDialect.intType();
 
 		return "create table TF_LOCKS (" + //
 				"id varchar(255) primary key not null, " + //
+				"reentranceId varchar(255) not null, " + //
+				"count " + intType + " not null, " + //
 				"expires " + dateType + " not null, " + //
 				"created " + dateType + " not null, " + //
 				"caller varchar(255), " + //
@@ -186,10 +188,28 @@ public class DbLocking implements Locking, LifecycleAware {
 	}
 
 	@Override
-	public ReadWriteLock forIdentifier(String id) {
+	public ReentrableLocking withReentranceId(String reentranceId) {
+		NullSafe.nonNull(reentranceId, "reentranceId");
+		if (READ_LOCK_REENTRANCE_ID.equals(reentranceId))
+			throw new IllegalArgumentException("reentranceId cannot be " + READ_LOCK_REENTRANCE_ID);
+
+		return new ReentrableLocking() {
+			@Override
+			public ReentrableReadWriteLock forIdentifier(String id) {
+				return forIdentifierAndReentranceId(id, reentranceId);
+			}
+		};
+	}
+
+	@Override
+	public ReentrableReadWriteLock forIdentifier(String id) {
+		return forIdentifierAndReentranceId(id, UUID.randomUUID().toString());
+	}
+
+	private ReentrableReadWriteLock forIdentifierAndReentranceId(String id, String reentranceId) {
 		String tuncId = truncateTo240Chars(id);
 		String caller = identifyCaller();
-		return new DbRwLock(tuncId, caller);
+		return new DbRwLock(tuncId, reentranceId, caller);
 	}
 
 	/**
@@ -231,19 +251,28 @@ public class DbLocking implements Locking, LifecycleAware {
 		}
 	}
 
-	/* package */ class DbRwLock implements ReadWriteLock {
+	/* package */ class DbRwLock implements ReentrableReadWriteLock {
 		public final String id;
 		public final String caller;
 
+		public final DistributedLock readLock;
+		public final DistributedLock writeLock;
+
 		public Timestamp created;
 
-		public DbRwLock(String id, String caller) {
+		public DbRwLock(String id, String reentranceId, String caller) {
 			this.id = id;
 			this.caller = caller;
+
+			this.readLock = new DistributedLock(this, Locking.READ_LOCK_REENTRANCE_ID, false);
+			this.writeLock = new DistributedLock(this, reentranceId, true);
 		}
+
 		// @formatter:off
-		@Override public Lock readLock()  { return writeLock(); }
-		@Override public Lock writeLock() { return new DistributedLock(this); }
+		@Override public String lockId() { return id; }
+		@Override public String reentranceId() { return writeLock.reentranceId; }
+		@Override public Lock readLock()  { return readLock; }
+		@Override public Lock writeLock() { return writeLock; }
 		// @formatter:on
 	}
 
@@ -303,9 +332,19 @@ public class DbLocking implements Locking, LifecycleAware {
 
 	private class DistributedLock implements Lock {
 		private final DbRwLock rwLock;
+		private final String reentranceId;
+		private final boolean isWriteLock;
+		private boolean s_locking; // to make sure writeLock is not re-entrant
 
-		public DistributedLock(DbRwLock rwLock) {
+		public DistributedLock(DbRwLock rwLock, String reentranceId, boolean isWriteLock) {
 			this.rwLock = rwLock;
+			this.reentranceId = reentranceId;
+			this.isWriteLock = isWriteLock;
+			this.s_locking = false;
+		}
+
+		private String lockContext() {
+			return " id " + rwLock.id + ", reentranceId " + reentranceId;
 		}
 
 		@Override
@@ -316,6 +355,8 @@ public class DbLocking implements Locking, LifecycleAware {
 			} catch (InterruptedException e) {
 				// ignore as there is a special lock method that supports interruptibility
 				log.debug("non interruptible lock() call internally caught an InterruptedException");
+				Thread.currentThread().interrupt();
+				throw new RuntimeException("Thread was interrupted, cannot lock " + lockContext(), e);
 			}
 		}
 
@@ -343,6 +384,8 @@ public class DbLocking implements Locking, LifecycleAware {
 		}
 
 		private boolean tryLockMs(long tryMs) throws InterruptedException {
+			markLocking();
+
 			long now = System.currentTimeMillis();
 			long tryUntil = now + tryMs;
 			if (tryUntil < 0)
@@ -352,10 +395,15 @@ public class DbLocking implements Locking, LifecycleAware {
 			String oldThreadName = currentThread.getName();
 			currentThread.setName(oldThreadName + " > waiting for lock " + rwLock.id);
 			try {
-				Box<Boolean> successIndicator = new Box<>();
+				var successIndicator = new Box<Boolean>();
 				while (true) {
 					JdbcTools.withConnection(dataSource, true, () -> "Trying to acquire lock " + rwLock.id, connection -> {
 						if (tryInsert(connection)) {
+							successIndicator.value = Boolean.TRUE;
+							return;
+						}
+
+						if (tryIncreaseCount(connection)) {
 							successIndicator.value = Boolean.TRUE;
 							return;
 						}
@@ -375,16 +423,20 @@ public class DbLocking implements Locking, LifecycleAware {
 					}
 
 					long millisLeft = tryUntil - System.currentTimeMillis();
-					if (millisLeft <= 0)
+					if (millisLeft <= 0) {
+						unmarkLocking();
 						return false;
+					}
 
 					waitBeforeTryLockAgain(millisLeft);
 				}
 
 			} catch (InterruptedException e) {
+				unmarkLocking();
 				throw e;
 
 			} catch (Exception e) {
+				unmarkLocking();
 				throw new RuntimeException("Could not get lock.", e);
 
 			} finally {
@@ -400,21 +452,66 @@ public class DbLocking implements Locking, LifecycleAware {
 			Timestamp currentTs = new Timestamp(current);
 			Timestamp expiresTs = new Timestamp(expires);
 
-			String query = "insert into TF_LOCKS (id, expires, created, caller, machine) values (?,?,?,?,?)";
+			String query = "insert into TF_LOCKS (id, reentranceId, count, expires, created, caller, machine) values (?,?,?,?,?,?,?)";
 
 			try {
 				JdbcTools.withPreparedStatement(c, query, () -> "inserting entry for lock with id " + rwLock.id, ps -> {
-					ps.setString(1, rwLock.id);
-					ps.setTimestamp(2, expiresTs);
-					ps.setTimestamp(3, currentTs);
-					ps.setString(4, rwLock.caller);
-					// TODO machine
-					ps.setString(5, "machine");
+					int i = 1;
+					ps.setString(i++, rwLock.id);
+					ps.setString(i++, reentranceId);
+					ps.setInt(i++, 1); // count
+					ps.setTimestamp(i++, expiresTs);
+					ps.setTimestamp(i++, currentTs);
+					ps.setString(i++, rwLock.caller);
+					ps.setString(i++, "machine"); // TODO machine
 
 					ps.executeUpdate();
 				});
 
 				rwLock.created = currentTs;
+				return true;
+
+			} catch (Exception e) {
+				// Exception is expected here if a row already exists
+				log.trace(() -> "Lock not obtained due to " + e.getClass().getSimpleName() + ""
+						+ (e.getMessage() != null ? ": " + e.getMessage() : ""));
+
+				return false;
+			}
+		}
+
+		private boolean tryIncreaseCount(Connection c) {
+			Timestamp created = queryCreatedTime(c);
+			if (!tryChangeCount(c, created, +1))
+				return false;
+
+			rwLock.created = created;
+			return true;
+		}
+
+		private boolean tryChangeCount(Connection c, Timestamp created, int diff) {
+			long current = System.currentTimeMillis();
+			long expires = current + lockExpirationInMs;
+
+			Timestamp expiresTs = new Timestamp(expires);
+
+			String query = "update TF_LOCKS set count = count + ?, expires = ? where id = ? and reentranceId = ? and created = ?";
+
+			var updated = new Box<Integer>();
+			try {
+				JdbcTools.withPreparedStatement(c, query, () -> "updating count for lock with id " + rwLock.id, ps -> {
+					ps.setInt(1, diff);
+					ps.setTimestamp(2, expiresTs);
+					ps.setString(3, rwLock.id);
+					ps.setString(4, reentranceId);
+					ps.setTimestamp(5, created);
+
+					updated.value = ps.executeUpdate();
+				});
+
+				if (updated.value == 0)
+					return false;
+
 				return true;
 
 			} catch (Exception e) {
@@ -425,55 +522,27 @@ public class DbLocking implements Locking, LifecycleAware {
 			}
 		}
 
-		protected boolean deleteLockIfExpired(Connection c) throws Exception {
-			Timestamp created = queryExpiredLock(c);
-			if (created == null)
-				return false;
+		private Timestamp queryCreatedTime(Connection c) {
+			String query = "select created from TF_LOCKS where id = ? and reentranceId = ?";
+			List<Object> params = asList(rwLock.id, reentranceId);
 
-			return deleteLockCreatedAt(c, created);
-		}
-
-		private Timestamp queryExpiredLock(Connection c) {
-			Timestamp curentTs = new Timestamp(System.currentTimeMillis());
-
-			List<Timestamp> result = newList();
-
-			String query = "select created from TF_LOCKS where id = ? and expires < ?";
-			List<Object> params = asList(rwLock.id, curentTs);
-
+			var result = new Box<Timestamp>();
 			JdbcTools.withPreparedStatement(c, query, params, () -> "Querying lock if expired with id " + rwLock.id, ps -> {
 				ps.setString(1, rwLock.id);
-				ps.setTimestamp(2, curentTs);
+				ps.setString(2, reentranceId);
 
 				try (ResultSet rs = ps.executeQuery()) {
 					if (rs.next()) {
-						Timestamp created = rs.getTimestamp(1);
-						result.add(created);
+						result.value = rs.getTimestamp(1);
 					}
 				}
-
 			});
 
-			return result.isEmpty() ? null : first(result);
-		}
-
-		private boolean deleteLockCreatedAt(Connection c, Timestamp created) {
-			Box<Integer> deleted = new Box<>();
-
-			String query = "delete from TF_LOCKS where id = ? and created = ?";
-			List<Object> params = asList(rwLock.id, created);
-
-			JdbcTools.withPreparedStatement(c, query, params, () -> "Deleting expired lock " + rwLock.id, ps -> {
-				ps.setString(1, rwLock.id);
-				ps.setTimestamp(2, created);
-
-				deleted.value = ps.executeUpdate();
-			});
-
-			return deleted.value > 0;
+			return result.value;
 		}
 
 		private void waitBeforeTryLockAgain(long millisLeft) throws InterruptedException {
+			// TODO use CountDownLatch instead? This could not-catch a notification
 			Object monitor = new Object();
 
 			MessageConsumer consumer = listenForUnlockNotification(rwLock.id, monitor);
@@ -501,7 +570,8 @@ public class DbLocking implements Locking, LifecycleAware {
 
 			try {
 				JdbcTools.withConnection(dataSource, true, () -> "Deleting unlocked lock " + rwLock.id, connection -> {
-					deleteLockCreatedAt(connection, rwLock.created);
+					if (tryChangeCount(connection, rwLock.created, -1))
+						deleteLockIfExpired(connection);
 				});
 
 				notifyUnlock(rwLock.id);
@@ -509,6 +579,47 @@ public class DbLocking implements Locking, LifecycleAware {
 
 			} catch (Exception e) {
 				log.warn("Error while releasing lock " + rwLock.id, e);
+			} finally {
+				unmarkLocking();
+			}
+		}
+
+		protected boolean deleteLockIfExpired(Connection c) throws Exception {
+			Timestamp curentTs = new Timestamp(System.currentTimeMillis());
+
+			var deleted = new Box<Integer>();
+
+			String query = "delete from TF_LOCKS where id = ? and (expires < ? or count = 0)";
+			List<Object> params = asList(rwLock.id, curentTs);
+
+			JdbcTools.withPreparedStatement(c, query, params, () -> "Deleting expired lock " + rwLock.id, ps -> {
+				ps.setString(1, rwLock.id);
+				ps.setTimestamp(2, curentTs);
+
+				deleted.value = ps.executeUpdate();
+			});
+
+			return deleted.value > 0;
+		}
+
+		private void markLocking() {
+			if (!isWriteLock)
+				return;
+
+			synchronized (this) {
+				if (s_locking)
+					throw new IllegalStateException("Cannot try lock " + lockContext() + " instance, it is already locked.");
+				s_locking = true;
+			}
+		}
+
+		private void unmarkLocking() {
+			if (!isWriteLock)
+				return;
+
+			// Is this needed to be sure that another thread who enters markLocking sees this?
+			synchronized (this) {
+				s_locking = false;
 			}
 		}
 

@@ -13,7 +13,6 @@ package tribefire.platform.wire.space.system;
 
 import java.util.concurrent.ExecutorService;
 
-import com.braintribe.codec.marshaller.api.HasStringCodec;
 import com.braintribe.common.lcd.Numbers;
 import com.braintribe.execution.virtual.VirtualThreadExecutorBuilder;
 import com.braintribe.logging.Logger;
@@ -84,7 +83,7 @@ public class ExecutionPersistenceSpace implements WireSpace {
 		bean.setWorkerIdentification(workerIdentification);
 		bean.setProcessor(rpc.persistingAsynchronousServiceProcessor());
 		bean.setRequestEvaluator(rpc.serviceRequestEvaluator());
-		bean.setStringCodec((HasStringCodec) marshalling.jsonMarshaller());
+		bean.setStringCodec(marshalling.jsonMarshaller());
 		bean.setMaxTries(3);
 
 		return bean;

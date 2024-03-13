@@ -14,6 +14,7 @@ package tribefire.platform.config.url;
 import java.io.File;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -127,9 +128,8 @@ public abstract class AbstractUrlBasedConfigurator extends AbstractExternalConfi
 	protected abstract String buildUrlProperty();
 
 	private List<RegistryEntry> readConfigurationUrl(String configurationUrl) {
-		List<RegistryEntry> entries = new ArrayList<RegistryEntry>();
 		try {
-			URL url = new URL(configurationUrl);
+			URL url = new URI(configurationUrl).toURL();
 
 			try (Reader is = new InputStreamReader(url.openStream(), "UTF-8")) {
 				return super.readConfigurationFromInputStream(is);
@@ -137,10 +137,8 @@ public abstract class AbstractUrlBasedConfigurator extends AbstractExternalConfi
 
 		} catch (Exception e) {
 			log.error("Could not read configuration located at: " + configurationUrl, e);
+			return new ArrayList<>();
 		}
-
-		return entries;
-
 	}
 
 	@Override

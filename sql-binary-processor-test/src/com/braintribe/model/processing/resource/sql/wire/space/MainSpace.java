@@ -26,7 +26,7 @@ import com.braintribe.model.access.IncrementalAccess;
 import com.braintribe.model.cache.CacheOptions;
 import com.braintribe.model.cache.CacheType;
 import com.braintribe.model.generic.eval.Evaluator;
-import com.braintribe.model.processing.lock.impl.SemaphoreBasedLocking;
+import com.braintribe.model.processing.lock.impl.SimpleCdlLocking;
 import com.braintribe.model.processing.resource.enrichment.ResourceEnrichingStreamer;
 import com.braintribe.model.processing.resource.sql.BinaryProcessorTestConstants;
 import com.braintribe.model.processing.resource.sql.JdbcSqlBinaryProcessor;
@@ -181,7 +181,7 @@ public class MainSpace implements MainContract, BinaryProcessorTestConstants {
 	protected void configJdbcProcessor(JdbcSqlBinaryProcessor bean, ProcessorConfig config) {
 		bean.setDataSource(dataSources.dataSource());
 		bean.setExternalId("test.sql.binary.persistence");
-		bean.setLocking(new SemaphoreBasedLocking());
+		bean.setLocking(new SimpleCdlLocking());
 		bean.setCacheMaxAge(config.getCacheOptions().getMaxAge());
 		bean.setCacheMustRevalidate(config.getCacheOptions().getMustRevalidate());
 		bean.setCacheType(config.getCacheOptions().getType());

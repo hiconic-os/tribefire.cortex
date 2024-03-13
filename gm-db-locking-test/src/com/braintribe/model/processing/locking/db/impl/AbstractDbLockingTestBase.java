@@ -25,6 +25,7 @@ import org.junit.runners.Parameterized.Parameters;
 import com.braintribe.common.db.DbVendor;
 import com.braintribe.common.db.SimpleDbTestSession;
 import com.braintribe.common.db.wire.contract.DbTestDataSourcesContract;
+import com.braintribe.model.processing.lock.api.ReentrableReadWriteLock;
 import com.braintribe.model.processing.locking.db.test.wire.contract.DbLockingTestContract;
 import com.braintribe.util.jdbc.JdbcTools;
 import com.braintribe.util.network.NetworkTools;
@@ -41,6 +42,11 @@ public abstract class AbstractDbLockingTestBase {
 	// ###############################################
 	// ## . . . . . . . . Static . . . . . . . . . .##
 	// ###############################################
+
+	protected static final String REENTRANCE_ID = "reentrance-id";
+	protected static final String LOCK_ID = "test-use-case";
+
+	protected static final int TIMEOUT_MS = 5000;
 
 	private static SimpleDbTestSession dbTestSession;
 
@@ -98,6 +104,14 @@ public abstract class AbstractDbLockingTestBase {
 		this.vendor = vendor;
 		this.dataSource = dbTestSession.contract.dataSource(vendor);
 		this.locking = lockingWireContext.contract().locking(vendor);
+	}
+
+	protected ReentrableReadWriteLock newReentrantLock() {
+		return locking.withReentranceId(REENTRANCE_ID).forIdentifier(LOCK_ID);
+	}
+
+	protected ReentrableReadWriteLock newRandomReentrantLock() {
+		return locking.forIdentifier(LOCK_ID);
 	}
 
 }

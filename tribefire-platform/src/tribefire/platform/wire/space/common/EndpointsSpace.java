@@ -26,7 +26,7 @@ public class EndpointsSpace implements WireSpace {
 	public URL servicesUrl() {
 		try {
 			String servicesUrl = TribefireRuntime.getServicesUrl();
-			URL bean = new URL(servicesUrl);
+			URL bean = new URI(servicesUrl).toURL();
 			return bean;
 
 		} catch (Exception e) {

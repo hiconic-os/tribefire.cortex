@@ -30,7 +30,7 @@ import org.junit.Test;
 import com.braintribe.common.concurrent.TaskScheduler;
 import com.braintribe.common.concurrent.TaskSchedulerImpl;
 import com.braintribe.model.processing.lock.api.Locking;
-import com.braintribe.model.processing.lock.impl.SemaphoreBasedLocking;
+import com.braintribe.model.processing.lock.impl.SimpleCdlLocking;
 
 import tribefire.cortex.leadership.api.LeadershipContext;
 import tribefire.cortex.leadership.api.LeadershipListener;
@@ -55,7 +55,7 @@ public class LockingBasedLeadershipManagerTest {
 	public void setup() {
 		this.executor = Executors.newCachedThreadPool();
 		this.scheduledThreadPool = Executors.newScheduledThreadPool(20);
-		this.locking = new SemaphoreBasedLocking();
+		this.locking = new SimpleCdlLocking();
 	}
 
 	@After
