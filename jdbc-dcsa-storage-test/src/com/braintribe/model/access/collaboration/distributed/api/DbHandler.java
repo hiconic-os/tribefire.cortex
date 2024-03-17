@@ -13,7 +13,7 @@ package com.braintribe.model.access.collaboration.distributed.api;
 
 import javax.sql.DataSource;
 
-import com.braintribe.model.processing.lock.api.LockManager;
+import com.braintribe.model.processing.lock.api.Locking;
 
 public interface DbHandler {
 
@@ -23,6 +23,6 @@ public interface DbHandler {
 
 	DataSource dataSource();
 
-	LockManager lockManager();
+	Locking locking();
 
 }

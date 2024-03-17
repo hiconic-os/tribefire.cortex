@@ -18,7 +18,7 @@ import java.util.Date;
 
 import javax.sql.DataSource;
 
-import com.braintribe.model.processing.lock.db.impl.DbLockManager;
+import com.braintribe.model.processing.locking.db.impl.DbLocking;
 import com.braintribe.processing.test.db.derby.DerbyServerControl;
 import com.braintribe.util.network.NetworkTools;
 import com.braintribe.utils.DateTools;
@@ -28,7 +28,7 @@ import com.zaxxer.hikari.HikariDataSource;
 public class DerbyDbHandler implements DbHandler {
 
 	protected DataSource dataSource = null;
-	protected DbLockManager dbLockManager;
+	protected DbLocking dbLocking;
 
 	protected DerbyServerControl derbyServerControl = null;
 	public static int DERBY_PORT = 1527;
@@ -52,7 +52,7 @@ public class DerbyDbHandler implements DbHandler {
 		NetworkTools.getNetworkAddress().getHostAddress();
 
 		dataSource();
-		lockManager();
+		locking();
 	}
 
 	@Override
@@ -87,14 +87,14 @@ public class DerbyDbHandler implements DbHandler {
 	}
 
 	@Override
-	public DbLockManager lockManager() {
-		if (dbLockManager == null) {
-			DbLockManager bean = new DbLockManager();
+	public DbLocking locking() {
+		if (dbLocking == null) {
+			DbLocking bean = new DbLocking();
 			bean.setDataSource(dataSource());
 			bean.postConstruct();
-			dbLockManager = bean;
+			dbLocking = bean;
 		}
-		return dbLockManager;
+		return dbLocking;
 	}
 
 	protected static void deleteDatabaseFiles() throws IOException {

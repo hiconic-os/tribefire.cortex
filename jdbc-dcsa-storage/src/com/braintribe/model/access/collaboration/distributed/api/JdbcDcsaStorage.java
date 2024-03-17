@@ -39,7 +39,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
 import javax.sql.DataSource;
@@ -58,7 +57,7 @@ import com.braintribe.model.access.collaboration.distributed.api.model.CsaStoreR
 import com.braintribe.model.generic.GMF;
 import com.braintribe.model.generic.reflection.Property;
 import com.braintribe.model.processing.bootstrapping.TribefireRuntime;
-import com.braintribe.model.processing.lock.api.LockManager;
+import com.braintribe.model.processing.lock.api.Locking;
 import com.braintribe.model.resource.Resource;
 import com.braintribe.util.jdbc.DatabaseTypes;
 import com.braintribe.util.jdbc.JdbcTypeSupport;
@@ -78,7 +77,7 @@ public class JdbcDcsaStorage implements DcsaSharedStorage, LifecycleAware {
 	private static final String tablename = "TF_DCSA";
 
 	private DataSource dataSource;
-	private LockManager lockManager;
+	private Locking locking;
 	private List<String> createTableStatements;
 	private String projectId;
 	private boolean autoUpdateSchema = true;
@@ -99,7 +98,7 @@ public class JdbcDcsaStorage implements DcsaSharedStorage, LifecycleAware {
 
 	@Override
 	public Lock getLock(String accessId) {
-		return lockManager.forIdentifier(accessId).lockTtl(getLockTtlInMs(), TimeUnit.MILLISECONDS).exclusive();
+		return locking.forIdentifier(accessId).writeLock();
 	}
 
 	@Override
@@ -111,7 +110,7 @@ public class JdbcDcsaStorage implements DcsaSharedStorage, LifecycleAware {
 
 		Connection connection = null;
 		PreparedStatement insertSt = null;
-		Lock lock = lockManager.forIdentifier(accessId.concat("-write-lock")).lockTtl(getLockTtlInMs(), TimeUnit.MILLISECONDS).exclusive();
+		Lock lock = locking.forIdentifier(accessId.concat("-write-lock")).writeLock();
 		lock.lock();
 		try {
 
@@ -638,8 +637,7 @@ public class JdbcDcsaStorage implements DcsaSharedStorage, LifecycleAware {
 		return context;
 	}
 
-	/* This method adds the resourceRelativePath to where it is missing. This is because this property was introduced
-	 * later. */
+	/* This method adds the resourceRelativePath to where it is missing. This is because this property was introduced later. */
 	private void updateResourceRelativePath(String id, String resourceRelativePath, Connection connection) throws Exception {
 		if (resourceRelativePath == null) {
 			return;
@@ -752,8 +750,8 @@ public class JdbcDcsaStorage implements DcsaSharedStorage, LifecycleAware {
 	}
 	@Configurable
 	@Required
-	public void setLockManager(LockManager lockManager) {
-		this.lockManager = lockManager;
+	public void setLocking(Locking locking) {
+		this.locking = locking;
 	}
 	@Configurable
 	@Required
@@ -942,11 +940,10 @@ public class JdbcDcsaStorage implements DcsaSharedStorage, LifecycleAware {
 		return result;
 	}
 
-	/* IMPLEMENTATION NOTE: Originally, the third parameter for the MetaData.getTables(...) invocation (i.e.
-	 * tableNamePattern) was not null, but the actual name of the table (i.e. "TF_DSTLCK"). This, however, caused problems
-	 * for the PostreSQL DB, because calling "create table TF_DSTLCK" there creates a table called "tf_dstlck" (i.e. all
-	 * chars uncapitalized). To avoid this problem, and possible future problems with different conventions, we simply
-	 * retrieve all the tables and then perform a case-insensitive check for each table name. */
+	/* IMPLEMENTATION NOTE: Originally, the third parameter for the MetaData.getTables(...) invocation (i.e. tableNamePattern) was not null, but the
+	 * actual name of the table (i.e. "TF_DSTLCK"). This, however, caused problems for the PostreSQL DB, because calling "create table TF_DSTLCK"
+	 * there creates a table called "tf_dstlck" (i.e. all chars uncapitalized). To avoid this problem, and possible future problems with different
+	 * conventions, we simply retrieve all the tables and then perform a case-insensitive check for each table name. */
 	protected String tableExists(Connection connection) throws SQLException {
 
 		Instant start = NanoClock.INSTANCE.instant();

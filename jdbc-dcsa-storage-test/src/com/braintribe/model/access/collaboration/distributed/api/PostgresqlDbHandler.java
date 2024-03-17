@@ -17,7 +17,7 @@ import javax.sql.DataSource;
 
 import org.junit.Ignore;
 
-import com.braintribe.model.processing.lock.db.impl.DbLockManager;
+import com.braintribe.model.processing.locking.db.impl.DbLocking;
 import com.braintribe.utils.DateTools;
 import com.zaxxer.hikari.HikariDataSource;
 
@@ -28,12 +28,12 @@ import com.zaxxer.hikari.HikariDataSource;
 public class PostgresqlDbHandler implements DbHandler {
 
 	protected DataSource dataSource = null;
-	protected DbLockManager dbLockManager;
+	protected DbLocking dbLocking;
 
 	@Override
 	public void initialize() throws Exception {
 		dataSource();
-		lockManager();
+		locking();
 	}
 
 	@Override
@@ -54,15 +54,15 @@ public class PostgresqlDbHandler implements DbHandler {
 	}
 
 	@Override
-	public DbLockManager lockManager() {
-		if (dbLockManager == null) {
-			DbLockManager bean = new DbLockManager();
+	public DbLocking locking() {
+		if (dbLocking == null) {
+			DbLocking bean = new DbLocking();
 			bean.setDataSource(dataSource());
 			bean.setAutoUpdateSchema(true);
 			bean.postConstruct();
-			dbLockManager = bean;
+			dbLocking = bean;
 		}
-		return dbLockManager;
+		return dbLocking;
 	}
 
 	/* package */ static void print(String text) {

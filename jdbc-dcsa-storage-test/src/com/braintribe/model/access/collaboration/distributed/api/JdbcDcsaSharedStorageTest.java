@@ -62,7 +62,7 @@ public class JdbcDcsaSharedStorageTest {
 			JdbcDcsaStorage storage = new JdbcDcsaStorage();
 			storage.setProjectId("storage-test-" + UUID.randomUUID().toString());
 			storage.setDataSource(dbHandler.dataSource());
-			storage.setLockManager(dbHandler.lockManager());
+			storage.setLocking(dbHandler.locking());
 			JsonStreamMarshaller marshaller = new JsonStreamMarshaller();
 			storage.setMarshaller(marshaller);
 			storage.postConstruct();
@@ -119,7 +119,7 @@ public class JdbcDcsaSharedStorageTest {
 		JdbcDcsaStorage storage = new JdbcDcsaStorage();
 		storage.setProjectId("storage-test-" + UUID.randomUUID().toString());
 		storage.setDataSource(dbHandler.dataSource());
-		storage.setLockManager(dbHandler.lockManager());
+		storage.setLocking(dbHandler.locking());
 		JsonStreamMarshaller marshaller = new JsonStreamMarshaller();
 		storage.setMarshaller(marshaller);
 		storage.postConstruct();
@@ -175,7 +175,7 @@ public class JdbcDcsaSharedStorageTest {
 		JdbcDcsaStorage storage = new JdbcDcsaStorage();
 		storage.setProjectId("storage-resource-test-" + UUID.randomUUID().toString());
 		storage.setDataSource(dbHandler.dataSource());
-		storage.setLockManager(dbHandler.lockManager());
+		storage.setLocking(dbHandler.locking());
 		JsonStreamMarshaller marshaller = new JsonStreamMarshaller();
 		storage.setMarshaller(marshaller);
 		storage.postConstruct();
@@ -218,7 +218,7 @@ public class JdbcDcsaSharedStorageTest {
 		JdbcDcsaStorage storage = new JdbcDcsaStorage();
 		storage.setProjectId("storage-resource-test-" + UUID.randomUUID().toString());
 		storage.setDataSource(dbHandler.dataSource());
-		storage.setLockManager(dbHandler.lockManager());
+		storage.setLocking(dbHandler.locking());
 		JsonStreamMarshaller marshaller = new JsonStreamMarshaller();
 		storage.setMarshaller(marshaller);
 		storage.postConstruct();
@@ -258,7 +258,7 @@ public class JdbcDcsaSharedStorageTest {
 		JdbcDcsaStorage storage = new JdbcDcsaStorage();
 		storage.setProjectId("storage-resource-test-" + UUID.randomUUID().toString());
 		storage.setDataSource(dbHandler.dataSource());
-		storage.setLockManager(dbHandler.lockManager());
+		storage.setLocking(dbHandler.locking());
 		JsonStreamMarshaller marshaller = new JsonStreamMarshaller();
 		storage.setMarshaller(marshaller);
 		storage.postConstruct();

@@ -78,7 +78,7 @@ import com.braintribe.utils.CollectionTools;
 		JdbcTools.withConnection(dbLocking.dataSource, true, () -> "Refreshing locks " + lockIds, c -> {
 
 			for (List<String> lockIdBatch : lockIdBatches) {
-				String sql = "update TF_LOCKS set expires = ? where id in " + JdbcTools.questionMarks(lockIdBatch.size());
+				String sql = "update TF_RE_LOCKS set expires = ? where id in " + JdbcTools.questionMarks(lockIdBatch.size());
 
 				JdbcTools.withPreparedStatement(c, sql, () -> "", ps -> {
 					ps.setTimestamp(1, expiresTs);

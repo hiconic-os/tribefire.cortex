@@ -277,7 +277,6 @@ public class DeploymentSpace implements WireSpace {
 			logger.warn("Could not parse the TRIBEFIRE_DEPLOYMENT_STANDARD_THREADS value " + standardThreadCountString + " as a number.", e);
 		}
 
-		bean.setStandardParallelDeployments(standardThreadCount);
 		bean.setThreadContextScoping(authContext.currentUser().threadContextScoping());
 		return bean;
 	}

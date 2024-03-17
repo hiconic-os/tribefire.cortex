@@ -38,9 +38,8 @@ import tribefire.platform.impl.security.EntityDecryption;
 import tribefire.platform.impl.security.EntityObfuscation;
 
 /**
- * An abstract {@link Configurator} that gets a list of deployable of a sub-class and registers them with the
- * {@link EnvironmentDenotationRegistry}. A sub-class of this class is likely to be configured as a Configurator that is
- * executed during the startup of a Cartridge and the TF services.
+ * An abstract {@link Configurator} that gets a list of deployable of a sub-class and registers them with the {@link EnvironmentDenotationRegistry}. A
+ * sub-class of this class is likely to be configured as a Configurator that is executed during the startup of a Cartridge and the TF services.
  */
 public abstract class AbstractExternalConfigurator implements Configurator, ContextAware {
 
@@ -68,30 +67,26 @@ public abstract class AbstractExternalConfigurator implements Configurator, Cont
 		// Get a list of entries from an implementing subclass. The result might be null.
 		List<RegistryEntry> entries = getEntries();
 
-		if (entries != null) {
-			for (RegistryEntry entry : entries) {
-				if (entry != null && entry.getBindId() != null && entry.getDenotation() != null) {
+		if (entries != null && !entries.isEmpty()) {
+			List<RegistryEntry> filteredEntries = entries.stream().filter(e -> e != null && e.getBindId() != null && e.getDenotation() != null)
+					.toList();
+			filteredEntries.parallelStream().forEach(entry -> {
+				try {
+					GenericEntity registeredGenericEntity = entry.getDenotation();
 
-					try {
-						GenericEntity registeredGenericEntity = entry.getDenotation();
+					EntityObfuscation.deobfuscateProperties(registeredGenericEntity);
+					EntityDecryption.decryptProperties(registeredGenericEntity);
 
-						EntityObfuscation.deobfuscateProperties(registeredGenericEntity);
-						EntityDecryption.decryptProperties(registeredGenericEntity);
-
-						log.info(() -> "Registering denotation type [ " + entry.getDenotation().getClass().getSimpleName() + " ] under id [ "
-								+ entry.getBindId() + " ] from source: " + entry.getSource());
-						EnvironmentDenotationRegistry.getInstance().register(entry.getBindId(), registeredGenericEntity);
-
-					} catch (Exception e) {
-						e = Exceptions.contextualize(e, "Entry: " + entry + ", Source: " + entry.getSource());
-						if (e instanceof ConfiguratorException) {
-							throw ((ConfiguratorException) e);
-						} else {
-							throw Exceptions.unchecked(e);
-						}
+				} catch (Exception e) {
+					e = Exceptions.contextualize(e, "Entry: " + entry + ", Source: " + entry.getSource());
+					if (e instanceof ConfiguratorException) {
+						throw ((ConfiguratorException) e);
+					} else {
+						throw Exceptions.unchecked(e);
 					}
 				}
-			}
+			});
+			filteredEntries.forEach(entry -> EnvironmentDenotationRegistry.getInstance().register(entry.getBindId(), entry.getDenotation()));
 		}
 	}
 
@@ -106,21 +101,19 @@ public abstract class AbstractExternalConfigurator implements Configurator, Cont
 	protected abstract List<RegistryEntry> getEntries() throws ConfiguratorException;
 
 	/**
-	 * Textual information about the source of the entries. This information is intended to provide a meaningful
-	 * information in log files. This information is NOT intended to server as a source URL or file path as it will only
-	 * be used for logging.
+	 * Textual information about the source of the entries. This information is intended to provide a meaningful information in log files. This
+	 * information is NOT intended to server as a source URL or file path as it will only be used for logging.
 	 * 
 	 * @return Any information deemed important by the subclass to identify the source of entries.
 	 */
 	protected abstract String getSourceInformation();
 
 	/**
-	 * Helper method to load entries from a {@link Reader}. This method will not throw any exception but will only log
-	 * errors/warnings to the logging framework.
+	 * Helper method to load entries from a {@link Reader}. This method will not throw any exception but will only log errors/warnings to the logging
+	 * framework.
 	 * 
 	 * @param reader
-	 *            The input stream that provides entries in JSON format (or any other format if an alternative
-	 *            marshaller is set).
+	 *            The input stream that provides entries in JSON format (or any other format if an alternative marshaller is set).
 	 * @return A list of entries or null, if no were found or an error occurred.
 	 */
 	protected List<RegistryEntry> readConfigurationFromInputStream(Reader reader) {
@@ -130,7 +123,7 @@ public abstract class AbstractExternalConfigurator implements Configurator, Cont
 			TeeReader teeReader = new TeeReader(reader, Numbers.MILLION);
 
 			GmDeserializationOptions options = GmDeserializationOptions.deriveDefaults().set(EntityFactory.class, EntityType::create).build();
-			
+
 			Object result = marshaller.unmarshall(teeReader, options);
 
 			if (result instanceof RegistryEntry) {

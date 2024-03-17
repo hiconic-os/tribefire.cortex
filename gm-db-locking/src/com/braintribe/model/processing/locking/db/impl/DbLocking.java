@@ -50,7 +50,7 @@ import com.braintribe.utils.lcd.NullSafe;
 /**
  * {@link Locking} implementation backed by an SQL database.
  * <p>
- * It uses a table called "TF_LOCKS".
+ * It uses a table called "TF_RE_LOCKS".
  * <p>
  * For each {@link Lock}, acquired e.g. via {@link #forIdentifier(String)} (or similar methods), an entry is created with a certain expiration date.
  * This expiration date is the current time plus the configured {@link #setLockExpirationInSecs(int)}.
@@ -114,7 +114,7 @@ public class DbLocking implements Locking, LifecycleAware {
 			try {
 				ensureLocksTable();
 			} catch (Exception e) {
-				throw new RuntimeException("Error while ensuring TF_LOCKS table used by Locking", e);
+				throw new RuntimeException("Error while ensuring TF_RE_LOCKS table used by Locking", e);
 			}
 	}
 
@@ -130,7 +130,7 @@ public class DbLocking implements Locking, LifecycleAware {
 	}
 
 	private void createLocksTable(Connection connection) throws SQLException {
-		log.debug("Creating table TF_LOCKS as it doesn't exist yet.");
+		log.debug("Creating table TF_RE_LOCKS as it doesn't exist yet.");
 
 		String sql = createTableSql();
 
@@ -138,7 +138,7 @@ public class DbLocking implements Locking, LifecycleAware {
 		try {
 			log.debug("Creating table with statement: " + sql);
 			statement.executeUpdate(sql);
-			log.debug("Successfully created table TF_LOCKS.");
+			log.debug("Successfully created table TF_RE_LOCKS.");
 
 		} catch (SQLException e) {
 			if (!locksTableExists(connection))
@@ -155,7 +155,7 @@ public class DbLocking implements Locking, LifecycleAware {
 		String dateType = jdbcDialect.timestampType();
 		String intType = jdbcDialect.intType();
 
-		return "create table TF_LOCKS (" + //
+		return "create table TF_RE_LOCKS (" + //
 				"id varchar(255) primary key not null, " + //
 				"reentranceId varchar(255) not null, " + //
 				"count " + intType + " not null, " + //
@@ -166,7 +166,7 @@ public class DbLocking implements Locking, LifecycleAware {
 	}
 
 	private boolean locksTableExists(Connection connection) {
-		return JdbcTools.tableExists(connection, "TF_LOCKS") != null;
+		return JdbcTools.tableExists(connection, "TF_RE_LOCKS") != null;
 	}
 
 	@Override
@@ -452,7 +452,7 @@ public class DbLocking implements Locking, LifecycleAware {
 			Timestamp currentTs = new Timestamp(current);
 			Timestamp expiresTs = new Timestamp(expires);
 
-			String query = "insert into TF_LOCKS (id, reentranceId, count, expires, created, caller, machine) values (?,?,?,?,?,?,?)";
+			String query = "insert into TF_RE_LOCKS (id, reentranceId, count, expires, created, caller, machine) values (?,?,?,?,?,?,?)";
 
 			try {
 				JdbcTools.withPreparedStatement(c, query, () -> "inserting entry for lock with id " + rwLock.id, ps -> {
@@ -495,7 +495,7 @@ public class DbLocking implements Locking, LifecycleAware {
 
 			Timestamp expiresTs = new Timestamp(expires);
 
-			String query = "update TF_LOCKS set count = count + ?, expires = ? where id = ? and reentranceId = ? and created = ?";
+			String query = "update TF_RE_LOCKS set count = count + ?, expires = ? where id = ? and reentranceId = ? and created = ?";
 
 			var updated = new Box<Integer>();
 			try {
@@ -523,7 +523,7 @@ public class DbLocking implements Locking, LifecycleAware {
 		}
 
 		private Timestamp queryCreatedTime(Connection c) {
-			String query = "select created from TF_LOCKS where id = ? and reentranceId = ?";
+			String query = "select created from TF_RE_LOCKS where id = ? and reentranceId = ?";
 			List<Object> params = asList(rwLock.id, reentranceId);
 
 			var result = new Box<Timestamp>();
@@ -589,7 +589,7 @@ public class DbLocking implements Locking, LifecycleAware {
 
 			var deleted = new Box<Integer>();
 
-			String query = "delete from TF_LOCKS where id = ? and (expires < ? or count = 0)";
+			String query = "delete from TF_RE_LOCKS where id = ? and (expires < ? or count = 0)";
 			List<Object> params = asList(rwLock.id, curentTs);
 
 			JdbcTools.withPreparedStatement(c, query, params, () -> "Deleting expired lock " + rwLock.id, ps -> {

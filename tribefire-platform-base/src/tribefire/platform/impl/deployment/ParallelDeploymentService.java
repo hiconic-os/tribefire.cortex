@@ -26,11 +26,13 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.braintribe.cfg.Configurable;
 import com.braintribe.cfg.Required;
+import com.braintribe.execution.generic.ContextualizedFuture;
 import com.braintribe.execution.virtual.VirtualThreadExecutorBuilder;
 import com.braintribe.logging.Logger;
 import com.braintribe.model.deployment.Deployable;
@@ -94,9 +96,8 @@ public class ParallelDeploymentService implements DeploymentService {
 	private DeployedComponentResolver deployedComponentResolver;
 
 	// post initialized
-	private final Map<String, DeploymentPromise> promises = new ConcurrentHashMap<>();
-	private int standardParallelDeployments = 5;
-	private final Object deploymentMonitor = new Object();
+	private final Map<String, ContextualizedFuture<?, Deployable>> futures = new ConcurrentHashMap<>();
+	private final ReentrantLock deploymentLock = new ReentrantLock();
 
 	private ThreadContextScoping threadContextScoping;
 
@@ -121,15 +122,6 @@ public class ParallelDeploymentService implements DeploymentService {
 		this.deployedComponentResolver = deployedComponentResolver;
 	}
 
-	@Configurable
-	public void setStandardParallelDeployments(int threadCount) {
-		if (threadCount <= 0) {
-			log.warn(() -> "Not accepting standard deployment thread count " + threadCount + ". Keeping default: " + standardParallelDeployments);
-		} else {
-			this.standardParallelDeployments = threadCount;
-		}
-	}
-
 	@Required
 	public void setThreadContextScoping(ThreadContextScoping threadContextScoping) {
 		this.threadContextScoping = threadContextScoping;
@@ -138,10 +130,13 @@ public class ParallelDeploymentService implements DeploymentService {
 	@Override
 	public void deploy(DeployContext deployContext) throws DeploymentException {
 		ParallelDeploymentStatistics stats = new ParallelDeploymentStatistics();
-		synchronized (deploymentMonitor) {
+		deploymentLock.lock();
+		try {
 			stats.stopWatch.intermediate("Monitor");
 			s_deploy(deployContext, stats);
 			stats.stopWatch.intermediate("Deployment");
+		} finally {
+			deploymentLock.unlock();
 		}
 		if (log.isDebugEnabled()) {
 			stats.createStatistics();
@@ -161,68 +156,41 @@ public class ParallelDeploymentService implements DeploymentService {
 			this.context = context;
 			this.stats = stats;
 
-			int threadCount = Math.min(deployableAmount, standardParallelDeployments);
 			standardDeploymentThreadPool = VirtualThreadExecutorBuilder.newPool().concurrency(Integer.MAX_VALUE).threadNamePrefix("Deployer")
 					.description("Deployer").build();
-			stats.standardThreadCount = threadCount;
+			stats.standardThreadCount = Integer.MAX_VALUE;
 
 			/* Note(RKU): Since we're using virtual threads now, there seems to be no need for 2 different thread pools */
 		}
 
-		private class ErrorCatcher implements Runnable {
-			private final Runnable delegate;
-			private final DeploymentPromise promise;
-
-			public ErrorCatcher(Runnable delegate, DeploymentPromise promise) {
-				super();
-				this.delegate = delegate;
-				this.promise = promise;
-			}
-
-			@Override
-			public void run() {
-				PromiseStatistics promiseStats = promise.getPromiseStatistics();
-				promiseStats.executionStarts();
-				try {
-					delegate.run();
-				} catch (Throwable t) {
-					promise.onFailure(t);
-				} finally {
-					promiseStats.executionEnded();
-				}
-			}
-		}
-
-		void enqueue(DeploymentPromise promise) {
-			SingleDeployer deployer = new SingleDeployer(context, promise.getDeployable(), promise, QueueStatus.pending);
+		Future<?> enqueue(Deployable deployable, ParallelDeploymentStatistics stats) {
+			Deployer deployer = new Deployer(context, deployable, stats);
 			ContextClassLoaderTransfer classLoaderTransfer = new ContextClassLoaderTransfer(deployer);
-			promise.getPromiseStatistics().enqueuedStandard();
-			standardDeploymentThreadPool.execute(new ErrorCatcher(threadContextScoping.bindContext(classLoaderTransfer), promise));
+			Future<?> future = standardDeploymentThreadPool.submit(threadContextScoping.bindContext(classLoaderTransfer));
+			return future;
 		}
 
 		void waitForFinishedDeployment() {
 
 			stats.waitForFinishedDeploymentStart();
 
-			for (DeploymentPromise p : promises.values()) {
-				// Forwards the internal asynchronous deployment result to the context notification methods
+			for (ContextualizedFuture<?, Deployable> f : futures.values()) {
 				try {
-					p.get();
-					context.succeeded(p.getOriginalDeployable());
-				} catch (Throwable t) {
-					context.failed(p.getOriginalDeployable(), t);
+					f.get();
+					context.succeeded(f.getContext());
+				} catch (Throwable e) {
+					context.failed(f.getContext(), e);
 				}
 			}
 
 			stats.endOfWaitForFinishedDeploymentStart();
 
-			promises.clear();
+			futures.clear();
 		}
 	}
 
 	/**
-	 * This class is required as it seems that the {@link ThreadContextScoping} is not able to transfer the current class
-	 * loader context.
+	 * This class is required as it seems that the {@link ThreadContextScoping} is not able to transfer the current class loader context.
 	 */
 	class ContextClassLoaderTransfer implements Runnable {
 
@@ -238,10 +206,8 @@ public class ParallelDeploymentService implements DeploymentService {
 		public void run() {
 			ClassLoader classLoaderBackup = Thread.currentThread().getContextClassLoader();
 			Thread.currentThread().setContextClassLoader(classLoader);
-
 			try {
 				delegate.run();
-
 			} finally {
 				Thread.currentThread().setContextClassLoader(classLoaderBackup);
 			}
@@ -249,49 +215,33 @@ public class ParallelDeploymentService implements DeploymentService {
 
 	}
 
-	// TODO make this a future to allow canceling
-	class SingleDeployer implements Runnable {
+	class Deployer implements Runnable {
 
 		private final DeployContext deployContext;
 		private final Deployable deployable;
-		private final DeploymentPromise deploymentPromise;
-		private final QueueStatus preconditionalState;
+		private final ParallelDeploymentStatistics stats;
 
-		public SingleDeployer(DeployContext deployContext, Deployable deployable, DeploymentPromise deploymentPromise,
-				QueueStatus preconditionalState) {
+		public Deployer(DeployContext deployContext, Deployable deployable, ParallelDeploymentStatistics stats) {
 			this.deployContext = deployContext;
 			this.deployable = deployable;
-			this.deploymentPromise = deploymentPromise;
-			this.preconditionalState = preconditionalState;
+			this.stats = stats;
 		}
 
 		@Override
 		public void run() {
-			Object statusMonitor = deploymentPromise.getStatusMonitor();
-			synchronized (statusMonitor) {
-				if (deploymentPromise.getQueueStatus() != preconditionalState)
-					return;
-
-				deploymentPromise.setQueueStatus(QueueStatus.processing);
-			}
-
 			BasicDeploymentContext<?, ?> context = new BasicDeploymentContext<>( //
 					deployedComponentResolver, resolveDeploymentSession(), deployable, deployContext.areDeployablesFullyFetched());
 
+			PromiseStatistics promiseStats = stats.acquirePromiseStats(deployable);
+			promiseStats.executionStarts();
+
 			try {
 				deploy(context);
-				deploymentPromise.onSuccess(null);
-
-			} catch (Exception e) {
-				deploymentPromise.onFailure(e);
-
 			} finally {
+				promiseStats.executionEnded();
 				context.onAfterDeployment();
 			}
 
-			synchronized (statusMonitor) {
-				deploymentPromise.setQueueStatus(QueueStatus.done);
-			}
 		}
 
 		private PersistenceGmSession resolveDeploymentSession() {
@@ -311,26 +261,20 @@ public class ParallelDeploymentService implements DeploymentService {
 		ParallelDeploymentController controller = new ParallelDeploymentController(size, deployContext, stats);
 		stats.stopWatch.intermediate("Controller Init");
 
-		for (Deployable deployable : deployContext.deployables()) {
-			DeploymentPromise deploymentPromise = new DeploymentPromise(deployable, deployable, stats);
-
-			String externalId = deployable.getExternalId();
-			if (externalId == null) {
-				log.error("No externalId set on deployable of type '" + deployable.entityType().getTypeSignature() + "'. Instance: " + deployable);
-				deploymentPromise.onFailure(new NullPointerException("The deployable " + deployable + " does not have an external Id"));
-			} else {
-				promises.put(externalId, deploymentPromise);
-			}
-		}
-		stats.stopWatch.intermediate("Promises Created");
-
-		// notify deployment started
 		stats.deploymentStarts();
 		deployContext.deploymentStarted();
 
-		promises.values().stream() //
-				.peek(controller::enqueue) //
-				.forEach(dp -> deployContext.started(dp.getDeployable()));
+		for (Deployable deployable : deployContext.deployables()) {
+			String externalId = deployable.getExternalId();
+			if (externalId == null) {
+				log.error("No externalId set on deployable of type '" + deployable.entityType().getTypeSignature() + "'. Instance: " + deployable);
+			} else {
+				Future<?> future = controller.enqueue(deployable, stats);
+				futures.put(externalId, new ContextualizedFuture<>(future, deployable));
+				deployContext.started(deployable);
+			}
+		}
+
 		stats.stopWatch.intermediate("Promises Enqueued");
 
 		controller.waitForFinishedDeployment();
@@ -341,8 +285,11 @@ public class ParallelDeploymentService implements DeploymentService {
 
 	@Override
 	public void undeploy(UndeployContext undeployContext) throws DeploymentException {
-		synchronized (deploymentMonitor) {
+		deploymentLock.lock();
+		try {
 			s_undeploy(undeployContext);
+		} finally {
+			deploymentLock.unlock();
 		}
 	}
 
@@ -613,12 +560,17 @@ public class ParallelDeploymentService implements DeploymentService {
 	}
 
 	public void waitForDeployableIfInDeployment(String externalId) {
-		DeploymentPromise deploymentPromise = promises.get(externalId);
 
-		if (deploymentPromise == null)
+		ContextualizedFuture<?, Deployable> contextualizedFuture = futures.get(externalId);
+		if (contextualizedFuture == null) {
 			return;
+		}
 
-		deploymentPromise.waitFor();
+		try {
+			contextualizedFuture.get();
+		} catch (Throwable t) {
+			return;
+		}
 	}
 
 	private String shortDeployableString(Deployable deployable) {

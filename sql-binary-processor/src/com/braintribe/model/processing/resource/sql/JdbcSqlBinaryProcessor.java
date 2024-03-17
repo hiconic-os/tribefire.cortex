@@ -123,9 +123,9 @@ public class JdbcSqlBinaryProcessor extends AbstractBinaryProcessor implements I
 		getSql = "select " + blobColumnName + " from " + tableName + " where " + idColumnName + " = ?";
 		deleteSql = "delete from  " + tableName + " where " + idColumnName + " = ?";
 	}
-	
+
 	private final LazyInitialization ensureTable = new LazyInitialization(this::ensureTableExists);
-	
+
 	private void ensureTableExists() {
 		JdbcDialect dialect = JdbcDialect.detectDialect(dataSource);
 		log.debug(() -> logPrefix() + "Detected dialect: " + dialect.hibernateDialect());

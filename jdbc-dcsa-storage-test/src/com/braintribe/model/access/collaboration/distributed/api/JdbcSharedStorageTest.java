@@ -45,7 +45,7 @@ public class JdbcSharedStorageTest extends AbstractSharedStorageTest {
 		JdbcDcsaStorage storage = new JdbcDcsaStorage();
 		storage.setProjectId("storage-test-" + UUID.randomUUID().toString());
 		storage.setDataSource(dbHandler.dataSource());
-		storage.setLockManager(dbHandler.lockManager());
+		storage.setLocking(dbHandler.locking());
 		JsonStreamMarshaller marshaller = new JsonStreamMarshaller();
 		storage.setMarshaller(marshaller);
 		storage.postConstruct();

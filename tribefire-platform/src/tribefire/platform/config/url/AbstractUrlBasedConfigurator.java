@@ -11,6 +11,7 @@
 // ============================================================================
 package tribefire.platform.config.url;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -26,20 +27,17 @@ import com.braintribe.logging.Logger;
 import com.braintribe.model.processing.bootstrapping.TribefireRuntime;
 
 /**
- * This is a subclass of {@link AbstractExternalConfigurator} that loads entries from a JSON configuration file. The
- * location of the file is provided by an actual subclass of this class. The location could either be a file path or a
- * URL that allows to download the content from a remote server.
+ * This is a subclass of {@link AbstractExternalConfigurator} that loads entries from a JSON configuration file. The location of the file is provided
+ * by an actual subclass of this class. The location could either be a file path or a URL that allows to download the content from a remote server.
  */
 public abstract class AbstractUrlBasedConfigurator extends AbstractExternalConfigurator {
 
 	private static final Logger log = Logger.getLogger(AbstractUrlBasedConfigurator.class);
 
 	/**
-	 * Returns a File object pointing to the default place where the file would be expected. It internally calls
-	 * {@link #buildDefaultFileName()} to get the default file name. If this file name is a valid path itself to an
-	 * existing file, it will be used directly. Otherwise, a file path with the prefix returned by
-	 * {@link TribefireRuntime#getConfigurationDir()} will be returned (while not checking whether this file really
-	 * exists).
+	 * Returns a File object pointing to the default place where the file would be expected. It internally calls {@link #buildDefaultFileName()} to
+	 * get the default file name. If this file name is a valid path itself to an existing file, it will be used directly. Otherwise, a file path with
+	 * the prefix returned by {@link TribefireRuntime#getConfigurationDir()} will be returned (while not checking whether this file really exists).
 	 * 
 	 * @return A {@link File} object pointing to a potential location of the configuration file.
 	 */
@@ -64,7 +62,7 @@ public abstract class AbstractUrlBasedConfigurator extends AbstractExternalConfi
 			// No configuration URL found. Now try to find it in default location.
 			File defaultCfgFile = getDefaultConfigFile(this::buildDefaultFileName);
 			if (defaultCfgFile.exists()) {
-				log.info("No explicit configuration URL defined but found configuration file at default location: "
+				log.info(() -> "No explicit configuration URL defined but found configuration file at default location: "
 						+ defaultCfgFile.getAbsolutePath());
 				configurationUrl = defaultCfgFile.toURI().toString();
 			}
@@ -83,7 +81,7 @@ public abstract class AbstractUrlBasedConfigurator extends AbstractExternalConfi
 			// No configuration URL found. Now try to find it in default location.
 			File defaultCfgFile = getDefaultConfigFile(this::buildSharedDefaultFileName);
 			if (defaultCfgFile.exists()) {
-				log.info("No explicit configuration URL defined but found configuration file at default location: "
+				log.info(() -> "No explicit configuration URL defined but found configuration file at default location: "
 						+ defaultCfgFile.getAbsolutePath());
 				configurationUrl = defaultCfgFile.toURI().toString();
 			}
@@ -131,7 +129,7 @@ public abstract class AbstractUrlBasedConfigurator extends AbstractExternalConfi
 		try {
 			URL url = new URI(configurationUrl).toURL();
 
-			try (Reader is = new InputStreamReader(url.openStream(), "UTF-8")) {
+			try (Reader is = new InputStreamReader(new BufferedInputStream(url.openStream()), "UTF-8")) {
 				return super.readConfigurationFromInputStream(is);
 			}
 
