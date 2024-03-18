@@ -9,40 +9,29 @@
 // 
 // You should have received a copy of the GNU Lesser General Public License along with this library; See http://www.gnu.org/licenses/.
 // ============================================================================
-package com.braintribe.transport.messaging.dbm;
-
-import java.lang.management.ManagementFactory;
+package com.braintribe.transport.messaging.bq;
 
 import com.braintribe.transport.messaging.api.MessagingConnectionProvider;
 import com.braintribe.transport.messaging.api.MessagingContext;
 import com.braintribe.transport.messaging.api.MessagingException;
 
 /**
- * {@link MessagingConnectionProvider} implementation for providing {@link GmDmbMqConnection}(s).
+ * {@link MessagingConnectionProvider} implementation for providing {@link BqMessagingConnection}(s).
  * 
  * @see MessagingConnectionProvider
- * @see GmDmbMqConnection
+ * @see BqMessagingConnection
  */
-public class GmDmbMqConnectionProvider implements MessagingConnectionProvider<GmDmbMqConnection> {
+public class BlockingQueueMessagingConnectionProvider implements MessagingConnectionProvider<BqMessagingConnection> {
 
     private MessagingContext messagingContext;
-
-    public MessagingContext getMessagingContext() {
-		return messagingContext;
-	}
 
 	public void setMessagingContext(MessagingContext messagingContext) {
 		this.messagingContext = messagingContext;
 	}
     
 	@Override
-	public GmDmbMqConnection provideMessagingConnection() throws MessagingException {
-		GmDmbMqConnection gmDmbMqConnection = new GmDmbMqConnection();
-		
-		gmDmbMqConnection.setConnectionProvider(this);
-		gmDmbMqConnection.setMBeanServerConnection(ManagementFactory.getPlatformMBeanServer());
-		
-		return gmDmbMqConnection;
+	public BqMessagingConnection provideMessagingConnection() throws MessagingException {
+		return new BqMessagingConnection(messagingContext);
 	}
 	
 	@Override
@@ -57,6 +46,6 @@ public class GmDmbMqConnectionProvider implements MessagingConnectionProvider<Gm
 
 	@Override
 	public String description() {
-		return "DMB Messaging";
+		return "Blocking Queue Messaging";
 	}
 }

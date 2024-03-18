@@ -21,7 +21,7 @@ import com.braintribe.model.processing.tfconstants.TribefireConstants;
 import com.braintribe.transport.messaging.api.MessagingConnectionProvider;
 import com.braintribe.transport.messaging.api.MessagingContext;
 import com.braintribe.transport.messaging.api.MessagingSessionProvider;
-import com.braintribe.transport.messaging.dbm.GmDmbMqConnectionProvider;
+import com.braintribe.transport.messaging.bq.BlockingQueueMessagingConnectionProvider;
 import com.braintribe.transport.messaging.impl.StandardMessagingSessionProvider;
 import com.braintribe.wire.api.annotation.Import;
 import com.braintribe.wire.api.annotation.Managed;
@@ -84,7 +84,7 @@ public class MessagingSpace implements MessagingContract {
 
 	@Managed
 	public MessagingConnectionProvider<?> defaultMessagingConnectionSupplier() {
-		GmDmbMqConnectionProvider bean = new GmDmbMqConnectionProvider();
+		BlockingQueueMessagingConnectionProvider bean = new BlockingQueueMessagingConnectionProvider();
 		bean.setMessagingContext(context());
 
 		return bean;

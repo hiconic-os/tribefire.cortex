@@ -37,7 +37,7 @@ import com.braintribe.model.usersession.UserSession;
 import com.braintribe.transport.http.DefaultHttpClientProvider;
 import com.braintribe.transport.messaging.api.MessagingContext;
 import com.braintribe.transport.messaging.api.MessagingSessionProvider;
-import com.braintribe.transport.messaging.dbm.GmDmbMqConnectionProvider;
+import com.braintribe.transport.messaging.bq.BlockingQueueMessagingConnectionProvider;
 import com.braintribe.transport.messaging.impl.StandardMessagingSessionProvider;
 import com.braintribe.util.servlet.remote.StandardRemoteClientAddressResolver;
 import com.braintribe.wire.api.annotation.Import;
@@ -164,12 +164,12 @@ public class MqRpcTestSpace implements MqRpcTestContract {
 	@Managed
 	private MessagingSessionProvider clientSessionProvider() {
 		StandardMessagingSessionProvider bean = new StandardMessagingSessionProvider();
-		bean.setMessagingConnectionProvider(messagingConnectionProvider(serverMqContext()));
+		bean.setMessagingConnectionProvider(messagingConnectionProvider(clientMqContext()));
 		return bean;
 	}
 
-	private GmDmbMqConnectionProvider messagingConnectionProvider(MessagingContext context) {
-		GmDmbMqConnectionProvider gmDmbMqConnectionProvider = new GmDmbMqConnectionProvider();
+	private BlockingQueueMessagingConnectionProvider messagingConnectionProvider(MessagingContext context) {
+		BlockingQueueMessagingConnectionProvider gmDmbMqConnectionProvider = new BlockingQueueMessagingConnectionProvider();
 		gmDmbMqConnectionProvider.setMessagingContext(context);
 		
 		return gmDmbMqConnectionProvider;

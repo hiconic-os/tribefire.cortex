@@ -9,7 +9,7 @@
 // 
 // You should have received a copy of the GNU Lesser General Public License along with this library; See http://www.gnu.org/licenses/.
 // ============================================================================
-package com.braintribe.transport.messaging.dbm;
+package com.braintribe.transport.messaging.bq;
 
 import java.util.UUID;
 
@@ -18,14 +18,12 @@ import com.braintribe.model.messaging.Destination;
 import com.braintribe.model.messaging.Message;
 import com.braintribe.transport.messaging.api.MessageProducer;
 import com.braintribe.transport.messaging.api.MessagingException;
+import com.braintribe.utils.lcd.NullSafe;
 
 /**
- * <p>
- * {@link MessageProducer} implementation for {@link GmDmbMqMessaging}.
- * 
  * @see MessageProducer
  */
-public class GmDmbMqMessageProducer extends GmDmbMqMessageHandler implements MessageProducer {
+/* package */ class BqMessageProducer extends BqMessageHandler implements MessageProducer {
 
 	private static final Long defaultTimeToLive = Long.valueOf(0L);
 	private static final Integer defaultPriority = Integer.valueOf(5);
@@ -33,54 +31,38 @@ public class GmDmbMqMessageProducer extends GmDmbMqMessageHandler implements Mes
 	private Long timeToLive = defaultTimeToLive;
 	private Integer priority = defaultPriority;
 
-	private static final Logger log = Logger.getLogger(GmDmbMqMessageProducer.class);
-
-	public GmDmbMqMessageProducer() {
-		super();
-	}
+	private static final Logger log = Logger.getLogger(BqMessageProducer.class);
 
 	@Override
 	public void sendMessage(Message message) throws MessagingException {
-
-		if (getDestination() == null) {
-			throw new UnsupportedOperationException(
-					"This method is not supported as no destination was assigned to the message producer at creation time");
-		}
+		if (getDestination() == null)
+			throw new UnsupportedOperationException("Cannot send message as no destination was assigned to the message producer at creation time");
 
 		sendMessage(message, getDestination());
 	}
 
 	@Override
 	public void sendMessage(Message message, Destination destination) throws MessagingException {
-
-		if (message == null) {
-			throw new IllegalArgumentException("message cannot be null");
-		}
-
-		if (destination == null) {
-			throw new IllegalArgumentException("destination cannot be null");
-		}
+		NullSafe.nonNull(message, "message");
+		NullSafe.nonNull(destination, "destination");
 
 		message.setMessageId(UUID.randomUUID().toString());
 		message.setDestination(destination);
 
-		if (message.getPriority() == null) {
+		if (message.getPriority() == null)
 			message.setPriority(priority);
-		} else {
+		else
 			message.setPriority(normalizePriority(message.getPriority()));
-		}
 
-		if (message.getTimeToLive() == null) {
+		if (message.getTimeToLive() == null)
 			message.setTimeToLive(timeToLive);
-		}
 
-		if (message.getTimeToLive() > 0L) {
+		if (message.getTimeToLive() > 0L)
 			message.setExpiration(System.currentTimeMillis() + message.getTimeToLive());
-		} else {
+		else
 			message.setExpiration(0L);
-		}
 
-		GmDmbMqSession session = getSession();
+		BqMessagingSession session = getSession();
 
 		session.getMessagingContext().enrichOutbound(message);
 
@@ -88,11 +70,10 @@ public class GmDmbMqMessageProducer extends GmDmbMqMessageHandler implements Mes
 
 		char destinationType = getDestinationType(message.getDestination());
 
-		session.getConnection().getMessagingMBean().sendMessage(destinationType, message.getDestination().getName(), message.getMessageId(),
+		session.getConnection().getBqMessaging().sendMessage(destinationType, message.getDestination().getName(), message.getMessageId(),
 				messageBytes, message.getPriority(), message.getExpiration(), message.getHeaders(), message.getProperties());
 
-		log.trace(() -> "Successfully notified [ " + message + " ] to MessageMBean");
-
+		log.trace(() -> "Successfully notified [ " + message + " ] to BqMessaging");
 	}
 
 	@Override
@@ -107,11 +88,10 @@ public class GmDmbMqMessageProducer extends GmDmbMqMessageHandler implements Mes
 
 	@Override
 	public void setTimeToLive(Long timeToLive) {
-		if (timeToLive == null) {
+		if (timeToLive == null)
 			this.timeToLive = defaultTimeToLive;
-		} else {
+		else
 			this.timeToLive = timeToLive;
-		}
 	}
 
 	@Override
@@ -121,15 +101,13 @@ public class GmDmbMqMessageProducer extends GmDmbMqMessageHandler implements Mes
 
 	@Override
 	public void setPriority(Integer priority) {
-		if (priority == null) {
+		if (priority == null)
 			this.priority = defaultPriority;
-		} else {
+		else
 			this.priority = normalizePriority(priority);
-		}
 	}
 
 	/**
-	 * <p>
 	 * Ensures that the given not-null priority fits the 0-9 range.
 	 * 
 	 * @param priorityCandidate
@@ -137,15 +115,16 @@ public class GmDmbMqMessageProducer extends GmDmbMqMessageHandler implements Mes
 	 * @return A priority between 0 and 9, or {@code null} if {@code null} was given.
 	 */
 	protected Integer normalizePriority(Integer priorityCandidate) {
-		if (priorityCandidate == null) {
+		if (priorityCandidate == null)
 			return null;
-		} else if (priorityCandidate < 0) {
+
+		if (priorityCandidate < 0)
 			return 0;
-		} else if (priorityCandidate > 9) {
+
+		if (priorityCandidate > 9)
 			return 9;
-		} else {
-			return priorityCandidate;
-		}
+
+		return priorityCandidate;
 	}
 
 }

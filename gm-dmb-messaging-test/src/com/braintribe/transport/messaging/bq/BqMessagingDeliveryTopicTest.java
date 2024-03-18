@@ -9,7 +9,7 @@
 // 
 // You should have received a copy of the GNU Lesser General Public License along with this library; See http://www.gnu.org/licenses/.
 // ============================================================================
-package com.braintribe.transport.messaging.dmb;
+package com.braintribe.transport.messaging.bq;
 
 import java.util.Collections;
 import java.util.Map;
@@ -20,19 +20,18 @@ import com.braintribe.transport.messaging.api.MessageProducer;
 import com.braintribe.transport.messaging.api.MessagingConnection;
 import com.braintribe.transport.messaging.api.MessagingConnectionProvider;
 import com.braintribe.transport.messaging.api.MessagingContext;
-import com.braintribe.transport.messaging.api.test.GmMessagingDeliveryQueueTest;
-import com.braintribe.transport.messaging.dbm.GmDmbMqMessageProducer;
+import com.braintribe.transport.messaging.api.test.GmMessagingDeliveryTopicTest;
 
-public class GmDmbMessagingDeliveryQueueTest extends GmMessagingDeliveryQueueTest {
+public class BqMessagingDeliveryTopicTest extends GmMessagingDeliveryTopicTest {
 
 	@Override
 	protected MessagingConnectionProvider<? extends MessagingConnection> getMessagingConnectionProvider() {
-		return GmDmbMessagingConnectionProvider.instance.get();
+		return TestMessagingConnectionProvider.instance.get();
 	}
 
 	@Override
 	protected MessagingContext getMessagingContext() {
-		return GmDmbMessagingConnectionProvider.instance.getMessagingContext();
+		return TestMessagingConnectionProvider.instance.getMessagingContext();
 	}
 
 	/**
@@ -42,7 +41,7 @@ public class GmDmbMessagingDeliveryQueueTest extends GmMessagingDeliveryQueueTes
 	@Override
 	protected void sendUnmarshallableMessage(MessageProducer messageProducer) {
 
-		GmDmbMqMessageProducer producer = (GmDmbMqMessageProducer) messageProducer;
+		BqMessageProducer producer = (BqMessageProducer) messageProducer;
 
 		Destination destination = producer.getDestination();
 
@@ -52,7 +51,7 @@ public class GmDmbMessagingDeliveryQueueTest extends GmMessagingDeliveryQueueTes
 
 		Map<String, Object> empty = Collections.emptyMap();
 
-		producer.getSession().getConnection().getMessagingMBean().sendMessage(destinationType, destination.getName(), UUID.randomUUID().toString(),
+		producer.getSession().getConnection().getBqMessaging().sendMessage(destinationType, destination.getName(), UUID.randomUUID().toString(),
 				messageBody, 5, 0, empty, empty);
 
 	}

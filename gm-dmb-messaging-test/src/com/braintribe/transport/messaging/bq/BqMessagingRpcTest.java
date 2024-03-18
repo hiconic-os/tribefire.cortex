@@ -9,37 +9,23 @@
 // 
 // You should have received a copy of the GNU Lesser General Public License along with this library; See http://www.gnu.org/licenses/.
 // ============================================================================
-package com.braintribe.transport.messaging.dmb;
+package com.braintribe.transport.messaging.bq;
 
-import com.braintribe.codec.marshaller.bin.Bin2Marshaller;
+import com.braintribe.transport.messaging.api.MessagingConnection;
 import com.braintribe.transport.messaging.api.MessagingConnectionProvider;
 import com.braintribe.transport.messaging.api.MessagingContext;
-import com.braintribe.transport.messaging.dbm.GmDmbMqConnectionProvider;
+import com.braintribe.transport.messaging.api.test.GmMessagingRpcTest;
 
-public class GmDmbMessagingConnectionProvider {
-	
-	public static final GmDmbMessagingConnectionProvider instance = new GmDmbMessagingConnectionProvider();
-	
-	private final MessagingConnectionProvider<?> messagingConnectionProvider;
-	
-	private GmDmbMessagingConnectionProvider() {
-		messagingConnectionProvider = getMessagingConnectionProvider();
+public class BqMessagingRpcTest extends GmMessagingRpcTest {
+
+	@Override
+	protected MessagingConnectionProvider<? extends MessagingConnection> getMessagingConnectionProvider() {
+		return TestMessagingConnectionProvider.instance.get();
 	}
-	
-	public MessagingConnectionProvider<?> get() {
-		return messagingConnectionProvider;
-	}
-	
-	private com.braintribe.transport.messaging.api.MessagingConnectionProvider<?> getMessagingConnectionProvider() {
-		GmDmbMqConnectionProvider gmDmbMqConnectionProvider = new GmDmbMqConnectionProvider();
-		gmDmbMqConnectionProvider.setMessagingContext(getMessagingContext());
-		
-		return gmDmbMqConnectionProvider;
-	}
-	
+
+	@Override
 	protected MessagingContext getMessagingContext() {
-		MessagingContext context = new MessagingContext();
-		context.setMarshaller(new Bin2Marshaller());
-		return context;
+		return TestMessagingConnectionProvider.instance.getMessagingContext();
 	}
+
 }

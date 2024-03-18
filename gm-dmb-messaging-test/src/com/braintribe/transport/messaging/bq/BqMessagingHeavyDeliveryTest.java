@@ -9,23 +9,23 @@
 // 
 // You should have received a copy of the GNU Lesser General Public License along with this library; See http://www.gnu.org/licenses/.
 // ============================================================================
-package com.braintribe.transport.messaging.dmb;
+package com.braintribe.transport.messaging.bq;
 
 import com.braintribe.transport.messaging.api.MessagingConnection;
 import com.braintribe.transport.messaging.api.MessagingConnectionProvider;
 import com.braintribe.transport.messaging.api.MessagingContext;
-import com.braintribe.transport.messaging.api.test.GmMessagingConnectionTest;
+import com.braintribe.transport.messaging.api.test.GmMessagingHeavyDeliveryTest;
 
-public class GmDmbMessagingConnectionTest extends GmMessagingConnectionTest {
+public class BqMessagingHeavyDeliveryTest extends GmMessagingHeavyDeliveryTest {
 
 	@Override
 	protected MessagingConnectionProvider<? extends MessagingConnection> getMessagingConnectionProvider() {
-		return GmDmbMessagingConnectionProvider.instance.get();
+		return TestMessagingConnectionProvider.instance.get();
 	}
 
 	@Override
 	protected MessagingContext getMessagingContext() {
-		return GmDmbMessagingConnectionProvider.instance.getMessagingContext();
+		return TestMessagingConnectionProvider.instance.getMessagingContext();
 	}
 
 }

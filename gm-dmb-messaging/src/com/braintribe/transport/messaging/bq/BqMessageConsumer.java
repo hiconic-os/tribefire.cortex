@@ -9,7 +9,7 @@
 // 
 // You should have received a copy of the GNU Lesser General Public License along with this library; See http://www.gnu.org/licenses/.
 // ============================================================================
-package com.braintribe.transport.messaging.dbm;
+package com.braintribe.transport.messaging.bq;
 
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -33,38 +33,31 @@ import com.braintribe.transport.messaging.api.MessageListener;
 import com.braintribe.transport.messaging.api.MessageProperties;
 import com.braintribe.transport.messaging.api.MessagingComponentStatus;
 import com.braintribe.transport.messaging.api.MessagingException;
-import com.braintribe.transport.messaging.dbm.mbean.MBeanMessageProperty;
 
 /**
- * <p>
- * {@link MessageConsumer} implementation for {@link GmDmbMqMessaging}.
- * 
  * @see MessageConsumer
  */
-public class GmDmbMqMessageConsumer extends GmDmbMqMessageHandler implements MessageConsumer {
+/* package */ class BqMessageConsumer extends BqMessageHandler implements MessageConsumer {
 
-	private String consumerId;
+	private final String consumerId;
 
 	private MessageListener messageListener;
-	private ReentrantLock messageListenerLock = new ReentrantLock();
+	private final ReentrantLock messageListenerLock = new ReentrantLock();
 
 	private MessagingComponentStatus status = MessagingComponentStatus.OPEN;
 
-	private ClassLoader consumerCreationClassLoader;
+	private final ClassLoader consumerCreationClassLoader;
 
 	private ClassLoader listenerSettingClassLoader;
 
 	private ExecutorService asyncListenerExecutor;
-	private ThreadFactory asyncListenerExecutorThreadFactory;
 	private Future<Boolean> asyncListenerFuture;
-	private long asyncListenerTimeout = 2;
-	private TimeUnit asyncListenerTimeoutUnit = TimeUnit.SECONDS;
+	private final long asyncListenerTimeout = 2;
+	private final TimeUnit asyncListenerTimeoutUnit = TimeUnit.SECONDS;
 
-	private static final String threadNamePrefix = "tribefire.mbean.messaging.consumer";
+	private static final Logger log = Logger.getLogger(BqMessageConsumer.class);
 
-	private static final Logger log = Logger.getLogger(GmDmbMqMessageConsumer.class);
-
-	public GmDmbMqMessageConsumer(String consumerId) throws MessagingException {
+	public BqMessageConsumer(String consumerId) throws MessagingException {
 		this.consumerId = consumerId;
 		this.consumerCreationClassLoader = obtainCurrentContextClassLoader();
 	}
@@ -76,7 +69,6 @@ public class GmDmbMqMessageConsumer extends GmDmbMqMessageHandler implements Mes
 
 	@Override
 	public void setMessageListener(MessageListener messageListener) throws MessagingException {
-
 		messageListenerLock.lock();
 		try {
 			if (messageListener == null) { // Setting to null is the equivalent of unsetting the listener for this consumer.
@@ -90,18 +82,17 @@ public class GmDmbMqMessageConsumer extends GmDmbMqMessageHandler implements Mes
 			}
 
 			this.messageListener = messageListener;
-			listenerSettingClassLoader = obtainCurrentContextClassLoader();
+			this.listenerSettingClassLoader = obtainCurrentContextClassLoader();
 
-			if (this.messageListener != null) {
-
-				if (asyncListenerExecutor == null) {
-					asyncListenerExecutor = VirtualThreadExecutorBuilder.newPool().concurrency(1)
-							.description("Dmb Message Consumer (" + getDestination().getName() + ")").build();
-				}
-
-				asyncListenerFuture = asyncListenerExecutor.submit(new MessageListenerConsumer());
-
+			if (asyncListenerExecutor == null) {
+				asyncListenerExecutor = VirtualThreadExecutorBuilder.newPool() //
+						.concurrency(1) //
+						.description("Blocking Queue Message Consumer (" + getDestination().getName() + ")") //
+						.build();
 			}
+
+			asyncListenerFuture = asyncListenerExecutor.submit(new MessageListenerConsumer());
+
 		} finally {
 			messageListenerLock.unlock();
 		}
@@ -125,113 +116,93 @@ public class GmDmbMqMessageConsumer extends GmDmbMqMessageHandler implements Mes
 		BlockingQueue<Function<String, Object>> consumerQueue = getConsumerQueue();
 
 		while (true) {
-
-			Function<String, Object> mbeanMessage;
+			Function<String, Object> bqMessage;
 			try {
-				mbeanMessage = consumerQueue.poll(500, TimeUnit.MILLISECONDS);
+				bqMessage = consumerQueue.poll(500, TimeUnit.MILLISECONDS);
+
 			} catch (InterruptedException e) {
-				if (log.isDebugEnabled()) {
-					// Removed exception from log output. It's just frightening to see exceptions in the log
-					// and there is probably no benefit from having the full stacktrace anyway.
-					log.debug("" + this.consumerId + ": Polling has been interrupted.");
-				}
+				// Removed exception from log output. It's just frightening to see exceptions in the log
+				// and there is probably no benefit from having the full stacktrace anyway.
+				Thread.currentThread().interrupt();
+				log.debug(() -> "" + this.consumerId + ": Polling has been interrupted.");
 				return null;
+
 			} catch (Exception e) {
 				throw new MessagingException("Failed to poll consumer queue" + (e.getMessage() != null ? " :" + e.getMessage() : ""), e);
 			}
 
-			if (mbeanMessage != null) {
+			if (bqMessage != null) {
 
 				if (status != MessagingComponentStatus.OPEN) {
-
-					if (getDestinationType() == 'q') {
-						getConsumerQueue().offer(mbeanMessage);
-					}
+					if (getDestinationType() == 'q')
+						getConsumerQueue().offer(bqMessage);
 
 					return null;
 				}
 
-				if (!isExpired(mbeanMessage) && matchesAddressee(mbeanMessage)) {
-					Message message = extractMessage(mbeanMessage);
-					if (message != null) {
+				if (!isExpired(bqMessage) && matchesAddressee(bqMessage)) {
+					Message message = extractMessage(bqMessage);
+					if (message != null)
 						return message;
-					}
 				}
 
 			}
 
-			if (status != MessagingComponentStatus.OPEN || (expiration > 0 && expiration < System.currentTimeMillis())) {
+			if (status != MessagingComponentStatus.OPEN || (expiration > 0 && expiration < System.currentTimeMillis()))
 				return null;
-			} else {
-				continue;
-			}
 		}
 
 	}
 
 	@Override
 	public void close() throws MessagingException {
-
 		if (status == MessagingComponentStatus.CLOSED) {
-			if (log.isDebugEnabled()) {
-				log.debug("Consumer [ " + this + " ] already closed.");
-			}
+			log.debug(() -> "Consumer [ " + this + " ] already closed.");
 			return;
 		}
 
 		status = MessagingComponentStatus.CLOSING;
 
 		try {
-
 			shutdownAsyncListener();
 
 			boolean removed = true;
 			if (getDestination() instanceof Topic) {
-				removed = getSession().getConnection().getMessagingMBean().unsubscribeTopicConsumer(getDestination().getName(), consumerId);
+				removed = getSession().getConnection().getBqMessaging().unsubscribeTopicConsumer(getDestination().getName(), consumerId);
 			}
 
-			if (removed) {
-				if (log.isDebugEnabled()) {
-					log.debug("Unregistered consumer [ " + this + " ] from MessagingMBean");
-				}
-			} else {
-				if (log.isWarnEnabled()) {
-					log.warn("Unregistration of consumer [ " + this + " ] from MessagingMBean failed.");
-				}
-			}
+			if (removed)
+				log.debug(() -> "Unregistered consumer [ " + this + " ] from BqMessaging");
+			else
+				log.warn("Unregistration of consumer [ " + this + " ] from BqMessaging failed.");
 
 		} catch (Exception e) {
-			throw new MessagingException("Failed to remove consumer [ " + this + " ] from MessagingMBean: " + e.getMessage(), e);
+			throw new MessagingException("Failed to remove consumer [ " + this + " ] from BqMessaging: " + e.getMessage(), e);
 		}
 
 		status = MessagingComponentStatus.CLOSED;
 
-		if (log.isDebugEnabled()) {
-			log.debug("Closed consumer [ " + this + " ]");
-		}
-
+		log.debug(() -> "Closed consumer [ " + this + " ]");
 	}
 
 	@Override
 	public String toString() {
-		return this.getClass().getSimpleName() + "{" + "id=" + this.consumerId + "," + "destination="
-				+ (this.getDestination() != null ? this.getDestination().getName() : "") + "," + "status=" + this.status + "}";
+		return getClass().getSimpleName() + "{" + "id=" + consumerId + "," + "destination="
+				+ (getDestination() != null ? getDestination().getName() : "") + "," + "status=" + status + "}";
 	}
 
 	public String getConsumerId() {
 		return consumerId;
 	}
 
-	@SuppressWarnings("unchecked")
 	protected BlockingQueue<Function<String, Object>> getConsumerQueue() {
-		return (BlockingQueue<Function<String, Object>>) getSession().getConnection().getMessagingMBean().getQueue(getDestinationType(),
-				getDestination().getName(), consumerId);
+		return getSession() //
+				.getConnection() //
+				.getBqMessaging(). //
+				getQueue(getDestinationType(), getDestination().getName(), consumerId);
 	}
 
-	protected Message extractMessage(Function<String, Object> mbeanMessage) {
-
-		Message message = null;
-
+	protected Message extractMessage(Function<String, Object> bqMessage) {
 		Thread currentThread = Thread.currentThread();
 		ClassLoader originalClassLoader = currentThread.getContextClassLoader();
 
@@ -239,51 +210,44 @@ public class GmDmbMqMessageConsumer extends GmDmbMqMessageHandler implements Mes
 
 		try {
 			try {
-				byte[] messageData = MBeanMessageProperty.get(mbeanMessage, MBeanMessageProperty.message);
-				message = getSession().getMessagingContext().unmarshallMessage(messageData);
+				byte[] messageData = BqMessageProperty.get(bqMessage, BqMessageProperty.message);
+				Message message = getSession().getMessagingContext().unmarshallMessage(messageData);
 				getSession().getMessagingContext().enrichInbound(message);
+
+				return message;
+
 			} catch (MarshallException e) {
-				log.error("Failed to extract " + Message.class.getName() + " from [ " + mbeanMessage + " ]: " + e.getMessage(), e);
+				log.error("Failed to extract " + Message.class.getName() + " from [ " + bqMessage + " ]: " + e.getMessage(), e);
 			} catch (Exception e) {
-				log.error("Failed to get " + Message.class.getName() + " contents from [ " + mbeanMessage + " ]: " + e.getMessage(), e);
+				log.error("Failed to get " + Message.class.getName() + " contents from [ " + bqMessage + " ]: " + e.getMessage(), e);
 			}
 		} finally {
 			pushOriginalContextClassLoader(currentThread, originalClassLoader);
 		}
 
-		return message;
-
+		return null;
 	}
 
-	protected boolean isExpired(Function<String, Object> mbeanMessage) {
-
-		Long expiration = MBeanMessageProperty.get(mbeanMessage, MBeanMessageProperty.expiration);
+	protected boolean isExpired(Function<String, Object> bqMessage) {
+		Long expiration = BqMessageProperty.get(bqMessage, BqMessageProperty.expiration);
 
 		if (expiration != null && expiration > 0 && expiration < System.currentTimeMillis()) {
-			if (log.isDebugEnabled()) {
-				log.debug("Consumer received an expired message: " + mbeanMessage);
-			}
+			log.debug(() -> "Consumer received an expired message: " + bqMessage);
 			return true;
 		} else {
-			if (log.isTraceEnabled()) {
-				log.trace("Consumer received an non-expired message: " + mbeanMessage);
-			}
+			log.trace(() -> "Consumer received an non-expired message: " + bqMessage);
 			return false;
 		}
 
 	}
 
-	protected boolean matchesAddressee(Function<String, Object> mbeanMessage) {
-
-		if (getDestinationType() == 'q') {
+	protected boolean matchesAddressee(Function<String, Object> bqMessage) {
+		if (getDestinationType() == 'q')
 			return true;
-		}
 
-		Map<String, Object> properties = MBeanMessageProperty.get(mbeanMessage, MBeanMessageProperty.properties);
-
-		if (properties == null || properties.isEmpty()) {
+		Map<String, Object> properties = BqMessageProperty.get(bqMessage, BqMessageProperty.properties);
+		if (properties == null || properties.isEmpty())
 			return true;
-		}
 
 		String appId, nodeId;
 
@@ -298,7 +262,6 @@ public class GmDmbMqMessageConsumer extends GmDmbMqMessageHandler implements Mes
 					)
 				);
 		// @formatter:on
-
 	}
 
 	/**
@@ -308,39 +271,34 @@ public class GmDmbMqMessageConsumer extends GmDmbMqMessageHandler implements Mes
 	 * @return {@code true} if there was a running task and that was successfully terminated.
 	 */
 	protected boolean shutdownAsyncListener() {
+		if (asyncListenerFuture == null)
+			return false;
 
-		if (asyncListenerFuture != null) {
-			messageListenerLock.lock();
+		messageListenerLock.lock();
+		try {
+			if (asyncListenerFuture == null)
+				return false;
+
 			try {
-				Boolean asyncListenerResponse;
-				try {
-					asyncListenerResponse = asyncListenerFuture.get(asyncListenerTimeout, asyncListenerTimeoutUnit);
+				Boolean asyncListenerResponse = asyncListenerFuture.get(asyncListenerTimeout, asyncListenerTimeoutUnit);
 
-					if (log.isTraceEnabled()) {
-						log.trace("Asynchronous listener returned: " + asyncListenerResponse);
-					}
+				log.trace(() -> "Asynchronous listener returned: " + asyncListenerResponse);
 
-					asyncListenerFuture = null;
+				asyncListenerFuture = null;
 
-					return true;
+				return true;
 
-				} catch (InterruptedException e) {
-					if (log.isDebugEnabled()) {
-						log.debug("Thread interrupted while waiting asynchronous listener task to complete", e);
-					}
-				} catch (ExecutionException e) {
-					if (log.isDebugEnabled()) {
-						log.debug("Thread interrupted while waiting asynchronous listener task to complete", e);
-					}
-				} catch (TimeoutException e) {
-					if (log.isDebugEnabled()) {
-						log.debug("Asynchronous listener completition timeout (" + asyncListenerTimeout + " " + asyncListenerTimeoutUnit
-								+ ") has been reached", e);
-					}
-				}
-			} finally {
-				messageListenerLock.unlock();
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				log.debug(() -> "Thread interrupted while waiting asynchronous listener task to complete", e);
+			} catch (ExecutionException e) {
+				log.debug(() -> "Asynchronous listener execution failed", e);
+			} catch (TimeoutException e) {
+				log.debug(() -> "Asynchronous listener completition timeout (" + asyncListenerTimeout + " " + asyncListenerTimeoutUnit
+						+ ") has been reached", e);
 			}
+		} finally {
+			messageListenerLock.unlock();
 		}
 
 		return false;
@@ -352,25 +310,20 @@ public class GmDmbMqMessageConsumer extends GmDmbMqMessageHandler implements Mes
 	 * Pushes this consumer's preferable class loader as the current thread's context class loader.
 	 * 
 	 * @param currentThread
-	 *            The Thread to have the context ClassLoader set to this consumer's ClassLoader (
-	 *            {@link #getConsumerContextClassLoader()})
+	 *            The Thread to have the context ClassLoader set to this consumer's ClassLoader ( {@link #getConsumerContextClassLoader()})
 	 * @param currentClassLoader
 	 *            The Thread's context ClassLoader prior this method call
 	 */
 	private void pushConsumerContextClassLoader(Thread currentThread, ClassLoader currentClassLoader) {
-
 		ClassLoader consumerClassLoader = getConsumerContextClassLoader();
 
 		if (consumerClassLoader != null && !consumerClassLoader.equals(currentClassLoader)) {
-
 			currentThread.setContextClassLoader(consumerClassLoader);
 
-			if (log.isDebugEnabled()) {
-				log.debug(
-						"Class loader of current thread did not match the preferable class loader for this consumer. Current thread context class loader is [ "
-								+ currentClassLoader + " ] whereas preferable context class loader for this consumer is [ " + consumerClassLoader
-								+ " ]. Current thread context class loader after pushing is [ " + currentThread.getContextClassLoader() + " ] ");
-			}
+			log.debug(
+					() -> "Class loader of current thread did not match the preferable class loader for this consumer. Current thread context class loader is [ "
+							+ currentClassLoader + " ] whereas preferable context class loader for this consumer is [ " + consumerClassLoader
+							+ " ]. Current thread context class loader after pushing is [ " + currentThread.getContextClassLoader() + " ] ");
 		}
 	}
 
@@ -379,33 +332,28 @@ public class GmDmbMqMessageConsumer extends GmDmbMqMessageHandler implements Mes
 	 * Pushes back the original context class loader to the current thread.
 	 * 
 	 * @param currentThread
-	 *            The Thread to have the context ClassLoader set to its previous instance, given by
-	 *            {@code originalClassLoader}
+	 *            The Thread to have the context ClassLoader set to its previous instance, given by {@code originalClassLoader}
 	 * @param originalClassLoader
 	 *            The ClassLoader to be set as the given Thread's ({@code currentThread}) context ClassLoader
 	 */
 	private static void pushOriginalContextClassLoader(Thread currentThread, ClassLoader originalClassLoader) {
-
 		if (originalClassLoader != null && !originalClassLoader.equals(currentThread.getContextClassLoader())) {
 
 			currentThread.setContextClassLoader(originalClassLoader);
 
-			if (log.isDebugEnabled()) {
-				log.debug("Pushed back original thread's context class loader. Current thread context class loader after pushing back is [ "
-						+ currentThread.getContextClassLoader() + " ] ");
-			}
-
+			log.debug(() -> "Pushed back original thread's context class loader. Current thread context class loader after pushing back is [ "
+					+ currentThread.getContextClassLoader() + " ] ");
 		}
 	}
 
 	/**
 	 * <p>
-	 * Returns the best suitable {@link ClassLoader} to be pushed to Threads before unmarshalling Messages and before
-	 * calling {@link MessageListener#onMessage(Message)} on the registered listener.
+	 * Returns the best suitable {@link ClassLoader} to be pushed to Threads before unmarshalling Messages and before calling
+	 * {@link MessageListener#onMessage(Message)} on the registered listener.
 	 * 
 	 * <p>
-	 * If a non-null {@link MessageListener} was set to this {@link MessageConsumer}, the context ClassLoader of the thread
-	 * which called {@link MessageConsumer#setMessageListener(MessageListener)} will be used.
+	 * If a non-null {@link MessageListener} was set to this {@link MessageConsumer}, the context ClassLoader of the thread which called
+	 * {@link MessageConsumer#setMessageListener(MessageListener)} will be used.
 	 * 
 	 * <p>
 	 * Otherwise, the context ClassLoader of the thread which created the {@link MessageConsumer} will be used.
@@ -416,49 +364,25 @@ public class GmDmbMqMessageConsumer extends GmDmbMqMessageHandler implements Mes
 		return listenerSettingClassLoader == null ? consumerCreationClassLoader : listenerSettingClassLoader;
 	}
 
-	/**
-	 * Obtains the context ClassLoader of the current Thread, throwing a MessagingException if the retrieval of the context
-	 * class loader is not permitted.
-	 * 
-	 * @return The context ClassLoader of the current Thread
-	 * @throws MessagingException
-	 *             If the retrieval of the context class loader is not permitted.
-	 */
 	private static ClassLoader obtainCurrentContextClassLoader() throws MessagingException {
-		try {
-			return Thread.currentThread().getContextClassLoader();
-		} catch (Exception e) {
-			throw new MessagingException("Failed to obtain current thread class loader: " + e.getMessage(), e);
-		}
-	}
-
-	private ThreadFactory getThreadFactory() {
-		if (asyncListenerExecutorThreadFactory == null) {
-			asyncListenerExecutorThreadFactory = new ConsumerThreadFactory(
-					threadNamePrefix + "[" + getDestination().getName() + "][" + consumerId.split("-")[1] + "]");
-		}
-		return asyncListenerExecutorThreadFactory;
+		return Thread.currentThread().getContextClassLoader();
 	}
 
 	protected class MessageListenerConsumer implements Callable<Boolean> {
 
 		@Override
 		public Boolean call() {
-
-			if (status != MessagingComponentStatus.OPEN) {
+			if (status != MessagingComponentStatus.OPEN)
 				return false;
-			}
 
 			while (true) {
 				try {
 					Message message = receive();
 
-					if (status != MessagingComponentStatus.OPEN || message == null) {
+					if (status != MessagingComponentStatus.OPEN || message == null)
 						return false;
-					}
 
 					if (messageListener != null) {
-
 						Thread currentThread = Thread.currentThread();
 						ClassLoader originalClassLoader = currentThread.getContextClassLoader();
 						pushConsumerContextClassLoader(currentThread, originalClassLoader);
@@ -491,12 +415,11 @@ public class GmDmbMqMessageConsumer extends GmDmbMqMessageHandler implements Mes
 		public Thread newThread(Runnable r) {
 			Thread t = Thread.ofVirtual().unstarted(r);
 			t.setName(name);
-			if (!t.isDaemon()) {
+			if (!t.isDaemon())
 				t.setDaemon(true);
-			}
-			if (t.getPriority() != Thread.NORM_PRIORITY) {
+			if (t.getPriority() != Thread.NORM_PRIORITY)
 				t.setPriority(Thread.NORM_PRIORITY);
-			}
+
 			return t;
 		}
 	}

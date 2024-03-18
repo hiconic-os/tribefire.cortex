@@ -30,7 +30,7 @@ import com.braintribe.model.service.api.MulticastRequest;
 import com.braintribe.model.service.api.ServiceRequest;
 import com.braintribe.transport.messaging.api.MessagingContext;
 import com.braintribe.transport.messaging.api.MessagingSessionProvider;
-import com.braintribe.transport.messaging.dbm.GmDmbMqConnectionProvider;
+import com.braintribe.transport.messaging.bq.BlockingQueueMessagingConnectionProvider;
 import com.braintribe.transport.messaging.impl.StandardMessagingSessionProvider;
 import com.braintribe.wire.api.annotation.Import;
 import com.braintribe.wire.api.annotation.Managed;
@@ -112,8 +112,11 @@ public class MulticastProcessorSpace implements MulticastProcessorContract {
 		return bean;
 	}
 
-	private GmDmbMqConnectionProvider messagingConnectionProvider(InstanceId instanceId) {
-		return messaging().createConnectionProvider(this.messagingDenotation(), context(instanceId));
+	private BlockingQueueMessagingConnectionProvider messagingConnectionProvider(InstanceId instanceId) {
+		BlockingQueueMessagingConnectionProvider bean = new BlockingQueueMessagingConnectionProvider();
+		bean.setMessagingContext(context(instanceId));
+		
+		return bean;
 	}
 
 	@Managed
@@ -126,25 +129,18 @@ public class MulticastProcessorSpace implements MulticastProcessorContract {
 	}
 
 	@Managed
-	private com.braintribe.transport.messaging.dbm.GmDmbMqMessaging messaging() {
-		return new com.braintribe.transport.messaging.dbm.GmDmbMqMessaging();
-	}
-
-	@Managed
 	private GmDmbMqMessaging messagingDenotation() {
 		return GmDmbMqMessaging.T.create();
 	}
 
 	@Managed
 	private ConfigurableMarshallerRegistry registry() {
-
 		BasicConfigurableMarshallerRegistry bean = new BasicConfigurableMarshallerRegistry();
 
 		bean.registerMarshaller("application/gm", binMarshaller());
 		bean.registerMarshaller("gm/bin", binMarshaller());
 
 		return bean;
-
 	}
 
 	@Managed

@@ -9,33 +9,28 @@
 // 
 // You should have received a copy of the GNU Lesser General Public License along with this library; See http://www.gnu.org/licenses/.
 // ============================================================================
-package com.braintribe.transport.messaging.dbm;
+package com.braintribe.transport.messaging.bq;
 
 import com.braintribe.model.messaging.Destination;
 import com.braintribe.model.messaging.Topic;
 import com.braintribe.transport.messaging.api.MessagingSession;
 
 /**
- * <p>
  * Common message handler object referencing a {@link MessagingSession} and {@link Destination}.
- * 
  */
-public class GmDmbMqMessageHandler {
+/* package */ class BqMessageHandler {
 
-	private GmDmbMqSession session;
+	private BqMessagingSession session;
 	private Destination destination;
 	private char destinationType;
 	private String applicationId;
 	private String nodeId;
 
-	public GmDmbMqMessageHandler() {
-	}
-
-	public GmDmbMqSession getSession() {
+	public BqMessagingSession getSession() {
 		return session;
 	}
 
-	public void setSession(GmDmbMqSession session) {
+	public void setSession(BqMessagingSession session) {
 		this.session = session;
 	}
 

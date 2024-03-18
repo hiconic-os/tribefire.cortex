@@ -9,23 +9,26 @@
 // 
 // You should have received a copy of the GNU Lesser General Public License along with this library; See http://www.gnu.org/licenses/.
 // ============================================================================
-package com.braintribe.transport.messaging.dmb;
+package com.braintribe.transport.messaging.bq;
 
-import com.braintribe.transport.messaging.api.MessagingConnection;
-import com.braintribe.transport.messaging.api.MessagingConnectionProvider;
-import com.braintribe.transport.messaging.api.MessagingContext;
-import com.braintribe.transport.messaging.api.test.GmMessagingHeavyDistributionTest;
+import java.util.function.Function;
 
-public class GmDmbMessagingHeavyDistributionTest extends GmMessagingHeavyDistributionTest {
+/* package */ enum BqMessageProperty {
 
-	@Override
-	protected MessagingConnectionProvider<? extends MessagingConnection> getMessagingConnectionProvider() {
-		return GmDmbMessagingConnectionProvider.instance.get();
-	}
+	destinationType,
+	destinationName,
+	messageId,
+	message,
+	priority,
+	expiration,
+	expired,
+	producedAt,
+	headers,
+	properties;
 
-	@Override
-	protected MessagingContext getMessagingContext() {
-		return GmDmbMessagingConnectionProvider.instance.getMessagingContext();
+	public static <T> T get(Function<String, Object> bqMessage, BqMessageProperty property) {
+		T messageData = (T) bqMessage.apply(property.toString());
+		return messageData;
 	}
 
 }

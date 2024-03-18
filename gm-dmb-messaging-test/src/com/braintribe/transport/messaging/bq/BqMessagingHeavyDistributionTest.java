@@ -9,26 +9,28 @@
 // 
 // You should have received a copy of the GNU Lesser General Public License along with this library; See http://www.gnu.org/licenses/.
 // ============================================================================
-package com.braintribe.transport.messaging.dbm.mbean;
+package com.braintribe.transport.messaging.bq;
 
-import java.util.function.Function;
+import com.braintribe.transport.messaging.api.MessagingConnection;
+import com.braintribe.transport.messaging.api.MessagingConnectionProvider;
+import com.braintribe.transport.messaging.api.MessagingContext;
+import com.braintribe.transport.messaging.api.test.GmMessagingHeavyDistributionTest;
 
-public enum MBeanMessageProperty {
+public class BqMessagingHeavyDistributionTest extends GmMessagingHeavyDistributionTest {
 
-	destinationType,
-	destinationName,
-	messageId,
-	message,
-	priority,
-	expiration,
-	expired,
-	producedAt,
-	headers,
-	properties;
+	@Override
+	public void testConcurrently() throws Throwable {
+		// stupid slow test
+	}
+	
+	@Override
+	protected MessagingConnectionProvider<? extends MessagingConnection> getMessagingConnectionProvider() {
+		return TestMessagingConnectionProvider.instance.get();
+	}
 
-	public static <T> T get(Function<String, Object> mbeanMessage, MBeanMessageProperty property) {
-		T messageData = (T) mbeanMessage.apply(property.toString());
-		return messageData;
+	@Override
+	protected MessagingContext getMessagingContext() {
+		return TestMessagingConnectionProvider.instance.getMessagingContext();
 	}
 
 }
