@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
@@ -107,14 +108,19 @@ public class BasicWorkerManager implements WorkerManager, WorkerManagerControl, 
 
 	private void deployDeferredWorkers() {
 
-		for (Worker worker : deferredWorkers) {
-			try {
-				deployNow(worker);
-			} catch (Exception e) {
-				String msg = String.format("cannot deploy worker [%s]", worker);
-				logger.error(msg, e);
-			}
+		try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+			deferredWorkers.forEach(worker -> {
+				executor.submit(() -> {
+					try {
+						deployNow(worker);
+					} catch (Exception e) {
+						String msg = String.format("cannot deploy worker [%s]", worker);
+						logger.error(msg, e);
+					}
+				});
+			});
 		}
+
 		deferredWorkers.clear();
 
 	}
@@ -174,13 +180,6 @@ public class BasicWorkerManager implements WorkerManager, WorkerManagerControl, 
 	}
 
 	private LeadershipManager getLeadershipManager() {
-		if (leadershipManager == null)
-			loadLeadershipManagerSync();
-
-		return leadershipManager;
-	}
-
-	private void loadLeadershipManagerSync() {
 		if (leadershipManager == null) {
 			leadershipManagerLock.lock();
 			try {
@@ -191,6 +190,8 @@ public class BasicWorkerManager implements WorkerManager, WorkerManagerControl, 
 				leadershipManagerLock.unlock();
 			}
 		}
+
+		return leadershipManager;
 	}
 
 	protected void stop(WorkerContextImpl workerInfo) {

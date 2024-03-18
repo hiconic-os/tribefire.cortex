@@ -68,7 +68,7 @@ public class DbLocking implements Locking, LifecycleAware {
 
 	private static final Logger log = Logger.getLogger(DbLocking.class);
 
-	private static final String DB_TABLE_NAME = "HC_LOCKING";
+	public static final String DB_TABLE_NAME = "HC_LOCKING";
 
 	public static final int DEFAULT_POLL_INTERVAL_MS = 100;
 	public static final int DEFAULT_LOCK_EXPIRATION_MS = 5 * 60 * 1000;

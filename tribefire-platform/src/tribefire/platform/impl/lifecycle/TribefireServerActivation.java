@@ -105,7 +105,7 @@ public class TribefireServerActivation implements DestructionAware {
 	protected AtomicLong activationUnsucessfulDurations = new AtomicLong(0);
 
 	protected ExecutorService executor = VirtualThreadExecutorBuilder.newPool() //
-			.concurrency(5) //
+			.concurrency(Integer.MAX_VALUE) //
 			.threadNamePrefix("activation") //
 			.description("Activation") //
 			.build();
@@ -272,8 +272,8 @@ public class TribefireServerActivation implements DestructionAware {
 			} catch (CommunicationException e) {
 				stopWatch.intermediate("Communication Exception");
 				state = inactive;
-				/* This was some previous weird impl with cartridges. You can get here for example when debugging and loading
-				 * deployables takes longer than 30 seconds. We just log it as an error now, below. */
+				/* This was some previous weird impl with cartridges. You can get here for example when debugging and loading deployables takes longer
+				 * than 30 seconds. We just log it as an error now, below. */
 
 				// log.info(() -> "Activation for " + processingInstanceId
 				// + " postponed as communication channel is not yet established. See more details on TRACE level.");
