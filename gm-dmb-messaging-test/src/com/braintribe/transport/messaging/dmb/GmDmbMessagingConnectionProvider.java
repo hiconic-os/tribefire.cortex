@@ -12,53 +12,29 @@
 package com.braintribe.transport.messaging.dmb;
 
 import com.braintribe.codec.marshaller.bin.Bin2Marshaller;
-import com.braintribe.model.messaging.expert.Messaging;
 import com.braintribe.transport.messaging.api.MessagingConnectionProvider;
 import com.braintribe.transport.messaging.api.MessagingContext;
-import com.braintribe.transport.messaging.dbm.GmDmbMqMessaging;
+import com.braintribe.transport.messaging.dbm.GmDmbMqConnectionProvider;
 
 public class GmDmbMessagingConnectionProvider {
 	
 	public static final GmDmbMessagingConnectionProvider instance = new GmDmbMessagingConnectionProvider();
 	
-	private MessagingConnectionProvider<? extends Messaging> messagingConnectionProvider;
+	private final MessagingConnectionProvider<?> messagingConnectionProvider;
 	
 	private GmDmbMessagingConnectionProvider() {
 		messagingConnectionProvider = getMessagingConnectionProvider();
 	}
 	
-	public MessagingConnectionProvider<? extends Messaging> get() {
+	public MessagingConnectionProvider<?> get() {
 		return messagingConnectionProvider;
 	}
 	
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	protected com.braintribe.transport.messaging.api.MessagingConnectionProvider<? extends Messaging> getMessagingConnectionProvider() {
+	private com.braintribe.transport.messaging.api.MessagingConnectionProvider<?> getMessagingConnectionProvider() {
+		GmDmbMqConnectionProvider gmDmbMqConnectionProvider = new GmDmbMqConnectionProvider();
+		gmDmbMqConnectionProvider.setMessagingContext(getMessagingContext());
 		
-		Messaging denotationType = createDenotationType();
-		
-		com.braintribe.transport.messaging.api.Messaging messaging = getExpertByDenotationType(denotationType);
-		
-		return messaging.createConnectionProvider(denotationType, getMessagingContext());
-		
-	}
-	
-	protected Messaging createDenotationType() {
-		
-		com.braintribe.model.messaging.dmb.GmDmbMqMessaging messagingDenotationType = com.braintribe.model.messaging.dmb.GmDmbMqMessaging.T.create();
-		
-		return messagingDenotationType;
-		
-	}
-	
-	protected com.braintribe.transport.messaging.api.Messaging<? extends Messaging> getExpertByDenotationType(Messaging denotationType) {
-		
-		if (denotationType instanceof com.braintribe.model.messaging.dmb.GmDmbMqMessaging) {
-			GmDmbMqMessaging gmDmbMqMessaging = new GmDmbMqMessaging();
-			return gmDmbMqMessaging;
-		}
-		
-		return null;
-		
+		return gmDmbMqConnectionProvider;
 	}
 	
 	protected MessagingContext getMessagingContext() {

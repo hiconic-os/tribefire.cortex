@@ -23,7 +23,6 @@ import com.braintribe.logging.ThreadRenamer;
 import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.messaging.Destination;
 import com.braintribe.model.messaging.Queue;
-import com.braintribe.model.messaging.dmb.GmDmbMqMessaging;
 import com.braintribe.model.processing.mqrpc.client.BasicGmMqRpcClientConfig;
 import com.braintribe.model.processing.mqrpc.client.GmMqRpcClientConfig;
 import com.braintribe.model.processing.mqrpc.server.GmMqRpcServer;
@@ -170,7 +169,10 @@ public class MqRpcTestSpace implements MqRpcTestContract {
 	}
 
 	private GmDmbMqConnectionProvider messagingConnectionProvider(MessagingContext context) {
-		return new com.braintribe.transport.messaging.dbm.GmDmbMqMessaging().createConnectionProvider(GmDmbMqMessaging.T.create(), context);
+		GmDmbMqConnectionProvider gmDmbMqConnectionProvider = new GmDmbMqConnectionProvider();
+		gmDmbMqConnectionProvider.setMessagingContext(context);
+		
+		return gmDmbMqConnectionProvider;
 	}
 
 	@Managed

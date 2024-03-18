@@ -16,7 +16,6 @@ import com.braintribe.codec.marshaller.common.OptionsEnrichingMarshaller;
 import com.braintribe.gm.marshaller.resource.aware.ResourceAwareMarshaller;
 import com.braintribe.gm.marshaller.threshold.ThresholdPersistenceMarshaller;
 import com.braintribe.model.cortex.deployment.CortexConfiguration;
-import com.braintribe.model.messaging.dmb.GmDmbMqMessaging;
 import com.braintribe.model.processing.deployment.api.SchrodingerBean;
 import com.braintribe.model.processing.tfconstants.TribefireConstants;
 import com.braintribe.transport.messaging.api.MessagingConnectionProvider;
@@ -86,7 +85,6 @@ public class MessagingSpace implements MessagingContract {
 	@Managed
 	public MessagingConnectionProvider<?> defaultMessagingConnectionSupplier() {
 		GmDmbMqConnectionProvider bean = new GmDmbMqConnectionProvider();
-		bean.setConnectionConfiguration(GmDmbMqMessaging.T.create());
 		bean.setMessagingContext(context());
 
 		return bean;

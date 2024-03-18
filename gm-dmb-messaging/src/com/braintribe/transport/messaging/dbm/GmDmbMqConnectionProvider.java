@@ -13,14 +13,11 @@ package com.braintribe.transport.messaging.dbm;
 
 import java.lang.management.ManagementFactory;
 
-import javax.management.MBeanServerConnection;
-
 import com.braintribe.transport.messaging.api.MessagingConnectionProvider;
 import com.braintribe.transport.messaging.api.MessagingContext;
 import com.braintribe.transport.messaging.api.MessagingException;
 
 /**
- * <p>
  * {@link MessagingConnectionProvider} implementation for providing {@link GmDmbMqConnection}(s).
  * 
  * @see MessagingConnectionProvider
@@ -28,17 +25,8 @@ import com.braintribe.transport.messaging.api.MessagingException;
  */
 public class GmDmbMqConnectionProvider implements MessagingConnectionProvider<GmDmbMqConnection> {
 
-    private com.braintribe.model.messaging.dmb.GmDmbMqMessaging providerConfiguration;
     private MessagingContext messagingContext;
 
-
-	public GmDmbMqConnectionProvider() {
-    }
-    
-    public void setConnectionConfiguration(com.braintribe.model.messaging.dmb.GmDmbMqMessaging providerConfiguration) {
-    	this.providerConfiguration = providerConfiguration;
-    }
-    
     public MessagingContext getMessagingContext() {
 		return messagingContext;
 	}
@@ -49,32 +37,14 @@ public class GmDmbMqConnectionProvider implements MessagingConnectionProvider<Gm
     
 	@Override
 	public GmDmbMqConnection provideMessagingConnection() throws MessagingException {
-		
 		GmDmbMqConnection gmDmbMqConnection = new GmDmbMqConnection();
 		
 		gmDmbMqConnection.setConnectionProvider(this);
-		gmDmbMqConnection.setMBeanServerConnection(createMBeanServerConnection());
+		gmDmbMqConnection.setMBeanServerConnection(ManagementFactory.getPlatformMBeanServer());
 		
 		return gmDmbMqConnection;
 	}
 	
-	/**
-	 * <p>
-	 * Creates a {@link MBeanServerConnection} based on the configuration provided via 
-	 * {@link #setConnectionConfiguration(com.braintribe.model.messaging.dmb.GmDmbMqMessaging)} 
-	 * 
-	 * @return The {@link MBeanServerConnection} created
-	 * @throws MessagingException If a {@link MBeanServerConnection} fails to be established
-	 */
-	protected MBeanServerConnection createMBeanServerConnection() throws MessagingException {
-		
-		if (this.providerConfiguration == null) {
-			throw new MessagingException("No connection provider configuration was set to this connection provider");
-		}
-		
-		return ManagementFactory.getPlatformMBeanServer();
-	}
-
 	@Override
 	public void close() {
 		// no-op, there is nothing to be closed so far in this MessagingConnectionProvider
