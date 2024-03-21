@@ -18,7 +18,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -68,7 +72,7 @@ public class DbLocking implements Locking, LifecycleAware {
 
 	private static final Logger log = Logger.getLogger(DbLocking.class);
 
-	public static final String DB_TABLE_NAME = "HC_LOCKING";
+	public static final String DB_TABLE_NAME = "hc_locking";
 
 	public static final int DEFAULT_POLL_INTERVAL_MS = 100;
 	public static final int DEFAULT_LOCK_EXPIRATION_MS = 5 * 60 * 1000;
@@ -115,38 +119,81 @@ public class DbLocking implements Locking, LifecycleAware {
 		if (autoUpdateSchema)
 			try {
 				ensureLocksTable();
+				// We start the ensuring of the indices in a separate thread to not slow down
+				// the startup procedure. We do not need the indices right away, so it's
+				// ok to wait a bit.
+				Thread.ofVirtual().start(this::ensureIndices);
+
 			} catch (Exception e) {
 				throw new RuntimeException("Error while ensuring " + DB_TABLE_NAME + " table used by Locking", e);
 			}
 	}
 
 	private void ensureLocksTable() throws SQLException {
-		Connection connection = dataSource.getConnection();
-		try {
+		try (Connection connection = dataSource.getConnection()) {
 			if (!locksTableExists(connection))
 				createLocksTable(connection);
+		}
+	}
 
-		} finally {
-			connection.close();
+	private void ensureIndices() {
+		try (Connection connection = dataSource.getConnection()) {
+			log.debug(() -> "Ensuring indices on " + DB_TABLE_NAME);
+
+			List<String> columns = List.of("reentranceId", "count", "expires", "created");
+
+			Map<String, String> indexPairs = new HashMap<>();
+			//@formatter:off
+			columns.stream().forEach(col -> {
+				String indexName = (DB_TABLE_NAME + "_" + col + "_idx").toLowerCase();
+				indexPairs.put(indexName, col);
+			});
+			//@formatter:on
+
+			Set<String> existingInstances = JdbcTools.indicesExist(connection, DB_TABLE_NAME, indexPairs.keySet());
+			if (existingInstances.size() == indexPairs.size()) {
+				// Indices already exist.
+				return;
+			}
+
+			Set<String> indices = new HashSet<>(indexPairs.keySet());
+			indices.removeAll(existingInstances);
+			if (indices.isEmpty()) {
+				return;
+			}
+
+			try (Statement statement = connection.createStatement()) {
+
+				for (String indexName : indices) {
+					String col = indexPairs.get(indexName);
+
+					String sql = "CREATE INDEX " + indexName + " ON " + DB_TABLE_NAME + " (" + col + ");";
+					log.debug(() -> "Creating index with statement: " + sql);
+					statement.executeUpdate(sql);
+					log.debug(() -> "Successfully created index on column " + col + " in table " + DB_TABLE_NAME);
+				}
+
+			} catch (Exception e) {
+				log.debug(() -> "Error while trying to ensure indices: " + e.getMessage(), e);
+			}
+		} catch (Exception e) {
+			log.debug(() -> "Error while connecting to the DB to ensure indices: " + e.getMessage(), e);
 		}
 	}
 
 	private void createLocksTable(Connection connection) throws SQLException {
-		log.debug("Creating table " + DB_TABLE_NAME + " as it doesn't exist yet.");
+		log.debug(() -> "Creating table " + DB_TABLE_NAME + " as it doesn't exist yet.");
 
 		String sql = createTableSql();
 
-		Statement statement = connection.createStatement();
-		try {
-			log.debug("Creating table with statement: " + sql);
+		try (Statement statement = connection.createStatement()) {
+			log.debug(() -> "Creating table with statement: " + sql);
 			statement.executeUpdate(sql);
-			log.debug("Successfully created table " + DB_TABLE_NAME);
+			log.debug(() -> "Successfully created table " + DB_TABLE_NAME);
 
 		} catch (SQLException e) {
 			if (!locksTableExists(connection))
 				throw e;
-		} finally {
-			statement.close();
 		}
 	}
 
