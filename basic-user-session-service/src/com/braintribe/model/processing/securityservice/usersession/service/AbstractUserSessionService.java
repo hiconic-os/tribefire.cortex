@@ -181,7 +181,7 @@ public abstract class AbstractUserSessionService implements UserSessionService, 
 
 		PersistenceUserSession pUserSession = pUserSessionMaybe.get();
 
-		if (pUserSession.getClosed() && pUserSession.getBlocksAuthenticationAfterLogout())
+		if (pUserSession.closed() && pUserSession.blocksAuthenticationAfterLogout())
 			return Reasons.build(InvalidCredentials.T).text("Credentials where already logged out").toMaybe();
 
 		UserSession userSession = mapToUserSession(pUserSession);
@@ -205,7 +205,7 @@ public abstract class AbstractUserSessionService implements UserSessionService, 
 
 		String acquirationKey = pUserSession.getAcquirationKey();
 
-		if (acquirationKey != null && pUserSession.getBlocksAuthenticationAfterLogout()) {
+		if (acquirationKey != null && pUserSession.blocksAuthenticationAfterLogout()) {
 			closePersistenceUserSession(pUserSession);
 		} else {
 			deletePersistenceUserSession(pUserSession);

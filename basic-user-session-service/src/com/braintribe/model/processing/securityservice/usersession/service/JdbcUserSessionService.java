@@ -102,7 +102,7 @@ public class JdbcUserSessionService extends AbstractUserSessionService {
 			stmt.setString(14, pUserSession.getCreationNodeId());
 			stmt.setString(15, pUserSession.getProperties());
 			stmt.setString(16, pUserSession.getAcquirationKey());
-			stmt.setBoolean(17, pUserSession.getBlocksAuthenticationAfterLogout());
+			stmt.setBoolean(17, pUserSession.blocksAuthenticationAfterLogout());
 
 			stmt.execute();
 		} catch (Exception e) {
