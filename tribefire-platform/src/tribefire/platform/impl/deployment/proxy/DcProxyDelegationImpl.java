@@ -13,6 +13,7 @@ package tribefire.platform.impl.deployment.proxy;
 
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
 import com.braintribe.cfg.InitializationAware;
@@ -48,14 +49,15 @@ public class DcProxyDelegationImpl implements DeployRegistryListener, Initializa
 	private EntityType<? extends Deployable> componentType;
 	private String externalId;
 	private DeployRegistry deployRegistry;
-	private final Object delegateMonitor = new Object();
+	private final ReentrantLock lock = new ReentrantLock();
 	private InstanceId processingInstanceId;
-	private Consumer<String> inDeploymentBlocker = s -> { /* noop */ };
+	private Consumer<String> inDeploymentBlocker = s -> {
+		/* noop */ };
 
 	private DeployedUnit deployedUnit;
 
 	private final Set<DcProxyListener> dcProxyListeners = new CopyOnWriteArraySet<>();
-	
+
 	public void setExternalId(String externalId) {
 		this.externalId = externalId;
 	}
@@ -73,7 +75,7 @@ public class DcProxyDelegationImpl implements DeployRegistryListener, Initializa
 	@Override
 	public void setDefaultDelegate(Object defaultDelegate) {
 		this.defaultDelegate = defaultDelegate;
-		
+
 		dcProxyListeners.forEach(l -> l.onDefaultDelegateSet(defaultDelegate));
 	}
 
@@ -142,9 +144,12 @@ public class DcProxyDelegationImpl implements DeployRegistryListener, Initializa
 		DeployedUnit resolvedUnit;
 		Object resolvedDelegate;
 
-		synchronized (delegateMonitor) {
+		lock.lock();
+		try {
 			resolvedUnit = deployedUnit;
 			resolvedDelegate = delegate;
+		} finally {
+			lock.unlock();
 		}
 
 		if (resolvedUnit == null)
@@ -164,8 +169,11 @@ public class DcProxyDelegationImpl implements DeployRegistryListener, Initializa
 			return;
 
 		if (externalId.equals(deployable.getExternalId())) {
-			synchronized (delegateMonitor) {
+			lock.lock();
+			try {
 				takeDelegate(deployedUnit, "deployment");
+			} finally {
+				lock.unlock();
 			}
 
 		} else if (log.isTraceEnabled()) {
@@ -179,10 +187,13 @@ public class DcProxyDelegationImpl implements DeployRegistryListener, Initializa
 			return;
 
 		if (externalId.equals(deployable.getExternalId())) {
-			synchronized (delegateMonitor) {
+			lock.lock();
+			try {
 				clearDelegate();
 				if (log.isDebugEnabled())
 					log.debug("Proxy for [ " + externalId + " ] unreferenced delegate upon undeploy");
+			} finally {
+				lock.unlock();
 			}
 
 		} else if (log.isTraceEnabled()) {
@@ -197,13 +208,16 @@ public class DcProxyDelegationImpl implements DeployRegistryListener, Initializa
 	}
 
 	private void fetchDelegate() {
-		synchronized (delegateMonitor) {
+		lock.lock();
+		try {
 			DeployedUnit deployedUnit = deployRegistry.resolve(externalId);
 
 			if (deployedUnit != null)
 				takeDelegate(deployedUnit, "construction");
 			else
 				clearDelegate();
+		} finally {
+			lock.unlock();
 		}
 	}
 
