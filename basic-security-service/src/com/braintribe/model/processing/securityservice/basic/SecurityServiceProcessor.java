@@ -83,12 +83,10 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 
 	/**
 	 * <p>
-	 * Sets the Provider of {@link PersistenceGmSession}(s) used by this expert for fetching standard {@link User}
-	 * information.
+	 * Sets the Provider of {@link PersistenceGmSession}(s) used by this expert for fetching standard {@link User} information.
 	 * 
 	 * @param authGmSessionProvider
-	 *            The Provider of {@link PersistenceGmSession}(s) used by this expert for fetching standard {@link User}
-	 *            information.
+	 *            The Provider of {@link PersistenceGmSession}(s) used by this expert for fetching standard {@link User} information.
 	 */
 	@Required
 	@Configurable
@@ -120,8 +118,7 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 
 	/**
 	 * <p>
-	 * Sets the max idle time, as {@link TimeSpan}, to be set to the {@link UserSession} objects created by this
-	 * authentication expert
+	 * Sets the max idle time, as {@link TimeSpan}, to be set to the {@link UserSession} objects created by this authentication expert
 	 * 
 	 * @param sessionMaxIdleTime
 	 *            The max idle time to be set to the {@link UserSession} objects created by this authentication expert
@@ -133,12 +130,11 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 
 	/**
 	 * <p>
-	 * Sets the max age, as {@link TimeSpan}, to assist the generation of expiry dates for the {@link UserSession} objects
-	 * created by this authentication expert
+	 * Sets the max age, as {@link TimeSpan}, to assist the generation of expiry dates for the {@link UserSession} objects created by this
+	 * authentication expert
 	 * 
 	 * @param sessionMaxAge
-	 *            Sets the max age to base the expiry dates for the {@link UserSession} objects created by this
-	 *            authentication expert
+	 *            Sets the max age to base the expiry dates for the {@link UserSession} objects created by this authentication expert
 	 */
 	@Configurable
 	public void setSessionMaxAge(TimeSpan sessionMaxAge) {
@@ -366,7 +362,8 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 
 		Date expiryDate = calculateExpiryDate(lastAccessedDate, maxIdleTime, fixedExpiryDate);
 
-		userSessionService.touchUserSession(userSession.getSessionId(), lastAccessedDate, expiryDate);
+		String sessionId = userSession.getSessionId();
+		Thread.ofVirtual().name("Touch session").start(() -> userSessionService.touchUserSession(sessionId, lastAccessedDate, expiryDate));
 	}
 
 	protected Date calculateExpiryDate(Date pivot, TimeSpan span, Date fixedExpiryDate) {

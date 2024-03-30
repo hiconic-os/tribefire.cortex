@@ -50,8 +50,8 @@ public class JdbcUserSessionService extends AbstractUserSessionService {
 				"?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?"+
 			")";
 	// @formatter:on
-	private static final String FIND_PERSISTENCE_USER_SESSION_STMT = "SELECT * FROM TF_US_PERSISTENCE_USER_SESSION WHERE ID = ?";
-	private static final String FIND_PERSISTENCE_USER_SESSION_BY_ACQKEY_STMT = "SELECT * FROM TF_US_PERSISTENCE_USER_SESSION WHERE ACQUIRATION_KEY = ? ORDER BY CREATION_DATE DESC";
+	private static final String FIND_PERSISTENCE_USER_SESSION_STMT = "SELECT ID, USER_NAME, USER_FIRST_NAME, USER_LAST_NAME, USER_EMAIL, CREATION_DATE, FIXED_EXPIRY_DATE, EXPIRY_DATE, LAST_ACCESSED_DATE, MAX_IDLE_TIME, EFFECTIVE_ROLES, SESSION_TYPE, CREATION_INTERNET_ADDRESS, CREATION_NODE_ID, PROPERTIES, ACQUIRATION_KEY, BLOCKS_AUTHENTICATION_AFTER_LOGOUT FROM TF_US_PERSISTENCE_USER_SESSION WHERE ID = ?";
+	private static final String FIND_PERSISTENCE_USER_SESSION_BY_ACQKEY_STMT = "SELECT ID, USER_NAME, USER_FIRST_NAME, USER_LAST_NAME, USER_EMAIL, CREATION_DATE, FIXED_EXPIRY_DATE, EXPIRY_DATE, LAST_ACCESSED_DATE, MAX_IDLE_TIME, EFFECTIVE_ROLES, SESSION_TYPE, CREATION_INTERNET_ADDRESS, CREATION_NODE_ID, PROPERTIES, ACQUIRATION_KEY, BLOCKS_AUTHENTICATION_AFTER_LOGOUT FROM TF_US_PERSISTENCE_USER_SESSION WHERE ACQUIRATION_KEY = ? ORDER BY CREATION_DATE DESC";
 	private static final String TOUCH_PERSISTENCE_USER_SESSION_STMT = "UPDATE TF_US_PERSISTENCE_USER_SESSION SET LAST_ACCESSED_DATE = ?, EXPIRY_DATE = ? WHERE ID = ?";
 	private static final String DELETE_PERSISTENCE_USER_SESSION_STMT = "DELETE FROM TF_US_PERSISTENCE_USER_SESSION WHERE ID = ?";
 	private static final String CLOSE_PERSISTENCE_USER_SESSION_STMT = "UPDATE TF_US_PERSISTENCE_USER_SESSION SET CLOSED = ?, EXPIRY_DATE = ? WHERE ID = ?";
@@ -156,28 +156,28 @@ public class JdbcUserSessionService extends AbstractUserSessionService {
 			return null;
 		}
 		PersistenceUserSession pUserSession = PersistenceUserSession.T.create();
-		pUserSession.setId(result.getString("ID"));
-		pUserSession.setUserName(result.getString("USER_NAME"));
-		pUserSession.setUserFirstName(result.getString("USER_FIRST_NAME"));
-		pUserSession.setUserLastName(result.getString("USER_LAST_NAME"));
-		pUserSession.setUserEmail(result.getString("USER_EMAIL"));
-		Timestamp creationDate = result.getTimestamp("CREATION_DATE");
+		pUserSession.setId(result.getString(1));
+		pUserSession.setUserName(result.getString(2));
+		pUserSession.setUserFirstName(result.getString(3));
+		pUserSession.setUserLastName(result.getString(4));
+		pUserSession.setUserEmail(result.getString(5));
+		Timestamp creationDate = result.getTimestamp(6);
 		pUserSession.setCreationDate(creationDate != null ? new Date(creationDate.getTime()) : null);
-		Timestamp fixedExpiryDate = result.getTimestamp("FIXED_EXPIRY_DATE");
+		Timestamp fixedExpiryDate = result.getTimestamp(7);
 		pUserSession.setFixedExpiryDate(fixedExpiryDate != null ? new Date(fixedExpiryDate.getTime()) : null);
-		Timestamp expiryDate = result.getTimestamp("EXPIRY_DATE");
+		Timestamp expiryDate = result.getTimestamp(8);
 		pUserSession.setExpiryDate(expiryDate != null ? new Date(expiryDate.getTime()) : null);
-		Timestamp lastAccessedDate = result.getTimestamp("LAST_ACCESSED_DATE");
+		Timestamp lastAccessedDate = result.getTimestamp(9);
 		pUserSession.setLastAccessedDate(lastAccessedDate != null ? new Date(lastAccessedDate.getTime()) : null);
-		Long maxIdleTime = result.getLong("MAX_IDLE_TIME");
+		Long maxIdleTime = result.getLong(10);
 		pUserSession.setMaxIdleTime(maxIdleTime == 0 ? null : maxIdleTime);
-		pUserSession.setEffectiveRoles(result.getString("EFFECTIVE_ROLES"));
-		pUserSession.setSessionType(result.getString("SESSION_TYPE"));
-		pUserSession.setCreationInternetAddress(result.getString("CREATION_INTERNET_ADDRESS"));
-		pUserSession.setCreationNodeId(result.getString("CREATION_NODE_ID"));
-		pUserSession.setProperties(result.getString("PROPERTIES"));
-		pUserSession.setAcquirationKey(result.getString("ACQUIRATION_KEY"));
-		pUserSession.setBlocksAuthenticationAfterLogout(result.getBoolean("BLOCKS_AUTHENTICATION_AFTER_LOGOUT"));
+		pUserSession.setEffectiveRoles(result.getString(11));
+		pUserSession.setSessionType(result.getString(12));
+		pUserSession.setCreationInternetAddress(result.getString(13));
+		pUserSession.setCreationNodeId(result.getString(14));
+		pUserSession.setProperties(result.getString(15));
+		pUserSession.setAcquirationKey(result.getString(16));
+		pUserSession.setBlocksAuthenticationAfterLogout(result.getBoolean(17));
 
 		return pUserSession;
 	}
