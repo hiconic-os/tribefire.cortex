@@ -108,13 +108,11 @@ public class ResourcesBuilding {
 
 	}
 
+	/** @deprecated no usages found */
+	@Deprecated
 	public static class UrlResourcesBuilder extends AbstractResourcesBuilder {
 
 		private final URL url;
-
-		public static UrlResourcesBuilder create(String value) throws MalformedURLException {
-			return new UrlResourcesBuilder(new URL(value));
-		}
 
 		public UrlResourcesBuilder(URL url) {
 			this.url = url;
