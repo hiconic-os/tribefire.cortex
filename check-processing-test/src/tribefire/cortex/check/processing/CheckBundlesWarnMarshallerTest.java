@@ -20,50 +20,48 @@ import com.braintribe.model.deploymentapi.check.data.CheckBundlesResponse;
 
 public class CheckBundlesWarnMarshallerTest {
 
+	private final CheckBundlesResponseHtmlMarshaller marshaller = new CheckBundlesResponseHtmlMarshaller();
+
 	@Test
 	public void testOneWarning() throws Exception {
-		CheckBundlesResponseHtmlMarshaller marshaller = new CheckBundlesResponseHtmlMarshaller();
-		
 		CheckBundlesResponse res = CbmResultUtils.oneOkOneWarn();
 		
 		File f = new File("./res/one-ok-one-warn-results.html");
-		if (f.exists())
-			f.delete();
-		
-		f.createNewFile();
+		cleanup(f);
+
 		FileOutputStream fos = new FileOutputStream(f);
 		marshaller.marshall(fos, res);
 	}
 	
 	@Test
 	public void testMultipleFailsAndErrors() throws Exception {
-		CheckBundlesResponseHtmlMarshaller marshaller = new CheckBundlesResponseHtmlMarshaller();
-		
 		CheckBundlesResponse res = CbmResultUtils.multipleFailsAndWarns();
 		
 		File f = new File("./res/multiple-errors.html");
-		if (f.exists())
-			f.delete();
-		
-		f.createNewFile();
+		cleanup(f);
+
 		FileOutputStream fos = new FileOutputStream(f);
 		marshaller.marshall(fos, res);
 	}
 	
 	@Test
 	public void oneFailManyOk() throws Exception {
-		CheckBundlesResponseHtmlMarshaller marshaller = new CheckBundlesResponseHtmlMarshaller();
-		
 		CheckBundlesResponse flatResults = CbmResultUtils.oneFailManyOk();
 		
 		File f = new File("./res/one-fail-many-ok.html");
-		if (f.exists())
-			f.delete();
-		
-		f.createNewFile();
+		cleanup(f);
+
 		FileOutputStream fos = new FileOutputStream(f);
 		marshaller.marshall(fos, flatResults);
 	}
 
 	
+	private void cleanup(File f) {
+		if (f.exists()) {
+			f.delete();
+		}
+
+		f.getParentFile().mkdirs();
+	}
+
 }
