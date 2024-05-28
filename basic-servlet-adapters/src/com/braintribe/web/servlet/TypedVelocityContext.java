@@ -23,6 +23,8 @@ import org.apache.velocity.context.Context;
  */
 public class TypedVelocityContext extends VelocityContext {
 
+	private static final long serialVersionUID = -3588470424191442735L;
+
 	private String type = BasicTemplateBasedServlet.DEFAULT_TEMPLATE_KEY;
 	
 	public TypedVelocityContext() {
