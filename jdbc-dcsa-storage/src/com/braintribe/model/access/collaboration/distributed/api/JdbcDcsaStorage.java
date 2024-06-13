@@ -46,6 +46,8 @@ import javax.sql.DataSource;
 import com.braintribe.cfg.Configurable;
 import com.braintribe.cfg.LifecycleAware;
 import com.braintribe.cfg.Required;
+import com.braintribe.codec.marshaller.api.DecodingLenience;
+import com.braintribe.codec.marshaller.api.GmDeserializationOptions;
 import com.braintribe.codec.marshaller.api.HasStringCodec;
 import com.braintribe.common.lcd.Numbers;
 import com.braintribe.exception.Exceptions;
@@ -551,7 +553,8 @@ public class JdbcDcsaStorage implements DcsaSharedStorage, LifecycleAware {
 				if (encoded != null) {
 					context.totalContentSize += encoded.length();
 
-					CsaOperation ge = (CsaOperation) marshaller.getStringCodec().decode(encoded);
+					CsaOperation ge = (CsaOperation) marshaller.getStringCodec().decode(encoded,
+							GmDeserializationOptions.deriveDefaults().setDecodingLenience(new DecodingLenience()).build());
 					ge.setId(id);
 
 					if (ge instanceof CsaResourceBasedOperation) {
