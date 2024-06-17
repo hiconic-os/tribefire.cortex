@@ -553,8 +553,11 @@ public class JdbcDcsaStorage implements DcsaSharedStorage, LifecycleAware {
 				if (encoded != null) {
 					context.totalContentSize += encoded.length();
 
+					DecodingLenience decodingLenience = new DecodingLenience();
+					decodingLenience.setLenient(true);
+					
 					CsaOperation ge = (CsaOperation) marshaller.getStringCodec().decode(encoded,
-							GmDeserializationOptions.deriveDefaults().setDecodingLenience(new DecodingLenience()).build());
+							GmDeserializationOptions.deriveDefaults().setDecodingLenience(decodingLenience).build());
 					ge.setId(id);
 
 					if (ge instanceof CsaResourceBasedOperation) {
