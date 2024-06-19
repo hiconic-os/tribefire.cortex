@@ -40,6 +40,7 @@ import com.braintribe.gm.model.reason.Maybe;
 import com.braintribe.gm.model.reason.Reason;
 import com.braintribe.gm.model.reason.Reasons;
 import com.braintribe.gm.model.reason.essential.InternalError;
+import com.braintribe.gm.model.reason.essential.NotFound;
 import com.braintribe.gm.model.security.reason.AuthenticationFailure;
 import com.braintribe.gm.model.security.reason.Forbidden;
 import com.braintribe.gm.model.security.reason.InvalidCredentials;
@@ -71,16 +72,14 @@ import com.braintribe.web.servlet.auth.providers.CookieProvider;
 import com.braintribe.web.servlet.auth.providers.CookieValueProvider;
 
 /**
- * AuthFilter extracts {@link Credentials} with help of configured web credential {@link WebCredentialsProvider
- * providers} from {@link HttpServletRequest}. Then it tries to open a {@link UserSession} with {@link OpenUserSession}
- * and to authorize it based on optionally configured {@link #setGrantedRoles(Set) granted roles}. All relevant
- * information of an authorized {@link UserSession} will be pushed as a new {@link AttributeContext} and the filter will
- * proceed.
+ * AuthFilter extracts {@link Credentials} with help of configured web credential {@link WebCredentialsProvider providers} from
+ * {@link HttpServletRequest}. Then it tries to open a {@link UserSession} with {@link OpenUserSession} and to authorize it based on optionally
+ * configured {@link #setGrantedRoles(Set) granted roles}. All relevant information of an authorized {@link UserSession} will be pushed as a new
+ * {@link AttributeContext} and the filter will proceed.
  * <p>
- * In case of an authentication or authorization problem the filter will act differently based its
- * {@link #setStrict(boolean) strictness}. If strict it will not proceed and will directy respond according to
- * configuration. If lenient it will proceed without a {@link UserSession} but preserve the reasoning of the missing
- * {@link UserSession} with a {@link LenientAuthenticationFailure} attribute pushed as a new {@link AttributeContext}.
+ * In case of an authentication or authorization problem the filter will act differently based its {@link #setStrict(boolean) strictness}. If strict
+ * it will not proceed and will directy respond according to configuration. If lenient it will proceed without a {@link UserSession} but preserve the
+ * reasoning of the missing {@link UserSession} with a {@link LenientAuthenticationFailure} attribute pushed as a new {@link AttributeContext}.
  * 
  * @author dirk.scheffler
  * @author roman.kurmanowytsch
@@ -294,8 +293,8 @@ public class AuthFilter implements HttpFilter, InitializationAware {
 
 				Reason whyUnsatisfied = sessionMaybe.whyUnsatisfied();
 
-				/* An AuthenticationFailure suggests that there were credentials that could not be authenticated which is maybe relevant
-				 * to the nested processing. Other reasons suggest internal problems which are not meaningful for the nested level. */
+				/* An AuthenticationFailure suggests that there were credentials that could not be authenticated which is maybe relevant to the nested
+				 * processing. Other reasons suggest internal problems which are not meaningful for the nested level. */
 				if (!sessionMaybe.isUnsatisfiedBy(MissingCredentials.T)) {
 					log.info("Lenient authentication failure: " + whyUnsatisfied.stringify());
 				}
@@ -344,7 +343,7 @@ public class AuthFilter implements HttpFilter, InitializationAware {
 				Maybe<Credentials> credentialsMaybe = webCredentialProvider.provideCredentials(request);
 
 				if (credentialsMaybe.isUnsatisfied()) {
-					if (credentialsMaybe.isUnsatisfiedBy(MissingCredentials.T))
+					if (credentialsMaybe.isUnsatisfiedBy(MissingCredentials.T) || credentialsMaybe.isUnsatisfiedBy(NotFound.T))
 						continue;
 
 					if (credentialsMaybe.isUnsatisfiedBy(InvalidCredentials.T)) {
@@ -369,8 +368,7 @@ public class AuthFilter implements HttpFilter, InitializationAware {
 		/**
 		 * Does an authorization if possible depending on the configuration
 		 * 
-		 * @return A {@link Maybe} of a {@link UserSession} which also can be null if there was no authorization achieved and
-		 *         also not required.
+		 * @return A {@link Maybe} of a {@link UserSession} which also can be null if there was no authorization achieved and also not required.
 		 */
 		private Maybe<UserSession> authorize() {
 			return checkAccessGranted(openUserSession());
