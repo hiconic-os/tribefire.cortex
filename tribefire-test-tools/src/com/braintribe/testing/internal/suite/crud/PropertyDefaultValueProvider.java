@@ -18,7 +18,7 @@ import java.util.Map;
 
 import com.braintribe.model.generic.reflection.EnumType;
 import com.braintribe.model.generic.reflection.GenericModelType;
-import com.braintribe.model.generic.reflection.SimpleType;
+import com.braintribe.model.generic.reflection.SimpleTypes;
 import com.braintribe.model.processing.meta.cmd.builders.PropertyMdResolver;
 
 public class PropertyDefaultValueProvider implements PropertyValueProvider {
@@ -31,14 +31,14 @@ public class PropertyDefaultValueProvider implements PropertyValueProvider {
 		GenericModelType propertyType = getType(propertyMd);
 
 		Map<GenericModelType, Object> defaultValues = new HashMap<>();
-		defaultValues.put(SimpleType.TYPE_STRING, getString(propertyMd));
-		defaultValues.put(SimpleType.TYPE_BOOLEAN, true);
-		defaultValues.put(SimpleType.TYPE_DATE, new Date());
-		defaultValues.put(SimpleType.TYPE_DECIMAL, new BigDecimal(2.4));
-		defaultValues.put(SimpleType.TYPE_DOUBLE, 2.4d);
-		defaultValues.put(SimpleType.TYPE_FLOAT, 2.4f);
-		defaultValues.put(SimpleType.TYPE_INTEGER, getInteger(propertyMd));
-		defaultValues.put(SimpleType.TYPE_LONG, 2l);
+		defaultValues.put(SimpleTypes.TYPE_STRING, getString(propertyMd));
+		defaultValues.put(SimpleTypes.TYPE_BOOLEAN, true);
+		defaultValues.put(SimpleTypes.TYPE_DATE, new Date());
+		defaultValues.put(SimpleTypes.TYPE_DECIMAL, new BigDecimal(2.4));
+		defaultValues.put(SimpleTypes.TYPE_DOUBLE, 2.4d);
+		defaultValues.put(SimpleTypes.TYPE_FLOAT, 2.4f);
+		defaultValues.put(SimpleTypes.TYPE_INTEGER, getInteger(propertyMd));
+		defaultValues.put(SimpleTypes.TYPE_LONG, 2l);
 
 		// logger.debug("Set to " + defaultValues.get(propertyType));
 		return defaultValues.get(propertyType);

@@ -153,7 +153,7 @@ public class EntityTypeImp extends SimpleTypeImp<GmEntityType> {
 	/**
 	 * creates a new map property with specified element type and adds it to the type managed by this imp
 	 * <p>
-	 * i.e. addMapProperty("users", SimpleType.TYPE_STRING, User.T)
+	 * i.e. addMapProperty("users", SimpleTypes.TYPE_STRING, User.T)
 	 */
 	public EntityTypeImp addMapProperty(String name, EntityType<?> keyType, EntityType<?> valueType) {
 		GmType gmTypeOfKeyType = models.entityType(keyType).get();

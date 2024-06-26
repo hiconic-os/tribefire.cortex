@@ -30,6 +30,7 @@ import com.braintribe.model.generic.reflection.GenericModelType;
 import com.braintribe.model.generic.reflection.GenericModelTypeReflection;
 import com.braintribe.model.generic.reflection.Property;
 import com.braintribe.model.generic.reflection.SimpleType;
+import com.braintribe.model.generic.reflection.SimpleTypes;
 import com.braintribe.model.generic.reflection.StandardCloningContext;
 import com.braintribe.model.generic.reflection.StrategyOnCriterionMatch;
 import com.braintribe.model.processing.aop.api.aspect.AccessAspect;
@@ -228,9 +229,9 @@ public class ReplaceFulltextComparisons implements AccessAspect, InitializationA
 		@Override
 		public void createAndAddPropertyComparison(com.braintribe.model.query.conditions.Condition condition,FulltextPropertyDescription property, String comparisonText, Source source) {
 			
-			Operator operator = property.propertyType == SimpleType.TYPE_STRING ? Operator.ilike : Operator.equal;
+			Operator operator = property.propertyType == SimpleTypes.TYPE_STRING ? Operator.ilike : Operator.equal;
 			String valueString = comparisonText;
-			if (property.propertyType == SimpleType.TYPE_STRING) {
+			if (property.propertyType == SimpleTypes.TYPE_STRING) {
 				Map<String,Object> vars = new HashMap<String, Object>();
 				vars.put("text", comparisonText);
 				valueString = StringTools.patternFormat(queryValueTemplate, vars); 

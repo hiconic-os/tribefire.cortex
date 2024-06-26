@@ -34,7 +34,7 @@ import com.braintribe.model.generic.reflection.EnumType;
 import com.braintribe.model.generic.reflection.GenericModelType;
 import com.braintribe.model.generic.reflection.MapType;
 import com.braintribe.model.generic.reflection.Property;
-import com.braintribe.model.generic.reflection.SimpleType;
+import com.braintribe.model.generic.reflection.SimpleTypes;
 import com.braintribe.model.meta.GmMetaModel;
 import com.braintribe.model.meta.data.constraint.Mandatory;
 import com.braintribe.model.meta.data.constraint.Unique;
@@ -69,14 +69,14 @@ public class GenericModelInstantiator {
 
 	// @formatter:off
 	static final Map<GenericModelType, Object> defaultValues = asMap(
-		SimpleType.TYPE_STRING, "Hallo",
-		SimpleType.TYPE_BOOLEAN, true,
-		SimpleType.TYPE_DATE, new Date(),
-		SimpleType.TYPE_DECIMAL, new BigDecimal(2.4),
-		SimpleType.TYPE_DOUBLE, 2.4d,
-		SimpleType.TYPE_FLOAT, 2.4f,
-		SimpleType.TYPE_INTEGER, 2,
-		SimpleType.TYPE_LONG, 2l
+		SimpleTypes.TYPE_STRING, "Hallo",
+		SimpleTypes.TYPE_BOOLEAN, true,
+		SimpleTypes.TYPE_DATE, new Date(),
+		SimpleTypes.TYPE_DECIMAL, new BigDecimal(2.4),
+		SimpleTypes.TYPE_DOUBLE, 2.4d,
+		SimpleTypes.TYPE_FLOAT, 2.4f,
+		SimpleTypes.TYPE_INTEGER, 2,
+		SimpleTypes.TYPE_LONG, 2l
 	);
 	// @formatter:on
 
