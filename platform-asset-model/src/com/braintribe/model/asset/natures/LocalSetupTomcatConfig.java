@@ -15,6 +15,7 @@ import java.util.List;
 
 import com.braintribe.model.generic.annotation.Initializer;
 import com.braintribe.model.generic.annotation.meta.Description;
+import com.braintribe.model.generic.annotation.meta.FolderName;
 import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.generic.reflection.EntityTypes;
 import com.braintribe.model.resource.Resource;
@@ -78,10 +79,12 @@ public interface LocalSetupTomcatConfig extends LocalSetupConfig {
 	void setMaxHeapSize(String maxHeapSize);
 
 	@Description("Sets JAVA_HOME within the tomcat environment.")
+	@FolderName
 	String getJavaHome();
 	void setJavaHome(String javaHome);
 
 	@Description("Sets JRE_HOME within the tomcat environment. Defaults to 'javaHome'.")
+	@FolderName
 	String getJreHome();
 	void setJreHome(String jreHome);
 

@@ -16,6 +16,7 @@ import java.util.List;
 import com.braintribe.model.generic.GenericEntity;
 import com.braintribe.model.generic.annotation.Initializer;
 import com.braintribe.model.generic.annotation.meta.Description;
+import com.braintribe.model.generic.annotation.meta.FolderName;
 import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.generic.reflection.EntityTypes;
 
@@ -30,6 +31,7 @@ public interface LocalSetupConfig extends GenericEntity {
 	String checkWriteAccessForDirs = "checkWriteAccessForDirs";
 
 	@Description("The directory in which the local setup is placed")
+	@FolderName
 	String getInstallationPath();
 	void setInstallationPath(String installationPath);
 
@@ -44,10 +46,12 @@ public interface LocalSetupConfig extends GenericEntity {
 	void setHttpsPort(Integer httpsPort);
 
 	@Description("The directory for temporary files of the JVM (controlled by system property java.io.tmpdir)")
+	@FolderName
 	String getTempDir();
 	void setTempDir(String tempDir);
 
 	@Description("A list of directory paths to be checked for write access. If a directory does not exist, it will be created.")
+	@FolderName
 	List<String> getCheckWriteAccessForDirs();
 	void setCheckWriteAccessForDirs(List<String> checkWriteAccessForDirs);
 
