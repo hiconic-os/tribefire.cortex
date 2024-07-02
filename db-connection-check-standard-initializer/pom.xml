@@ -20,7 +20,7 @@ limitations under the License.
         <version>[3.0,3.1)</version>
     </parent>
     <artifactId>db-connection-check-standard-initializer</artifactId>
-    <version>3.0.12</version>
+    <version>3.0.13</version>
     <properties>
     </properties>
     <licenses>

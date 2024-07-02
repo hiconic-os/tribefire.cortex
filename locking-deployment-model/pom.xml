@@ -20,7 +20,7 @@ limitations under the License.
         <version>[3.0,3.1)</version>
     </parent>
     <artifactId>locking-deployment-model</artifactId>
-    <version>3.0.7</version>
+    <version>3.0.8</version>
     <properties>
         <archetype>model</archetype>
     </properties>

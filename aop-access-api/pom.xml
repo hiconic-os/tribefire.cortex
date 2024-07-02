@@ -20,7 +20,7 @@ limitations under the License.
         <version>[3.0,3.1)</version>
     </parent>
     <artifactId>aop-access-api</artifactId>
-    <version>3.0.7</version>
+    <version>3.0.8</version>
     <properties>
         <archetype>library</archetype>
     </properties>

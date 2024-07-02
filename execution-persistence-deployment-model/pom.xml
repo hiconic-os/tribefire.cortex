@@ -20,7 +20,7 @@ limitations under the License.
         <version>[3.0,3.1)</version>
     </parent>
     <artifactId>execution-persistence-deployment-model</artifactId>
-    <version>3.0.14</version>
+    <version>3.0.15</version>
     <properties>
         <model-revision>1</model-revision>
         <archetype>model</archetype>

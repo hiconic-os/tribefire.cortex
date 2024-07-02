@@ -20,7 +20,7 @@ limitations under the License.
         <version>[3.0,3.1)</version>
     </parent>
     <artifactId>tribefire-home-servlet-model</artifactId>
-    <version>3.0.13</version>
+    <version>3.0.14</version>
     <properties>
         <archetype>model</archetype>
     </properties>

@@ -20,7 +20,7 @@ limitations under the License.
         <version>[3.0,3.1)</version>
     </parent>
     <artifactId>gmml-to-initializer-converter</artifactId>
-    <version>3.0.17</version>
+    <version>3.0.18</version>
     <properties/>
     <licenses>
         <license>

@@ -20,7 +20,7 @@ limitations under the License.
         <version>[3.0,3.1)</version>
     </parent>
     <artifactId>tribefire-logs-servlet</artifactId>
-    <version>3.0.21</version>
+    <version>3.0.22</version>
     <properties>
         <archetype>library</archetype>
     </properties>

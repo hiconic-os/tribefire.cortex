@@ -20,7 +20,7 @@ limitations under the License.
         <version>[3.0,3.1)</version>
     </parent>
     <artifactId>basic-deployment-model-processing</artifactId>
-    <version>3.0.37</version>
+    <version>3.0.38</version>
     <properties>
         <archetype>library</archetype>
     </properties>
