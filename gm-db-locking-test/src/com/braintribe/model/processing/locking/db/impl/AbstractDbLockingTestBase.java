@@ -70,8 +70,8 @@ public abstract class AbstractDbLockingTestBase {
 
 	@Before
 	public void setup() throws Exception {
-		JdbcTools.withStatement(dataSource, () -> "Cleaning up TF_LOCKS table", ps -> {
-			ps.executeUpdate("delete from TF_LOCKS");
+		JdbcTools.withStatement(dataSource, () -> "Cleaning up " + DbLocking.DB_TABLE_NAME + " table", ps -> {
+			ps.executeUpdate("delete from " + DbLocking.DB_TABLE_NAME);
 		});
 	}
 
