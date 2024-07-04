@@ -20,7 +20,7 @@ limitations under the License.
         <version>[3.0,3.1)</version>
     </parent>
     <artifactId>id-generator-deployment-model</artifactId>
-    <version>3.0.16</version>
+    <version>3.0.17</version>
     <properties>
         <model-revision>1</model-revision>
         <archetype>model</archetype>
