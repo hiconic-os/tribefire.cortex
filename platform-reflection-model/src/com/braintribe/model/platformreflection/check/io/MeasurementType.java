@@ -22,10 +22,10 @@ import com.braintribe.model.generic.reflection.EnumTypes;
 public enum MeasurementType implements EnumBase {
 	disk, internet;
 
-	public static final EnumType T = EnumTypes.T(MeasurementType.class);
+	public static final EnumType<MeasurementType> T = EnumTypes.T(MeasurementType.class);
 	
 	@Override
-	public EnumType type() {
+	public EnumType<MeasurementType> type() {
 		return T;
 	}	
 }

@@ -33,10 +33,10 @@ public enum CbrAggregationKind implements EnumBase {
 	bundle,
 	role;
 	
-	public static final EnumType T = EnumTypes.T(CbrAggregationKind.class);
+	public static final EnumType<CbrAggregationKind> T = EnumTypes.T(CbrAggregationKind.class);
 
 	@Override
-	public EnumType type() {
+	public EnumType<CbrAggregationKind> type() {
 		return T;
 	}
 }

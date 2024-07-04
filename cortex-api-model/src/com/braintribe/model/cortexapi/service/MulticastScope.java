@@ -23,10 +23,10 @@ public enum MulticastScope implements EnumBase {
 
 	none, masters, all;
 
-	public static final EnumType T = EnumTypes.T(MulticastScope.class);
+	public static final EnumType<MulticastScope> T = EnumTypes.T(MulticastScope.class);
 	
 	@Override
-	public EnumType type() {
+	public EnumType<MulticastScope> type() {
 		return T;
 	}	
 }

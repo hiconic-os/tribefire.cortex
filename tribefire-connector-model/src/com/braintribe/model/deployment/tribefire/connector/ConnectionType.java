@@ -23,10 +23,10 @@ public enum ConnectionType implements EnumBase {
 	
 	local, remote;
 
-	public static final EnumType T = EnumTypes.T(ConnectionType.class);
+	public static final EnumType<ConnectionType> T = EnumTypes.T(ConnectionType.class);
 	
 	@Override
-	public EnumType type() {
+	public EnumType<ConnectionType> type() {
 		return T;
 	}	
 }

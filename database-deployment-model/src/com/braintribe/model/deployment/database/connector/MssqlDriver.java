@@ -23,10 +23,10 @@ public enum MssqlDriver implements EnumBase {
 	MicrosoftJdbc4Driver,
 	Jtds;
 
-	public static final EnumType T = EnumTypes.T(MssqlDriver.class);
+	public static final EnumType<MssqlDriver> T = EnumTypes.T(MssqlDriver.class);
 	
 	@Override
-	public EnumType type() {
+	public EnumType<MssqlDriver> type() {
 		return T;
 	}	
 }

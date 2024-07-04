@@ -23,10 +23,10 @@ public enum GeneralizationKind implements EnumBase {
 	
 	generalization, specialization, none, mapping;
 
-	public static final EnumType T = EnumTypes.T(GeneralizationKind.class);
+	public static final EnumType<GeneralizationKind> T = EnumTypes.T(GeneralizationKind.class);
 	
 	@Override
-	public EnumType type() {
+	public EnumType<GeneralizationKind> type() {
 		return T;
 	}	
 

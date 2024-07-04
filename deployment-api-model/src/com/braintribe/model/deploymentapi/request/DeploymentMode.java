@@ -25,10 +25,10 @@ public enum DeploymentMode implements EnumBase {
 	bootstrappingOnly,
 	transientOnly;
 
-	public static final EnumType T = EnumTypes.T(DeploymentMode.class);
+	public static final EnumType<DeploymentMode> T = EnumTypes.T(DeploymentMode.class);
 	
 	@Override
-	public EnumType type() {
+	public EnumType<DeploymentMode> type() {
 		return T;
 	}	
 

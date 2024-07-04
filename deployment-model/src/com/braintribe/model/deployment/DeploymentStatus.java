@@ -24,10 +24,10 @@ public enum DeploymentStatus implements EnumBase {
 	deployed,
 	partiallyDeployed;
 
-	public static final EnumType T = EnumTypes.T(DeploymentStatus.class);
+	public static final EnumType<DeploymentStatus> T = EnumTypes.T(DeploymentStatus.class);
 	
 	@Override
-	public EnumType type() {
+	public EnumType<DeploymentStatus> type() {
 		return T;
 	}	
 }

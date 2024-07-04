@@ -25,10 +25,10 @@ public enum ResourceKind implements EnumBase {
 	transientOnly,
 	none;
 
-	public static final EnumType T = EnumTypes.T(ResourceKind.class);
+	public static final EnumType<ResourceKind> T = EnumTypes.T(ResourceKind.class);
 
 	@Override
-	public EnumType type() {
+	public EnumType<ResourceKind> type() {
 		return T;
 	}
 

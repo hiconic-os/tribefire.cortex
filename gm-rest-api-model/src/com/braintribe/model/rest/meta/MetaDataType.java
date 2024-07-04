@@ -23,10 +23,10 @@ public enum MetaDataType implements EnumBase {
 	
 	ENTITY,ENUM,ENUM_CONSTANT;
 
-	public static final EnumType T = EnumTypes.T(MetaDataType.class);
+	public static final EnumType<MetaDataType> T = EnumTypes.T(MetaDataType.class);
 	
 	@Override
-	public EnumType type() {
+	public EnumType<MetaDataType> type() {
 		return T;
 	}	
 

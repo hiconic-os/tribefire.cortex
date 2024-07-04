@@ -23,10 +23,10 @@ public enum AggregationKind implements EnumBase {
 	
 	none, simple_aggregation, /*collection_aggregation, */ multiple_aggregation, ordered_aggregation, unordered_aggregation, key_association, value_association;
 
-	public static final EnumType T = EnumTypes.T(AggregationKind.class);
+	public static final EnumType<AggregationKind> T = EnumTypes.T(AggregationKind.class);
 	
 	@Override
-	public EnumType type() {
+	public EnumType<AggregationKind> type() {
 		return T;
 	}	
 

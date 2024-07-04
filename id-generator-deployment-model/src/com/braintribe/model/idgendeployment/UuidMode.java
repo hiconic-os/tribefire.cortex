@@ -22,10 +22,10 @@ import com.braintribe.model.generic.reflection.EnumTypes;
 public enum UuidMode implements EnumBase {
 	standard, compact, compactWithTimestampPrefix;
 
-	public static final EnumType T = EnumTypes.T(UuidMode.class);
+	public static final EnumType<UuidMode> T = EnumTypes.T(UuidMode.class);
 	
 	@Override
-	public EnumType type() {
+	public EnumType<UuidMode> type() {
 		return T;
 	}	
 }

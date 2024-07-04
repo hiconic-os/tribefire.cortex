@@ -32,10 +32,10 @@ public enum JdbcTransactionIsolationLevel implements EnumBase {
 	REPEATABLE_READ,
 	SERIALIZABLE;
 
-	public static final EnumType T = EnumTypes.T(JdbcTransactionIsolationLevel.class);
+	public static final EnumType<JdbcTransactionIsolationLevel> T = EnumTypes.T(JdbcTransactionIsolationLevel.class);
 	
 	@Override
-	public EnumType type() {
+	public EnumType<JdbcTransactionIsolationLevel> type() {
 		return T;
 	}	
 }

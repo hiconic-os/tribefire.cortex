@@ -24,10 +24,10 @@ public enum InterceptionType implements EnumBase {
 	aroundProcess,
 	postProcess;
 
-	public static final EnumType T = EnumTypes.T(InterceptionType.class);
+	public static final EnumType<InterceptionType> T = EnumTypes.T(InterceptionType.class);
 	
 	@Override
-	public EnumType type() {
+	public EnumType<InterceptionType> type() {
 		return T;
 	}
 

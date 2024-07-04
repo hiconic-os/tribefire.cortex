@@ -29,10 +29,10 @@ public enum MssqlVersion implements EnumBase {
 	SqlServer2012,
 	SqlServer2014;
 
-	public static final EnumType T = EnumTypes.T(MssqlVersion.class);
+	public static final EnumType<MssqlVersion> T = EnumTypes.T(MssqlVersion.class);
 	
 	@Override
-	public EnumType type() {
+	public EnumType<MssqlVersion> type() {
 		return T;
 	}	
 }

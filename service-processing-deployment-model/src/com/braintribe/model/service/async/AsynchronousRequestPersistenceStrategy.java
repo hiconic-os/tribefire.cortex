@@ -23,10 +23,10 @@ public enum AsynchronousRequestPersistenceStrategy implements EnumBase {
 
 	always, onEnqueue, never;
 
-	public static final EnumType T = EnumTypes.T(AsynchronousRequestPersistenceStrategy.class);
+	public static final EnumType<AsynchronousRequestPersistenceStrategy> T = EnumTypes.T(AsynchronousRequestPersistenceStrategy.class);
 	
 	@Override
-	public EnumType type() {
+	public EnumType<AsynchronousRequestPersistenceStrategy> type() {
 		return T;
 	}
 	

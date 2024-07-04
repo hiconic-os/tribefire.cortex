@@ -42,10 +42,10 @@ public enum AssetNature implements EnumBase {
 	
 	// TODO tomcatRuntime?
 	
-	public static final EnumType T = EnumTypes.T(AssetNature.class);
+	public static final EnumType<AssetNature> T = EnumTypes.T(AssetNature.class);
 
 	@Override
-	public EnumType type() {
+	public EnumType<AssetNature> type() {
 		return T;
 	}
 

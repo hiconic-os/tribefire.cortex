@@ -22,10 +22,10 @@ import com.braintribe.model.generic.reflection.EnumTypes;
 public enum Prettiness implements EnumBase {
 	none, low, mid, high;
 
-	public static final EnumType T = EnumTypes.T(Prettiness.class);
+	public static final EnumType<Prettiness> T = EnumTypes.T(Prettiness.class);
 	
 	@Override
-	public EnumType type() {
+	public EnumType<Prettiness> type() {
 		return T;
 	}	
 }

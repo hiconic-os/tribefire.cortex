@@ -29,10 +29,10 @@ public enum WireKind implements EnumBase {
 	hardwired,
 	dynamic;
 
-	public static final EnumType T = EnumTypes.T(WireKind.class);
+	public static final EnumType<WireKind> T = EnumTypes.T(WireKind.class);
 	
 	@Override
-	public EnumType type() {
+	public EnumType<WireKind> type() {
 		return T;
 	}	
 }

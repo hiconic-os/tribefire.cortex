@@ -30,10 +30,10 @@ public enum OracleVersion implements EnumBase {
 	Oracle11g,
 	Oracle12c;
 
-	public static final EnumType T = EnumTypes.T(OracleVersion.class);
+	public static final EnumType<OracleVersion> T = EnumTypes.T(OracleVersion.class);
 	
 	@Override
-	public EnumType type() {
+	public EnumType<OracleVersion> type() {
 		return T;
 	}	
 }

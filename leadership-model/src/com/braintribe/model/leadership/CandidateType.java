@@ -22,10 +22,10 @@ import com.braintribe.model.generic.reflection.EnumTypes;
 public enum CandidateType implements EnumBase {
 	Dbl, Remote;
 
-	public static final EnumType T = EnumTypes.T(CandidateType.class);
+	public static final EnumType<CandidateType> T = EnumTypes.T(CandidateType.class);
 	
 	@Override
-	public EnumType type() {
+	public EnumType<CandidateType> type() {
 		return T;
 	}	
 }

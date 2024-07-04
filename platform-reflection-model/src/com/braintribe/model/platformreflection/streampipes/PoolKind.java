@@ -24,10 +24,10 @@ public enum PoolKind implements EnumBase {
 	dynamic,
 	softReferencing;
 
-	public static final EnumType T = EnumTypes.T(PoolKind.class);
+	public static final EnumType<PoolKind> T = EnumTypes.T(PoolKind.class);
 	
 	@Override
-	public EnumType type() {
+	public EnumType<PoolKind> type() {
 		return T;
 	}	
 }

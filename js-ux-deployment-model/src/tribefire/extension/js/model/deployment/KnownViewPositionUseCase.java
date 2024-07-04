@@ -27,10 +27,10 @@ public enum KnownViewPositionUseCase implements EnumBase {
 	gmeViewCenter("gmeViewCenter"),
 	gmeViewBottom("gmeViewBottom");
 	
-	public static final EnumType T = EnumTypes.T(KnownViewPositionUseCase.class);
+	public static final EnumType<KnownViewPositionUseCase> T = EnumTypes.T(KnownViewPositionUseCase.class);
 	
 	@Override
-	public EnumType type() {
+	public EnumType<KnownViewPositionUseCase> type() {
 		return T;
 	}
 	

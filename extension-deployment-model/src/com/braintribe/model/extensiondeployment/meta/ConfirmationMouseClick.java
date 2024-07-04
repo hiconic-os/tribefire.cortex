@@ -23,10 +23,10 @@ public enum ConfirmationMouseClick implements EnumBase {
 	
 	none, shift, ctrl, alt;
 
-	public static final EnumType T = EnumTypes.T(ConfirmationMouseClick.class);
+	public static final EnumType<ConfirmationMouseClick> T = EnumTypes.T(ConfirmationMouseClick.class);
 	
 	@Override
-	public EnumType type() {
+	public EnumType<ConfirmationMouseClick> type() {
 		return T;
 	}
 

@@ -22,10 +22,10 @@ import com.braintribe.model.generic.reflection.EnumTypes;
 public enum CheckStatus implements EnumBase {
 	ok, warn, fail;
 
-	public static final EnumType T = EnumTypes.T(CheckStatus.class);
+	public static final EnumType<CheckStatus> T = EnumTypes.T(CheckStatus.class);
 	
 	@Override
-	public EnumType type() {
+	public EnumType<CheckStatus> type() {
 		return T;
 	}	
 }

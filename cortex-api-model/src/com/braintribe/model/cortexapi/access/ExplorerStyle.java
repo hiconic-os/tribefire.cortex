@@ -22,10 +22,10 @@ import com.braintribe.model.generic.reflection.EnumTypes;
 public enum ExplorerStyle implements EnumBase {
 	tribefireOrange, grayishBlue;
 
-	public static final EnumType T = EnumTypes.T(ExplorerStyle.class);
+	public static final EnumType<ExplorerStyle> T = EnumTypes.T(ExplorerStyle.class);
 	
 	@Override
-	public EnumType type() {
+	public EnumType<ExplorerStyle> type() {
 		return T;
 	}	
 }
