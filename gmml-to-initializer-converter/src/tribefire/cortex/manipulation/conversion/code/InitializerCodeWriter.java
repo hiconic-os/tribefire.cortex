@@ -245,7 +245,7 @@ public class InitializerCodeWriter {
 	}
 
 	private Enum<?> resolveEnum(EnumReference ref) {
-		EnumType enumType = GMF.getTypeReflection().findEnumType(ref.getTypeSignature());
+		EnumType<?> enumType = GMF.getTypeReflection().findEnumType(ref.getTypeSignature());
 		return enumType.getEnumValue(ref.getConstant());
 	}
 

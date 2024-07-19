@@ -165,7 +165,7 @@ public class GenericModelInstantiator {
 	 */
 	public Object getValueOfType(GenericModelType propertyType) {
 		if (propertyType.isEnum()) {
-			EnumType enumType = ((EnumType) propertyType);
+			EnumType<?> enumType = ((EnumType<?>) propertyType);
 			Enum<?> enumConstantJava = enumType.getEnumValues()[0];
 
 			return enumConstantJava;

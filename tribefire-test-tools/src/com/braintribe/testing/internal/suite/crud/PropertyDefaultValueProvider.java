@@ -52,7 +52,7 @@ public class PropertyDefaultValueProvider implements PropertyValueProvider {
 	public Enum<?> getEnum(PropertyMdResolver propertyMd) {
 		GenericModelType propertyType = getType(propertyMd);
 
-		EnumType enumType = ((EnumType) propertyType);
+		EnumType<?> enumType = ((EnumType<?>) propertyType);
 		Enum<?> enumConstantJava = enumType.getEnumValues()[0];
 
 		return enumConstantJava;
