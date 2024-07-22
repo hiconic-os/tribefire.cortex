@@ -19,7 +19,7 @@ import com.braintribe.model.generic.base.EnumBase;
 import com.braintribe.model.generic.reflection.EnumType;
 import com.braintribe.model.generic.reflection.EnumTypes;
 
-public enum ExplorerStyle implements EnumBase {
+public enum ExplorerStyle implements EnumBase<ExplorerStyle> {
 	tribefireOrange, grayishBlue;
 
 	public static final EnumType<ExplorerStyle> T = EnumTypes.T(ExplorerStyle.class);

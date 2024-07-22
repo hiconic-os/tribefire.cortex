@@ -19,7 +19,7 @@ import com.braintribe.model.generic.base.EnumBase;
 import com.braintribe.model.generic.reflection.EnumType;
 import com.braintribe.model.generic.reflection.EnumTypes;
 
-public enum ConnectionType implements EnumBase {
+public enum ConnectionType implements EnumBase<ConnectionType> {
 	
 	local, remote;
 

@@ -19,7 +19,7 @@ import com.braintribe.model.generic.base.EnumBase;
 import com.braintribe.model.generic.reflection.EnumType;
 import com.braintribe.model.generic.reflection.EnumTypes;
 
-public enum Prettiness implements EnumBase {
+public enum Prettiness implements EnumBase<Prettiness> {
 	none, low, mid, high;
 
 	public static final EnumType<Prettiness> T = EnumTypes.T(Prettiness.class);

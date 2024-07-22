@@ -19,7 +19,7 @@ import com.braintribe.model.generic.base.EnumBase;
 import com.braintribe.model.generic.reflection.EnumType;
 import com.braintribe.model.generic.reflection.EnumTypes;
 
-public enum MeasurementType implements EnumBase {
+public enum MeasurementType implements EnumBase<MeasurementType> {
 	disk, internet;
 
 	public static final EnumType<MeasurementType> T = EnumTypes.T(MeasurementType.class);

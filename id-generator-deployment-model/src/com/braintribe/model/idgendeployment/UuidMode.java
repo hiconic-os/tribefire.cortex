@@ -19,7 +19,7 @@ import com.braintribe.model.generic.base.EnumBase;
 import com.braintribe.model.generic.reflection.EnumType;
 import com.braintribe.model.generic.reflection.EnumTypes;
 
-public enum UuidMode implements EnumBase {
+public enum UuidMode implements EnumBase<UuidMode> {
 	standard, compact, compactWithTimestampPrefix;
 
 	public static final EnumType<UuidMode> T = EnumTypes.T(UuidMode.class);

@@ -19,7 +19,7 @@ import com.braintribe.model.generic.base.EnumBase;
 import com.braintribe.model.generic.reflection.EnumType;
 import com.braintribe.model.generic.reflection.EnumTypes;
 
-public enum CandidateType implements EnumBase {
+public enum CandidateType implements EnumBase<CandidateType> {
 	Dbl, Remote;
 
 	public static final EnumType<CandidateType> T = EnumTypes.T(CandidateType.class);

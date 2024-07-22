@@ -25,7 +25,7 @@ import com.braintribe.model.generic.reflection.EnumTypes;
  * 
  * @author christina.wilpernig
  */
-public enum AssetNature implements EnumBase {
+public enum AssetNature implements EnumBase<AssetNature> {
 	AssetAggregator,
 	ContainerProjection,
 	MarkdownDocumentation,

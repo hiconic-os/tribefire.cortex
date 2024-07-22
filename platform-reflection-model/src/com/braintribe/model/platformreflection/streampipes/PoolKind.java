@@ -19,7 +19,7 @@ import com.braintribe.model.generic.base.EnumBase;
 import com.braintribe.model.generic.reflection.EnumType;
 import com.braintribe.model.generic.reflection.EnumTypes;
 
-public enum PoolKind implements EnumBase {
+public enum PoolKind implements EnumBase<PoolKind> {
 	growing,
 	dynamic,
 	softReferencing;

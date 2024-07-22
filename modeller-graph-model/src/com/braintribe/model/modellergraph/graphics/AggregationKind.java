@@ -19,7 +19,7 @@ import com.braintribe.model.generic.base.EnumBase;
 import com.braintribe.model.generic.reflection.EnumType;
 import com.braintribe.model.generic.reflection.EnumTypes;
 
-public enum AggregationKind implements EnumBase {
+public enum AggregationKind implements EnumBase<AggregationKind> {
 	
 	none, simple_aggregation, /*collection_aggregation, */ multiple_aggregation, ordered_aggregation, unordered_aggregation, key_association, value_association;
 

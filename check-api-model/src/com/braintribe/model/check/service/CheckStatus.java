@@ -19,7 +19,7 @@ import com.braintribe.model.generic.base.EnumBase;
 import com.braintribe.model.generic.reflection.EnumType;
 import com.braintribe.model.generic.reflection.EnumTypes;
 
-public enum CheckStatus implements EnumBase {
+public enum CheckStatus implements EnumBase<CheckStatus> {
 	ok, warn, fail;
 
 	public static final EnumType<CheckStatus> T = EnumTypes.T(CheckStatus.class);

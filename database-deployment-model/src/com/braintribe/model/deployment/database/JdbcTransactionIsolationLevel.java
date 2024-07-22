@@ -24,7 +24,7 @@ import com.braintribe.model.generic.reflection.EnumTypes;
  * 
  * @author peter.gazdik
  */
-public enum JdbcTransactionIsolationLevel implements EnumBase {
+public enum JdbcTransactionIsolationLevel implements EnumBase<JdbcTransactionIsolationLevel> {
 
 	NONE,
 	READ_UNCOMMITTED,

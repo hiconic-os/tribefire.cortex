@@ -24,7 +24,7 @@ import com.braintribe.model.deploymentreflection.DeployedUnit;
 /**
  * Enumeration which is used with {@link GetDeploymentStatus} to filter {@link DeployedUnit}s by their wire kind.
  */
-public enum WireKind implements EnumBase {
+public enum WireKind implements EnumBase<WireKind> {
 
 	hardwired,
 	dynamic;

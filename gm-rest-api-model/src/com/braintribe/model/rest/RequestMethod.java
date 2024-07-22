@@ -19,7 +19,7 @@ import com.braintribe.model.generic.base.EnumBase;
 import com.braintribe.model.generic.reflection.EnumType;
 import com.braintribe.model.generic.reflection.EnumTypes;
 
-public enum RequestMethod implements EnumBase {
+public enum RequestMethod implements EnumBase<RequestMethod> {
 	get, put, post, delete, options;
 
 	public static final EnumType<RequestMethod> T = EnumTypes.T(RequestMethod.class);

@@ -22,7 +22,7 @@ import com.braintribe.model.generic.reflection.EnumTypes;
 /**
  * 
  */
-public enum OracleVersion implements EnumBase {
+public enum OracleVersion implements EnumBase<OracleVersion> {
 
 	Oracle8i,
 	Oracle9i,

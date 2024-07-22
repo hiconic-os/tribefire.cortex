@@ -22,7 +22,7 @@ import com.braintribe.model.generic.reflection.EnumTypes;
 /**
  * 
  */
-public enum MssqlVersion implements EnumBase {
+public enum MssqlVersion implements EnumBase<MssqlVersion> {
 
 	SqlServer2005,
 	SqlServer2008,
