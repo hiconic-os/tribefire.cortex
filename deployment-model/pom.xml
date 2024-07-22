@@ -20,7 +20,7 @@ limitations under the License.
         <version>[3.0,3.1)</version>
     </parent>
     <artifactId>deployment-model</artifactId>
-    <version>3.0.9</version>
+    <version>3.0.10</version>
     <properties>
         <model-revision>4</model-revision>
         <archetype>model</archetype>
