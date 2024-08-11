@@ -15,22 +15,17 @@
 // ============================================================================
 package com.braintribe.model.processing.securityservice.basic.test.wire.space.access;
 
-import static com.braintribe.wire.api.util.Lists.list;
 import static com.braintribe.wire.api.util.Maps.entry;
 import static com.braintribe.wire.api.util.Maps.map;
-import static com.braintribe.wire.api.util.Sets.set;
 
 import java.util.Map;
 
 import com.braintribe.model.generic.GenericEntity;
 import com.braintribe.model.generic.i18n.LocalizedString;
-import com.braintribe.model.generic.pr.criteria.PatternCriterion;
-import com.braintribe.model.generic.pr.criteria.PropertyTypeCriterion;
 import com.braintribe.model.generic.pr.criteria.TraversingCriterion;
-import com.braintribe.model.generic.pr.criteria.typematch.CollectionTypeMatch;
-import com.braintribe.model.generic.pr.criteria.typematch.EntityTypeMatch;
 import com.braintribe.model.generic.processing.pr.fluent.TC;
 import com.braintribe.model.generic.typecondition.TypeConditions;
+import com.braintribe.model.processing.query.tools.PreparedTcs;
 import com.braintribe.model.resource.source.ResourceSource;
 import com.braintribe.wire.api.annotation.Managed;
 import com.braintribe.wire.api.space.WireSpace;
@@ -74,13 +69,14 @@ public class TraversingCriteriaSpace implements WireSpace {
 
 	@Managed
 	public TraversingCriterion localizedStringProperty() {
-		PropertyTypeCriterion bean = PropertyTypeCriterion.T.create();
-		
-		EntityTypeMatch match = EntityTypeMatch.T.create();
-		match.setTypeSignature(LocalizedString.T.getTypeSignature());
-		
-		bean.setTypes(set(match));
-		
+		// @formatter:off
+		TraversingCriterion bean = TC.create()
+				.conjunction()
+					.property()
+					.entity(LocalizedString.T)
+				.close()
+				.done();
+		// @formatter:on
 		return bean;
 	}
 
@@ -96,26 +92,8 @@ public class TraversingCriteriaSpace implements WireSpace {
 		return bean;
 	}
 
-	@Managed
 	public TraversingCriterion standard() {
-
-		PropertyTypeCriterion ptc = PropertyTypeCriterion.T.create();
-		ptc.setTypes(
-				set(
-					EntityTypeMatch.T.create(),
-					CollectionTypeMatch.T.create()
-				)
-			);
-
-		PatternCriterion bean = PatternCriterion.T.create();
-		bean.setCriteria(
-				list(
-					com.braintribe.model.generic.pr.criteria.EntityCriterion.T.create(),
-					ptc
-				)
-			);
-		return bean;
-
+		return PreparedTcs.scalarOnlyTc;
 	}
 
 	@Managed
