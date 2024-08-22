@@ -43,6 +43,8 @@ import com.braintribe.cfg.Required;
 import com.braintribe.common.lcd.Pair;
 import com.braintribe.exception.Exceptions;
 import com.braintribe.execution.virtual.VirtualThreadExecutorBuilder;
+import com.braintribe.gm.model.reason.Reason;
+import com.braintribe.gm.model.reason.essential.InternalError;
 import com.braintribe.logging.Logger;
 import com.braintribe.model.check.service.CheckRequest;
 import com.braintribe.model.check.service.CheckResult;
@@ -504,7 +506,19 @@ public class CheckBundlesProcessor extends AbstractDispatchingServiceProcessor<C
 					cre.setCheckStatus(CheckStatus.fail);
 					cre.setName("Check Bundle Framework Distributed");
 					cre.setMessage("Evaluation of distributed checks failed with: unsatisfied");
-					cre.setDetails(unsatisfied.getWhy().stringify());
+
+					Reason reason = unsatisfied.getWhy();
+					if (reason != null) {
+						StringBuilder sb = new StringBuilder(unsatisfied.getWhy().stringify());
+						if (reason instanceof InternalError ie) {
+							Throwable throwable = ie.getJavaException();
+							if (throwable != null) {
+								sb.append("\n");
+								sb.append(Exceptions.stringify(throwable));
+							}
+						}
+						cre.setDetails(sb.toString());
+					}
 
 					CheckResult r = CheckResult.T.create();
 					r.getEntries().add(cre);
