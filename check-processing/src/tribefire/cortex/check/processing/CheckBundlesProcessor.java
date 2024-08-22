@@ -85,6 +85,7 @@ import com.braintribe.model.service.api.result.Failure;
 import com.braintribe.model.service.api.result.MulticastResponse;
 import com.braintribe.model.service.api.result.ResponseEnvelope;
 import com.braintribe.model.service.api.result.ServiceResult;
+import com.braintribe.model.service.api.result.Unsatisfied;
 import com.braintribe.thread.api.ThreadContextScoping;
 import com.braintribe.utils.StringTools;
 import com.braintribe.utils.xml.XmlTools;
@@ -92,9 +93,8 @@ import com.braintribe.utils.xml.XmlTools;
 import tribefire.cortex.model.check.CheckCoverage;
 
 /**
- * This service processor handles {@link CheckBundlesRequest Check Bundle Requests} covering local instance checks as
- * well as distributed checks. Also, vitality/health checks are treated here. These kind of low-level checks can be
- * executed in an unauthorized way.
+ * This service processor handles {@link CheckBundlesRequest Check Bundle Requests} covering local instance checks as well as distributed checks.
+ * Also, vitality/health checks are treated here. These kind of low-level checks can be executed in an unauthorized way.
  * 
  * @author christina.wilpernig
  */
@@ -472,7 +472,7 @@ public class CheckBundlesProcessor extends AbstractDispatchingServiceProcessor<C
 					ResponseEnvelope standardServiceResult = (ResponseEnvelope) serviceResult;
 					response = (CheckBundlesResponse) standardServiceResult.getResult();
 					break;
-				case failure:
+				case failure: {
 					Failure fail = (Failure) serviceResult;
 					String nodeId = instanceId.getNodeId();
 
@@ -496,6 +496,29 @@ public class CheckBundlesProcessor extends AbstractDispatchingServiceProcessor<C
 					response.setStatus(CheckStatus.fail);
 
 					break;
+				}
+				case unsatisfied: {
+					Unsatisfied unsatisfied = serviceResult.asUnsatisfied();
+
+					CheckResultEntry cre = CheckResultEntry.T.create();
+					cre.setCheckStatus(CheckStatus.fail);
+					cre.setName("Check Bundle Framework Distributed");
+					cre.setMessage("Evaluation of distributed checks failed with: unsatisfied");
+					cre.setDetails(unsatisfied.getWhy().stringify());
+
+					CheckResult r = CheckResult.T.create();
+					r.getEntries().add(cre);
+
+					CheckBundleResult cbr = CheckBundleResult.T.create();
+					cbr.setResult(r);
+					cbr.setStatus(CheckStatus.fail);
+					cbr.setName("Check Bundle Framework - Internal Error");
+
+					response = CheckBundlesResponse.T.create();
+					response.getElements().add(cbr);
+					response.setStatus(CheckStatus.fail);
+				}
+
 				default:
 					throw new IllegalStateException("Unexpected Multicast result type: " + serviceResult.resultType());
 			}
