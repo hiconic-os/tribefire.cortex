@@ -404,7 +404,9 @@ public class CheckBundlesProcessor extends AbstractDispatchingServiceProcessor<C
 		cbr.setStatus(CheckStatus.fail);
 		cbr.setName("Check Bundle Framework - Internal Error");
 		// TODO properly solve this
-		cbr.setCheck(CheckProcessor.T.create());
+		CheckProcessor checkProcessor = CheckProcessor.T.create();
+		checkProcessor.setName("n/a");
+		cbr.setCheck(checkProcessor);
 
 		return cbr;
 	}
@@ -531,6 +533,8 @@ public class CheckBundlesProcessor extends AbstractDispatchingServiceProcessor<C
 					response = CheckBundlesResponse.T.create();
 					response.getElements().add(cbr);
 					response.setStatus(CheckStatus.fail);
+
+					break;
 				}
 
 				default:
