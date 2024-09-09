@@ -20,8 +20,8 @@ import static com.braintribe.utils.lcd.CollectionTools2.asLinkedSet;
 import java.util.Set;
 
 /**
- * Simply a list of constants of known Tribefire Platform bindIds for various system components (which end up being configured on
- * CortexConfiguration).
+ * Simply a list of constants of known Hiconic Platform bindIds for various system components. These are defined in the
+ * {@link EnvironmentDenotations Environment Denotation Registry} and end up being configured on CortexConfiguration.
  * 
  * @author peter.gazdik
  */
@@ -29,8 +29,6 @@ public interface PlatformBindIds {
 
 	// Vitals
 	String TRIBEFIRE_LOCKING_BIND_ID = "tribefire-locking";
-	String TRIBEFIRE_LOCK_DB_BIND_ID = "tribefire-locking-db";
-	String TRIBEFIRE_LOCK_MANAGER_BIND_ID = "tribefire-lock-manager";
 	String TRIBEFIRE_MQ_BIND_ID = "tribefire-mq";
 
 	// Accesses
@@ -49,15 +47,13 @@ public interface PlatformBindIds {
 	static Set<String> platformBindIds() {
 		return asLinkedSet( //
 				TRIBEFIRE_LOCKING_BIND_ID, //
-				TRIBEFIRE_LOCK_DB_BIND_ID, //
-				TRIBEFIRE_LOCK_MANAGER_BIND_ID, //
 				TRIBEFIRE_MQ_BIND_ID, //
 
 				AUTH_DB_BIND_ID, //
 				USER_SESSIONS_DB_BIND_ID, //
 				USER_STATISTICS_DB_BIND_ID, //
 				TRANSIENT_MESSAGING_DATA_DB_BIND_ID, //
-				
+
 				RESOURCES_DB //
 		);
 	}

@@ -58,8 +58,7 @@ import tribefire.platform.wire.space.security.services.UserSessionServiceSpace;
  * 
  * Vitals:
  * <ul>
- * <li>{@link CortexConfiguration#getLocking() Locking} ({@value PlatformBindIds#TRIBEFIRE_LOCK_DB_BIND_ID},
- * {@value PlatformBindIds#TRIBEFIRE_LOCK_MANAGER_BIND_ID})
+ * <li>{@link CortexConfiguration#getLocking() Locking} ({@value PlatformBindIds#TRIBEFIRE_LOCKING_BIND_ID})
  * <li>{@link CortexConfiguration#getMessaging() Messaging} ({@value PlatformBindIds#TRANSIENT_MESSAGING_DATA_DB_BIND_ID})
  * </ul>
  * 
