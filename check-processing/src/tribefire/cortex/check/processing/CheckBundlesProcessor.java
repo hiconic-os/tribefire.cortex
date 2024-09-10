@@ -405,7 +405,7 @@ public class CheckBundlesProcessor extends AbstractDispatchingServiceProcessor<C
 		cbr.setName("Check Bundle Framework - Internal Error");
 		// TODO properly solve this
 		CheckProcessor checkProcessor = CheckProcessor.T.create();
-		checkProcessor.setName("n/a");
+		checkProcessor.setName("Check Framework");
 		cbr.setCheck(checkProcessor);
 
 		return cbr;
@@ -495,6 +495,10 @@ public class CheckBundlesProcessor extends AbstractDispatchingServiceProcessor<C
 					cbr.setStatus(CheckStatus.fail);
 					cbr.setName("Check Bundle Framework - Internal Error");
 
+					CheckProcessor checkProcessor = CheckProcessor.T.create();
+					checkProcessor.setName("Check Framework");
+					cbr.setCheck(checkProcessor);
+
 					response = CheckBundlesResponse.T.create();
 					response.getElements().add(cbr);
 					response.setStatus(CheckStatus.fail);
@@ -529,6 +533,10 @@ public class CheckBundlesProcessor extends AbstractDispatchingServiceProcessor<C
 					cbr.setResult(r);
 					cbr.setStatus(CheckStatus.fail);
 					cbr.setName("Check Bundle Framework - Internal Error");
+
+					CheckProcessor checkProcessor = CheckProcessor.T.create();
+					checkProcessor.setName("Check Framework");
+					cbr.setCheck(checkProcessor);
 
 					response = CheckBundlesResponse.T.create();
 					response.getElements().add(cbr);
@@ -573,7 +581,7 @@ public class CheckBundlesProcessor extends AbstractDispatchingServiceProcessor<C
 
 			// TODO properly solve this
 			if (cbr.getName() == null)
-				cbr.setName("n/a");
+				cbr.setName("Check Framework");
 
 			CheckResult result = entry.getValue();
 			cbr.setResult(result);
