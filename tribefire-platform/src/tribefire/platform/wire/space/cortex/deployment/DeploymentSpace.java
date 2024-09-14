@@ -68,6 +68,7 @@ import tribefire.platform.wire.space.common.HttpSpace;
 import tribefire.platform.wire.space.common.MarshallingSpace;
 import tribefire.platform.wire.space.common.MessagingSpace;
 import tribefire.platform.wire.space.common.ResourceProcessingSpace;
+import tribefire.platform.wire.space.cortex.accesses.AllAccessesCommonsSpace;
 import tribefire.platform.wire.space.cortex.accesses.CortexAccessSpace;
 import tribefire.platform.wire.space.cortex.accesses.HardwiredAccessSpaceBase;
 import tribefire.platform.wire.space.cortex.accesses.PlatformSetupAccessSpace;
@@ -91,6 +92,7 @@ public class DeploymentSpace implements WireSpace {
 	private static final Logger logger = Logger.getLogger(DeploymentSpace.class);
 
 	// @formatter:off
+	@Import private AllAccessesCommonsSpace allAccessesCommons;
 	@Import private AuthContextSpace authContext;
 	@Import private AuthenticatorsSpace authenticators;
 	@Import private BindersSpace binders;
@@ -204,9 +206,12 @@ public class DeploymentSpace implements WireSpace {
 		stopWatch.intermediate("Checks");
 
 		// workers
-		bean.bind(multicast.consumerDeployable()).component(binders.worker(), multicast::consumer);
-		bean.bind(rpc.mqServerDeployable()).component(binders.worker(), rpc::mqServer);
-		bean.bind(topology.heartbeatManagerDeployable()).component(binders.worker(), topology::heartbeatManager);
+		bean.bind(multicast.consumerDeployable()) //
+				.component(binders.worker(), multicast::consumer);
+		bean.bind(rpc.mqServerDeployable()) //
+				.component(binders.worker(), rpc::mqServer);
+		bean.bind(topology.heartbeatManagerDeployable()) //
+				.component(binders.worker(), topology::heartbeatManager);
 
 		stopWatch.intermediate("Workers");
 
@@ -216,6 +221,10 @@ public class DeploymentSpace implements WireSpace {
 		for (HardwiredComponent<HardwiredServiceProcessor, ServiceProcessor<?, ?>> component : authenticators.hardwiredComponents().values()) {
 			bean.bind(component.getTransientDeployable()).component(binders.serviceProcessor(), component.getExpertSupplier());
 		}
+
+		// Dispatching Persistence Processor
+		bean.bind(allAccessesCommons.dispatchingPersistenceProcessorDeployable()) //
+				.component(binders.serviceProcessor(), allAccessesCommons::dispatchingPersistenceProcessor);
 
 		logger.debug(() -> "Creating HardwiredDenotationBinding took: " + stopWatch);
 
@@ -272,16 +281,8 @@ public class DeploymentSpace implements WireSpace {
 		bean.setDeploymentScoping(scoping());
 		bean.setDeployRegistry(registry());
 		bean.setDeployedComponentResolver(proxyingDeployedComponentResolver());
-
-		String standardThreadCountString = TribefireRuntime.getProperty("TRIBEFIRE_DEPLOYMENT_STANDARD_THREADS", "5");
-		int standardThreadCount = 5;
-		try {
-			standardThreadCount = Integer.parseInt(standardThreadCountString);
-		} catch (Exception e) {
-			logger.warn("Could not parse the TRIBEFIRE_DEPLOYMENT_STANDARD_THREADS value " + standardThreadCountString + " as a number.", e);
-		}
-
 		bean.setThreadContextScoping(authContext.currentUser().threadContextScoping());
+
 		return bean;
 	}
 

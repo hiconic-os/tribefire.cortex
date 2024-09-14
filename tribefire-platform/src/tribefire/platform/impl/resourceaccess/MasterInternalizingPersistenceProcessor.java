@@ -19,14 +19,8 @@ import java.util.Set;
 
 import com.braintribe.model.access.IncrementalAccess;
 import com.braintribe.model.access.ModelAccessException;
-import com.braintribe.model.accessapi.CustomPersistenceRequest;
-import com.braintribe.model.accessapi.GetModel;
-import com.braintribe.model.accessapi.GetPartitions;
 import com.braintribe.model.accessapi.ManipulationRequest;
 import com.braintribe.model.accessapi.ManipulationResponse;
-import com.braintribe.model.accessapi.QueryAndSelect;
-import com.braintribe.model.accessapi.QueryEntities;
-import com.braintribe.model.accessapi.QueryProperty;
 import com.braintribe.model.accessapi.ReferencesRequest;
 import com.braintribe.model.accessapi.ReferencesResponse;
 import com.braintribe.model.aopaccessapi.AccessAspectAroundProceedRequest;
@@ -60,15 +54,7 @@ public class MasterInternalizingPersistenceProcessor extends AbstractDispatching
 	
 	@Override
 	protected void configureDispatching(DispatchConfiguration<ServiceRequest, Object> dispatching) {
-		dispatching.register(CustomPersistenceRequest.T, delegate::processCustomRequest);
-		dispatching.register(GetModel.T, (c,r) -> delegate.getMetaModel());
 		dispatching.register(AccessAspectAroundProceedRequest.T, (c,r) -> delegate.proceedAround(r));
-		dispatching.register(QueryAndSelect.T, (c,r) -> delegate.query(r.getQuery()));
-		dispatching.register(QueryEntities.T, (c,r) -> delegate.queryEntities(r.getQuery()));
-		dispatching.register(QueryProperty.T, (c,r) -> delegate.queryProperty(r.getQuery()));
-		dispatching.register(ManipulationRequest.T, (c,r) -> delegate.applyManipulation(r));
-		dispatching.register(ReferencesRequest.T, (c,r) -> delegate.getReferences(r));
-		dispatching.register(GetPartitions.T, (c,r) -> delegate.getPartitions());
 	}
 
 	@Override

@@ -51,7 +51,6 @@ import com.braintribe.gm.model.security.reason.SecurityReason;
 import com.braintribe.model.access.collaboration.persistence.VirtualModelsPersistenceInitializer;
 import com.braintribe.model.accessapi.GmqlRequest;
 import com.braintribe.model.accessapi.PersistenceRequest;
-import com.braintribe.model.accessapi.QueryRequest;
 import com.braintribe.model.accessdeployment.CollaborativeAccess;
 import com.braintribe.model.accessdeployment.IncrementalAccess;
 import com.braintribe.model.aopaccessapi.AccessAspectAroundProceedRequest;
@@ -77,11 +76,13 @@ import com.braintribe.model.extensiondeployment.HardwiredBinaryProcessor;
 import com.braintribe.model.extensiondeployment.HardwiredBinaryRetrieval;
 import com.braintribe.model.extensiondeployment.HardwiredServicePostProcessor;
 import com.braintribe.model.extensiondeployment.HardwiredServicePreProcessor;
+import com.braintribe.model.extensiondeployment.HardwiredServiceProcessor;
 import com.braintribe.model.extensiondeployment.ResourceEnricher;
 import com.braintribe.model.extensiondeployment.StateChangeProcessor;
 import com.braintribe.model.extensiondeployment.check.CheckProcessor;
 import com.braintribe.model.extensiondeployment.meta.BinaryProcessWith;
 import com.braintribe.model.extensiondeployment.meta.PreEnrichResourceWith;
+import com.braintribe.model.extensiondeployment.meta.ProcessWith;
 import com.braintribe.model.extensiondeployment.meta.ProcessWithComponent;
 import com.braintribe.model.extensiondeployment.meta.StreamWith;
 import com.braintribe.model.extensiondeployment.meta.UploadWith;
@@ -300,7 +301,7 @@ public class CortexAccessInitializersSpace implements WireSpace {
 	}
 
 	private Map<String, Set<String>> getVirtualModelsDefinitions() {
-		
+
 		// @formatter:off
 		Map<String, Set<String>> virtualModels = map(
 			entry(
@@ -375,7 +376,8 @@ public class CortexAccessInitializersSpace implements WireSpace {
 			mdEditor.onEntityType(GenericEntity.T).addPropertyMetaData(GenericEntity.id, typeSpecification(session));
 
 			mdEditor.onEntityType(IncrementalAccess.T).addMetaData( //
-					extendServiceModelWith_AccessApiModel_And_ResourceApiModel(session), //
+					extendServiceModelWith_ResourceApiModel(session), //
+					extendServiceModel_Process_PersistenceRequest_With_HardwiredDispatchingPersistenceProcessor(session), //
 					extendAccessModel_Set_Default_ResourceEnrichers(session) //
 			);
 
@@ -394,13 +396,35 @@ public class CortexAccessInitializersSpace implements WireSpace {
 	}
 
 	/** Add <tt>access-api-model</tt> and <tt>resource-api-model</tt> to every {@code IncrementalAccess} */
-	private ServiceModelExtension extendServiceModelWith_AccessApiModel_And_ResourceApiModel(ManagedGmSession session) {
-		GmMetaModel accessApiModel = session.getEntityByGlobalId(QueryRequest.T.getModel().globalId());
+	private ServiceModelExtension extendServiceModelWith_ResourceApiModel(ManagedGmSession session) {
 		GmMetaModel resourceApiModel = session.getEntityByGlobalId(UploadResource.T.getModel().globalId());
 
 		ServiceModelExtension result = session.create(ServiceModelExtension.T, "md:service-model-extension:" + IncrementalAccess.T.getShortName());
-		result.getModels().add(accessApiModel);
 		result.getModels().add(resourceApiModel);
+
+		return result;
+	}
+
+	private ServiceModelExtension extendServiceModel_Process_PersistenceRequest_With_HardwiredDispatchingPersistenceProcessor(
+			ManagedGmSession session) {
+
+		GmMetaModel accessApiModel = session.getEntityByGlobalId(PersistenceRequest.T.getModel().globalId());
+
+		String persistenceProcessingConfigurationModel = "synthetic:persistence-processing-configuration-model";
+		GmMetaModel mdModel = session.create(GmMetaModel.T, modelGlobalId(persistenceProcessingConfigurationModel));
+		mdModel.setName(persistenceProcessingConfigurationModel);
+		mdModel.getDependencies().add(accessApiModel);
+
+		HardwiredServiceProcessor processor = session.getEntityByGlobalId(AllAccessesCommonsSpace.DISPATCHING_PERSISTENCE_PROCESSOR_GLOBAL_ID);
+
+		ProcessWith processWith = session.create(ProcessWith.T, "process-with:hardwired-dispatching-persistence-processor");
+		processWith.setProcessor(processor);
+
+		ModelMetaDataEditor mdEditor = BasicModelMetaDataEditor.create(mdModel).withSession(session).done();
+		mdEditor.onEntityType(PersistenceRequest.T).addMetaData(processWith);
+
+		ServiceModelExtension result = session.create(ServiceModelExtension.T, "md:service-model-extension:persistence-request-mapping");
+		result.getModels().add(mdModel);
 
 		return result;
 	}
@@ -414,11 +438,10 @@ public class CortexAccessInitializersSpace implements WireSpace {
 		mdModel.setName(securityReasonConfigurationModel);
 		mdModel.getDependencies().add(securityReasonModel);
 
-		ModelMetaDataEditor mdEditor = BasicModelMetaDataEditor.create(mdModel).withSession(session).done();
-
 		HttpStatusCode authFailureCode = httpStatusCode(session, "auth-failure", HttpServletResponse.SC_UNAUTHORIZED);
 		HttpStatusCode forbiddenCode = httpStatusCode(session, "forbidden", HttpServletResponse.SC_FORBIDDEN);
 
+		ModelMetaDataEditor mdEditor = BasicModelMetaDataEditor.create(mdModel).withSession(session).done();
 		mdEditor.onEntityType(AuthenticationFailure.T).addMetaData(authFailureCode);
 		mdEditor.onEntityType(Forbidden.T).addMetaData(forbiddenCode);
 
