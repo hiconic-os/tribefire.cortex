@@ -375,25 +375,27 @@ public class EnsureAdminUserWorker implements Worker {
 		String password = identity.getPassword();
 
 		if (user == null) {
-
 			logger.debug(() -> "User " + username + " not found. Creating it now (password: " + StringTools.simpleObfuscatePassword(password) + ").");
 
+			Set<Role> roles = ensureRoles(identity.getRoles(), session);
+
+			String firstName = identity.getFirstName();
+			if (firstName == null)
+				firstName = username.substring(0, 1).toUpperCase().concat(".");
+
+			String lastName = identity.getLastName();
+			if (lastName == null)
+				lastName = StringTools.capitalize(username);
+
+			/* IMPORTANT: We only create user after the roles exist, so there is no state where user without proper roles exist, as such wrongly
+			 * configure user could be cached in user-sessions access. */
 			user = session.create(User.T);
 			user.setId(RandomTools.newStandardUuid());
 			user.setName(username);
 			user.setPassword(password);
-			String firstName = identity.getFirstName();
-			if (firstName == null) {
-				firstName = username.substring(0, 1).toUpperCase().concat(".");
-			}
 			user.setFirstName(firstName);
-			String lastName = identity.getLastName();
-			if (lastName == null) {
-				lastName = StringTools.capitalize(username);
-			}
 			user.setLastName(lastName);
-
-			user.getRoles().addAll(ensureRoles(identity.getRoles(), session));
+			user.getRoles().addAll(roles);
 
 			session.commit();
 
