@@ -19,6 +19,7 @@ import java.util.Set;
 
 import com.braintribe.model.access.IncrementalAccess;
 import com.braintribe.model.access.ModelAccessException;
+import com.braintribe.model.accessapi.CustomPersistenceRequest;
 import com.braintribe.model.accessapi.ManipulationRequest;
 import com.braintribe.model.accessapi.ManipulationResponse;
 import com.braintribe.model.accessapi.ReferencesRequest;
@@ -27,6 +28,7 @@ import com.braintribe.model.aopaccessapi.AccessAspectAroundProceedRequest;
 import com.braintribe.model.aopaccessapi.AccessAspectAroundProceedResponse;
 import com.braintribe.model.meta.GmMetaModel;
 import com.braintribe.model.processing.aop.api.service.AopIncrementalAccess;
+import com.braintribe.model.processing.service.api.ServiceRequestContext;
 import com.braintribe.model.processing.service.impl.AbstractDispatchingServiceProcessor;
 import com.braintribe.model.processing.service.impl.DispatchConfiguration;
 import com.braintribe.model.processing.session.api.persistence.PersistenceGmSession;
@@ -100,6 +102,11 @@ public class MasterInternalizingPersistenceProcessor extends AbstractDispatching
 	@Override
 	public Set<String> getPartitions() throws ModelAccessException {
 		return delegate.getPartitions();
+	}
+
+	@Override
+	public Object processCustomRequest(ServiceRequestContext context, CustomPersistenceRequest request) {
+		return delegate.processCustomRequest(context, request);
 	}
 
 	@Override
