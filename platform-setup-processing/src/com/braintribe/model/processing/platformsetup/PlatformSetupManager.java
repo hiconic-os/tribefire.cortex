@@ -164,7 +164,7 @@ public class PlatformSetupManager implements AccessRequestProcessor<AccessReques
 				
 				MergeCollaborativeStageToPredecessor merge = MergeCollaborativeStageToPredecessor.T.create();
 				merge.setName("trunk");
-				merge.setServiceId(accessId);
+				merge.setDomainId(accessId);
 				merge.eval(context).get();
 				
 				SmoodInitializer stage = getLatestStageForAccess(accessId);
@@ -179,7 +179,7 @@ public class PlatformSetupManager implements AccessRequestProcessor<AccessReques
 				MergeCollaborativeStage merge = MergeCollaborativeStage.T.create();
 				merge.setSource("trunk");
 				merge.setTarget(getCollaborativeStageName(target));
-				merge.setServiceId(accessId);
+				merge.setDomainId(accessId);
 				merge.eval(context).get();
 				
 				target.setHasUnsavedChanges(true);
@@ -220,7 +220,7 @@ public class PlatformSetupManager implements AccessRequestProcessor<AccessReques
 			if (request.getMergeIntoPredecessor()) {
 				// TODO additional Access Ids?
 				GetCollaborativeInitializers getInitializers = GetCollaborativeInitializers.T.create();
-				getInitializers.setServiceId(accessId);
+				getInitializers.setDomainId(accessId);
 				List<SmoodInitializer> initializers = getInitializers.eval(requestEvaluator).get();
 				
 				SmoodInitializer stage = CollectionTools.getElementUnlessIndexOutOfBounds(initializers, initializers.size()-2);
@@ -340,13 +340,13 @@ public class PlatformSetupManager implements AccessRequestProcessor<AccessReques
 		RenameCollaborativeStage renameStage = RenameCollaborativeStage.T.create();
 		renameStage.setNewName(stageName);
 		renameStage.setOldName("trunk");
-		renameStage.setServiceId(accessId);
+		renameStage.setDomainId(accessId);
 		renameStage.eval(context).get();
 
 		// create new trunk stage
 		PushCollaborativeStage pushStage = PushCollaborativeStage.T.create();
 		pushStage.setName("trunk");
-		pushStage.setServiceId(accessId);
+		pushStage.setDomainId(accessId);
 		pushStage.eval(context).get();
 
 		// purge the cache to ensure correct trunk information
@@ -625,7 +625,7 @@ public class PlatformSetupManager implements AccessRequestProcessor<AccessReques
 			
 			
 			GetCollaborativeInitializers getInitializers = GetCollaborativeInitializers.T.create();
-			getInitializers.setServiceId(accessId);
+			getInitializers.setDomainId(accessId);
 			List<SmoodInitializer> initializers = getInitializers.eval(requestEvaluator).get();
 			
 			Set<PlatformAsset> assetsForAccess = new LinkedHashSet<>();
@@ -717,7 +717,7 @@ public class PlatformSetupManager implements AccessRequestProcessor<AccessReques
 
 	private SmoodInitializer getLatestStageForAccess(String accessId) {
 		GetCollaborativeInitializers getInitializers = GetCollaborativeInitializers.T.create();
-		getInitializers.setServiceId(accessId);
+		getInitializers.setDomainId(accessId);
 		List<SmoodInitializer> initializers = getInitializers.eval(requestEvaluator).get();
 		
 		SmoodInitializer stage = CollectionTools.getElementUnlessIndexOutOfBounds(initializers, initializers.size()-2);
@@ -867,7 +867,7 @@ public class PlatformSetupManager implements AccessRequestProcessor<AccessReques
 							RenameCollaborativeStage rename = RenameCollaborativeStage.T.create();
 							rename.setOldName(getCollaborativeStageName(asset));
 							rename.setNewName(getCollaborativeStageName(groupId, name, version));
-							rename.setServiceId(accessId);
+							rename.setDomainId(accessId);
 							rename.eval(context).get();
 						});
 			}
