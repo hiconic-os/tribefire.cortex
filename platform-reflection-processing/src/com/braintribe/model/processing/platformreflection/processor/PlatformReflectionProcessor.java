@@ -29,6 +29,7 @@ import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -41,6 +42,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -1475,7 +1477,34 @@ public class PlatformReflectionProcessor extends AbstractDispatchingServiceProce
 			String threadDump = null;
 			File jcmdExecutable = findJCmd(javaHomeDir);
 			if (jcmdExecutable != null) {
-				threadDump = getThreadDumpNative(jcmdExecutable, pid, "" + pid, "Thread.print");
+				List<String> contentList = new ArrayList<>();
+				File tempFile = null;
+				try {
+					tempFile = Files.createTempFile("threaddump-" + UUID.randomUUID().toString(), ".txt").toFile();
+					if (tempFile.exists()) {
+						tempFile.delete();
+					}
+					String content = getThreadDumpNativeWithFileOutput(jcmdExecutable, pid, tempFile, "" + pid, "Thread.dump_to_file", "-format=json",
+							tempFile.getAbsolutePath());
+					if (!StringTools.isBlank(content)) {
+						contentList.add(content);
+					}
+				} catch (Exception e) {
+					logger.debug(() -> "Could not execute: Thread.dump_to_file", e);
+				} finally {
+					if (tempFile != null) {
+						FileTools.deleteFileSilently(tempFile);
+					}
+				}
+
+				String content = getThreadDumpNative(jcmdExecutable, pid, "" + pid, "Thread.print");
+				if (!StringTools.isBlank(content)) {
+					contentList.add(content);
+				}
+
+				if (!contentList.isEmpty()) {
+					threadDump = contentList.stream().collect(Collectors.joining("\n\n\n"));
+				}
 			}
 			if (threadDump == null) {
 				File jstackExecutable = findJStack(javaHomeDir);
@@ -1512,6 +1541,44 @@ public class PlatformReflectionProcessor extends AbstractDispatchingServiceProce
 					return null;
 				}
 				return output;
+			} else {
+				logger.debug(() -> "Executing " + executable.getAbsolutePath() + " with PID " + pid + " resulted in: " + context.toString());
+			}
+		} catch (Exception e) {
+			logger.debug(() -> "Could not get the native thread dump using " + executable.getAbsolutePath(), e);
+		}
+		return null;
+	}
+
+	protected String getThreadDumpNativeWithFileOutput(File executable, int pid, File targetFile, String... arguments) {
+		if (executable == null) {
+			return null;
+		}
+		logger.debug(() -> "Using executable " + executable.getAbsolutePath() + " to get a thread dump from process with file output " + pid);
+
+		try {
+			List<String> execParts = new ArrayList<>(arguments.length + 1);
+			execParts.add(executable.getAbsolutePath());
+			CollectionTools.addElementsToCollection(execParts, arguments);
+
+			RunCommandRequest request = new RunCommandRequest(execParts.toArray(new String[0]), 5000L);
+			RunCommandContext context = commandExecution.runCommand(request);
+			int errorCode = context.getErrorCode();
+			if (errorCode == 0) {
+
+				logger.debug("Creating a native thread dump succeeded.");
+
+				if (targetFile.exists()) {
+					logger.debug(() -> "Found target file: " + targetFile.getName() + ", length: " + targetFile.length());
+					String output = IOTools.slurp(targetFile, "UTF-8");
+					if (StringTools.isBlank(output)) {
+						return null;
+					}
+					return output;
+				}
+				logger.debug(() -> "Supposed target file " + targetFile.getAbsolutePath() + " does not exist.");
+
+				return null;
 			} else {
 				logger.debug(() -> "Executing " + executable.getAbsolutePath() + " with PID " + pid + " resulted in: " + context.toString());
 			}
