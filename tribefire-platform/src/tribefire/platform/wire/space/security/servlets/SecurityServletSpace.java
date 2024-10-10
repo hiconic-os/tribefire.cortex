@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.braintribe.exception.AuthorizationException;
 import com.braintribe.exception.LogPreferences;
+import com.braintribe.logging.Logger;
 import com.braintribe.logging.Logger.LogLevel;
 import com.braintribe.model.processing.bootstrapping.TribefireRuntime;
 import com.braintribe.model.processing.security.manipulation.IllegalManipulationException;
@@ -66,6 +67,8 @@ import tribefire.platform.wire.space.system.servlets.ServletsSpace;
 
 @Managed
 public class SecurityServletSpace implements WireSpace {
+
+	private static final Logger logger = Logger.getLogger(SecurityServletSpace.class);
 
 	// @formatter:off
 	@Import	private AuthAccessSpace authAccess;
@@ -152,7 +155,9 @@ public class SecurityServletSpace implements WireSpace {
 	protected void configureAuthFilter(AuthFilter authFilter) {
 		authFilter.setRequestEvaluator(rpc.serviceRequestEvaluator());
 		authFilter.setCookieHandler(http.cookieHandler());
-		authFilter.setThreadRenamer(runtime.threadRenamer());
+		if (logger.isDebugEnabled()) {
+			authFilter.setThreadRenamer(runtime.threadRenamer());
+		}
 		authFilter.setThrowExceptionOnAuthFailure(true);
 
 		authFilter.addWebCredentialProvider("cookie", existingSessionFromCookieProvider());

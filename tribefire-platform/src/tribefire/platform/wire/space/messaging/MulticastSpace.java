@@ -19,6 +19,7 @@ import java.util.concurrent.ExecutorService;
 
 import com.braintribe.execution.virtual.VirtualThreadExecutor;
 import com.braintribe.execution.virtual.VirtualThreadExecutorBuilder;
+import com.braintribe.logging.Logger;
 import com.braintribe.model.extensiondeployment.HardwiredWorker;
 import com.braintribe.model.messaging.Topic;
 import com.braintribe.model.processing.bootstrapping.TribefireRuntime;
@@ -38,6 +39,8 @@ import tribefire.platform.wire.space.system.TopologySpace;
 
 @Managed
 public class MulticastSpace implements WireSpace {
+
+	private static final Logger logger = Logger.getLogger(MulticastSpace.class);
 
 	// @formatter:on
 	@Import
@@ -75,7 +78,9 @@ public class MulticastSpace implements WireSpace {
 		bean.setRequestDestinationType(Topic.T);
 		bean.setConsumerId(cartridgeInformation.instanceId());
 		bean.setExecutor(threadPool());
-		bean.setThreadRenamer(runtime.threadRenamer());
+		if (logger.isDebugEnabled()) {
+			bean.setThreadRenamer(runtime.threadRenamer());
+		}
 		bean.setTrusted(false);
 		bean.setKeepAliveInterval(environment.property(TribefireRuntime.ENVIRONMENT_MULTICAST_KEEP_ALIVE_INTERVAL, Long.class, 10000L));
 		bean.setMetaDataResolverProvider(rpc.metaDataResolverProvider());

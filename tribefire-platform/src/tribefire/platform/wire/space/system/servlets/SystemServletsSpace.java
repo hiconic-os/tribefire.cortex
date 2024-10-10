@@ -321,7 +321,9 @@ public class SystemServletsSpace implements WireSpace {
 	@Managed
 	public ThreadRenamerFilter threadRenamerFilter() {
 		ThreadRenamerFilter bean = new ThreadRenamerFilter();
-		bean.setThreadRenamer(runtime.threadRenamer());
+		if (logger.isDebugEnabled()) {
+			bean.setThreadRenamer(runtime.threadRenamer());
+		}
 		return bean;
 	}
 
@@ -368,13 +370,12 @@ public class SystemServletsSpace implements WireSpace {
 		bean.setRemoteAddressResolver(servlets.remoteAddressResolver());
 		return bean;
 	}
-	
+
 	@Managed
 	public CaptureFilter captureFilter() {
 		CaptureFilter bean = new CaptureFilter();
 		bean.setCaptureDir(resources.tmp("servlet-response-captures").asFile());
 		return bean;
 	}
-
 
 }

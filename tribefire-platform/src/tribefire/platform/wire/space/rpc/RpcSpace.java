@@ -188,7 +188,9 @@ public class RpcSpace implements WireSpace {
 		bean.setRequestDestinationType(Queue.T);
 		bean.setConsumerId(cartridgeInformation.instanceId());
 		bean.setExecutor(mqServerThreadPool());
-		bean.setThreadRenamer(runtime.threadRenamer());
+		if (logger.isDebugEnabled()) {
+			bean.setThreadRenamer(runtime.threadRenamer());
+		}
 		bean.setTrusted(true);
 		bean.setMetaDataResolverProvider(metaDataResolverProvider());
 		return bean;
@@ -247,9 +249,9 @@ public class RpcSpace implements WireSpace {
 	@Managed
 	private ThreadNamingInterceptor threadNamingInterceptor() {
 		ThreadNamingInterceptor bean = new ThreadNamingInterceptor();
-
-		bean.setThreadRenamer(runtime.threadRenamer());
-
+		if (logger.isDebugEnabled()) {
+			bean.setThreadRenamer(runtime.threadRenamer());
+		}
 		return bean;
 	}
 
