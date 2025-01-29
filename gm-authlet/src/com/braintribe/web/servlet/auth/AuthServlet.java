@@ -53,6 +53,12 @@ import com.braintribe.util.servlet.remote.DefaultRemoteClientAddressResolver;
 import com.braintribe.util.servlet.remote.RemoteAddressInformation;
 import com.braintribe.util.servlet.remote.RemoteClientAddressResolver;
 import com.braintribe.utils.collection.impl.AttributeContexts;
+import com.braintribe.web.servlet.auth.aspect.AuthHttpRequestSupplier;
+import com.braintribe.web.servlet.auth.aspect.AuthHttpRequestSupplierAspect;
+import com.braintribe.web.servlet.auth.aspect.AuthHttpRequestSupplierImpl;
+import com.braintribe.web.servlet.auth.aspect.AuthHttpResponseConfigurer;
+import com.braintribe.web.servlet.auth.aspect.AuthHttpResponseConfigurerAspect;
+import com.braintribe.web.servlet.auth.aspect.AuthHttpResponseConfigurerImpl;
 
 public class AuthServlet extends HttpServlet {
 
@@ -88,13 +94,16 @@ public class AuthServlet extends HttpServlet {
 
 		// Create authentication request.
 
-		AttributeContext attributeContext = buildAttributeContext(req);
+		OpenUserSessionWithUserAndPassword authRequest = createOpenUserSessionRequest(req);
+
+		AttributeContext attributeContext = buildAttributeContext(req, authRequest);
 
 		AttributeContexts.push(attributeContext);
 		try {
 
-			OpenUserSessionWithUserAndPassword authRequest = createOpenUserSessionRequest(req);
 			Maybe<UserSession> sessionMaybe = authenticate(resp, authRequest);
+
+			consumeResponseInAspect(sessionMaybe, attributeContext, resp);
 
 			if (sessionMaybe.isUnsatisfied()) {
 
@@ -123,6 +132,20 @@ public class AuthServlet extends HttpServlet {
 		} finally {
 			AttributeContexts.pop();
 		}
+	}
+
+	private void consumeResponseInAspect(Maybe<UserSession> sessionMaybe, AttributeContext attributeContext, HttpServletResponse resp) {
+		AuthHttpResponseConfigurer responseConfigurer = attributeContext.findOrNull(AuthHttpResponseConfigurerAspect.class);
+		if (responseConfigurer instanceof AuthHttpResponseConfigurerImpl) {
+			AuthHttpResponseConfigurerImpl impl = (AuthHttpResponseConfigurerImpl) responseConfigurer;
+			if (sessionMaybe.isSatisfied()) {
+				Object result = sessionMaybe.get();
+				impl.consume(result, resp);
+			} else {
+				impl.consume(null, resp);
+			}
+		}
+
 	}
 
 	public Marshaller getMarshaller(HttpServletRequest request) {
@@ -230,9 +253,18 @@ public class AuthServlet extends HttpServlet {
 
 	}
 
-	protected AttributeContext buildAttributeContext(HttpServletRequest httpRequest) {
-		return AttributeContexts.peek().derive().set(RequestedEndpointAspect.class, httpRequest.getRequestURL().toString())
-				.set(RequestorAddressAspect.class, getClientRemoteInternetAddress(httpRequest)).build();
+	protected AttributeContext buildAttributeContext(HttpServletRequest httpRequest, OpenUserSessionWithUserAndPassword authRequest) {
+		AuthHttpRequestSupplier httpRequestSupplier = new AuthHttpRequestSupplierImpl(authRequest, httpRequest);
+		AuthHttpResponseConfigurerImpl httpResponseConfigurer = new AuthHttpResponseConfigurerImpl();
+
+		//@formatter:off
+		return AttributeContexts.peek().derive()
+				.set(RequestedEndpointAspect.class, httpRequest.getRequestURL().toString())
+				.set(RequestorAddressAspect.class, getClientRemoteInternetAddress(httpRequest))
+				.set(AuthHttpRequestSupplierAspect.class, httpRequestSupplier)
+				.set(AuthHttpResponseConfigurerAspect.class, httpResponseConfigurer)
+				.build();
+		//@formatter:on
 	}
 
 	@Required
