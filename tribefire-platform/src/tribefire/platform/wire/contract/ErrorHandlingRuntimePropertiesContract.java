@@ -15,6 +15,7 @@
 // ============================================================================
 package tribefire.platform.wire.contract;
 
+import com.braintribe.servlet.exception.StandardExceptionHandler.Exposure;
 import com.braintribe.wire.api.annotation.Default;
 
 import tribefire.module.wire.contract.PropertyLookupContract;
@@ -22,4 +23,10 @@ import tribefire.module.wire.contract.PropertyLookupContract;
 public interface ErrorHandlingRuntimePropertiesContract extends PropertyLookupContract {
 	@Default("true")
 	boolean TRIBEFIRE_ERROR_HANDLING_PRE_REASON();
+	
+	@Default("auto")
+	Exposure TRIBEFIRE_ERROR_EXCEPTION_EXPOSURE();
+	
+	@Default("true")
+	boolean TRIBEFIRE_ERROR_TRACEBACKID_EXPOSURE();
 }

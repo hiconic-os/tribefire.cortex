@@ -35,7 +35,6 @@ import com.braintribe.model.processing.session.api.managed.NotFoundException;
 import com.braintribe.model.processing.web.cors.CortexCorsHandler;
 import com.braintribe.servlet.exception.ExceptionFilter;
 import com.braintribe.servlet.exception.StandardExceptionHandler;
-import com.braintribe.servlet.exception.StandardExceptionHandler.Exposure;
 import com.braintribe.utils.StringTools;
 import com.braintribe.utils.lcd.CollectionTools2;
 import com.braintribe.web.cors.CorsFilter;
@@ -207,7 +206,8 @@ public class SecurityServletSpace implements WireSpace {
 	@Managed
 	public StandardExceptionHandler standardExceptionHandler() {
 		StandardExceptionHandler bean = new StandardExceptionHandler();
-		bean.setExceptionExposure(Exposure.auto);
+		bean.setExceptionExposure(errorHandlingRuntimeProperties.TRIBEFIRE_ERROR_EXCEPTION_EXPOSURE());
+		bean.setTracebackIdExposure(errorHandlingRuntimeProperties.TRIBEFIRE_ERROR_TRACEBACKID_EXPOSURE());
 		bean.setMarshallerRegistry(marshalling.registry());
 		if (errorHandlingRuntimeProperties.TRIBEFIRE_ERROR_HANDLING_PRE_REASON())
 			bean.setStatusCodeMap(preReasonExceptionStatusCodeMap());
