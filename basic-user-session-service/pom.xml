@@ -143,10 +143,5 @@ limitations under the License.
             <artifactId>worker-deployment-model</artifactId>
             <version>${V.tribefire.cortex}</version>
         </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>${V.com.google.guava}</version>
-        </dependency>
     </dependencies>
 </project>
