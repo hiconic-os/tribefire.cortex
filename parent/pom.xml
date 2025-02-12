@@ -48,7 +48,7 @@ limitations under the License.
         <V.com.microsoft.sqlserver>8.2.2.jre8</V.com.microsoft.sqlserver>
         <V.com.oracle.database.jdbc>11.2.0.4</V.com.oracle.database.jdbc>
         <V.com.vladsch.flexmark>0.34.18</V.com.vladsch.flexmark>
-        <V.commons-io>2.11.0</V.commons-io>
+        <V.commons-io>2.18.0</V.commons-io>
         <V.commons-lang>2.6</V.commons-lang>
         <V.io.dropwizard.metrics>4.0.5</V.io.dropwizard.metrics>
         <V.io.jsonwebtoken>0.11.2</V.io.jsonwebtoken>
