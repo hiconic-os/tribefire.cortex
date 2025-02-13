@@ -270,7 +270,7 @@ nav .flex-container {
 }
       
  </style>
-<script src="webpages/js/jquery-3.3.1.min.js" type="text/javascript" ></script>
+<script src="webpages/js/jquery.min.js" type="text/javascript" ></script>
 <script>
       var logFilesArray = [];
       /*var defaultLogFilesArray = ["catalina", "commons-daemon", "host-manager", "localhost", "manager", "tribefire-host-stderr", "tribefire-host-stdout", "tribefire-repository_debug", "tribefire-repository_warn", "tribefire-services_debug", "tribefire-services_security", "tribefire-services_warn"];*/

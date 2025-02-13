@@ -22,7 +22,7 @@ div#tf_repo { margin: 20px; font-family: 'Open Sans', sans-serif; }
 #tf_repo a:hover { text-decoration: normal; ; font-weight: normal; color: orange;}
 
 </style>
-<script src="./webpages/js/jquery-3.3.1.min.js"></script>
+<script src="./webpages/js/jquery.min.js"></script>
 <script src="./webpages/js/jquery.popmenu.min.js"></script>
 <script>
 	
