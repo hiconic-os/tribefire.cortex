@@ -57,7 +57,7 @@ limitations under the License.
         <V.javax.websocket>1.1</V.javax.websocket>
         <V.mysql>5.1.36</V.mysql>
         <V.net.java.dev.jna>5.8.0</V.net.java.dev.jna>
-        <V.net.lingala.zip4j>2.2.3</V.net.lingala.zip4j>
+        <V.net.lingala.zip4j>2.11.5</V.net.lingala.zip4j>
         <V.org.apache.ant_ant>1.8.2</V.org.apache.ant_ant>
         <V.org.apache.ant_ant-junit>1.10.5</V.org.apache.ant_ant-junit>
         <V.org.apache.commons>1.6</V.org.apache.commons>
