@@ -17,6 +17,7 @@ package com.braintribe.model.deployment.database.pool;
 
 import com.braintribe.model.generic.GenericEntity;
 import com.braintribe.model.generic.annotation.Abstract;
+import com.braintribe.model.generic.annotation.meta.Mandatory;
 import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.generic.reflection.EntityTypes;
 
@@ -28,6 +29,7 @@ public interface HasDatabaseConnectionPool extends GenericEntity {
 
 	EntityType<HasDatabaseConnectionPool> T = EntityTypes.T(HasDatabaseConnectionPool.class);
 
+	@Mandatory
 	DatabaseConnectionPool getConnector();
 	void setConnector(DatabaseConnectionPool connector);
 
