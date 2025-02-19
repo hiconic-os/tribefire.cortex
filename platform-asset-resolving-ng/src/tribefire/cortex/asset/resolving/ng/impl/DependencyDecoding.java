@@ -25,7 +25,6 @@ import java.util.Map;
 import com.braintribe.devrock.mc.core.declared.commons.HashComparators;
 import com.braintribe.model.artifact.analysis.AnalysisDependency;
 import com.braintribe.model.artifact.essential.PartIdentification;
-import com.braintribe.model.asset.natures.PlatformAssetNature;
 import com.braintribe.model.processing.manipulation.parser.api.MutableGmmlManipulatorParserConfiguration;
 import com.braintribe.model.processing.manipulation.parser.api.ParseResponse;
 import com.braintribe.model.processing.manipulation.parser.impl.Gmml;
@@ -49,12 +48,6 @@ public class DependencyDecoding implements PlatformAssetResolvingConstants {
 		return info;
 	}
 
-	/**
-	 * load the {@link PlatformAssetNature} from a {@link VirtualPart}
-	 * 
-	 * @param virtualPart - the {@link VirtualPart}
-	 * @return - the {@link PlatformAssetNature} contained
-	 */
 	private static Map<String, Object> decodeMap(String payload) {
 		try (Reader reader = new StringReader(payload)) {
 			return loadNatureFromReader(reader);

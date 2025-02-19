@@ -18,28 +18,19 @@ package tribefire.cortex.asset.resolving.ng.impl;
 import static com.braintribe.utils.lcd.CollectionTools2.newConcurrentMap;
 
 import java.io.File;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 
 import com.braintribe.cfg.Configurable;
 import com.braintribe.cfg.Required;
 import com.braintribe.common.attribute.AttributeContext;
-import com.braintribe.console.ConsoleOutputs;
-import com.braintribe.console.output.ConfigurableConsoleOutputContainer;
 import com.braintribe.devrock.mc.api.download.PartEnrichingContext;
 import com.braintribe.devrock.mc.api.event.EventBroadcasterAttribute;
 import com.braintribe.devrock.mc.api.event.EventHub;
@@ -57,7 +48,6 @@ import com.braintribe.devrock.model.repository.MavenFileSystemRepository;
 import com.braintribe.devrock.model.repository.MavenHttpRepository;
 import com.braintribe.devrock.model.repository.Repository;
 import com.braintribe.exception.Exceptions;
-import com.braintribe.execution.virtual.VirtualThreadExecutorBuilder;
 import com.braintribe.gm.model.reason.Maybe;
 import com.braintribe.gm.model.reason.Reason;
 import com.braintribe.gm.model.reason.essential.NotFound;
@@ -86,10 +76,6 @@ import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.generic.reflection.Property;
 import com.braintribe.model.generic.reflection.StandardCloningContext;
 import com.braintribe.model.processing.core.expert.api.DenotationMap;
-import com.braintribe.model.time.TimeSpan;
-import com.braintribe.model.time.TimeUnit;
-import com.braintribe.processing.async.api.Promise;
-import com.braintribe.processing.async.impl.HubPromise;
 import com.braintribe.utils.collection.impl.AttributeContexts;
 import com.braintribe.utils.lcd.LazyInitialized;
 
@@ -101,7 +87,6 @@ import tribefire.cortex.asset.resolving.ng.api.PlatformAssetResolvingConstants;
 public class PlatformAssetResolver implements AssetDependencyResolver, PlatformAssetResolvingConstants {
 
 	private static final Logger logger = Logger.getLogger(PlatformAssetResolver.class);
-	private static DecimalFormat secondsFormat = new DecimalFormat("0.###s", new DecimalFormatSymbols(Locale.US));
 	private static PartIdentification assetManPart = PartIdentification.parse(PART_IDENTIFIER_ASSET_MAN);
 	private TransitiveDependencyResolver transitiveResolver;
 	private RepositoryReflection repositoryReflection;
@@ -155,10 +140,7 @@ public class PlatformAssetResolver implements AssetDependencyResolver, PlatformA
 		private final boolean noDocu;
 		private final CompiledDependencyIdentification projectDependency;
 		private boolean selectorFiltering = true;
-		private ExecutorService executorService;
-		private final Map<String, Promise<Optional<Part>>> enrichingPromises = Collections.synchronizedMap(new LinkedHashMap<>());
 		private boolean modelPrimingUsed;
-		private final boolean verbose;
 		private final Object sessionMonitor = new Object();
 		private AnalysisArtifactResolution resolution;
 		private Reason failure;
@@ -172,7 +154,6 @@ public class PlatformAssetResolver implements AssetDependencyResolver, PlatformA
 			this.natureParts = context.natureParts();
 			this.noDocu = !context.includeDocumentation();
 			this.selectorFiltering = context.selectorFiltering();
-			this.verbose = context.verboseOutput();
 		}
 		private AnalysisArtifactResolution resolve(List<CompiledTerminal> terminals) {
 			TransitiveResolutionContext transitiveResolutionContext = createTransitiveResolutionContext();
@@ -185,10 +166,6 @@ public class PlatformAssetResolver implements AssetDependencyResolver, PlatformA
 			AttributeContext attributeContext = AttributeContexts.derivePeek() //
 					.set(EventBroadcasterAttribute.class, eventHub) //
 					.build(); //
-
-			executorService = VirtualThreadExecutorBuilder.newPool().concurrency(10) //
-					.threadNamePrefix("platform-asset-enriching") //
-					.build();
 
 			AttributeContexts.push(attributeContext);
 
@@ -218,17 +195,6 @@ public class PlatformAssetResolver implements AssetDependencyResolver, PlatformA
 
 				markCoreSyncModelsAsProvidedIfNeccessary();
 
-				for (Map.Entry<String, Promise<Optional<Part>>> entry : enrichingPromises.entrySet()) {
-					Promise<Optional<Part>> future = entry.getValue();
-					String partIdentity = entry.getKey();
-
-					try {
-						future.get();
-					} catch (Exception e) {
-						throw Exceptions.unchecked(e, "Error while enriching parts");
-					}
-				}
-
 				// transfer origins
 
 				for (PlatformAssetSolution assetSolution : solutionsByName.values()) {
@@ -239,7 +205,6 @@ public class PlatformAssetResolver implements AssetDependencyResolver, PlatformA
 
 			} finally {
 				AttributeContexts.pop();
-				executorService.shutdown();
 			}
 
 			return this;
@@ -403,20 +368,6 @@ public class PlatformAssetResolver implements AssetDependencyResolver, PlatformA
 		@Override
 		public PlatformAssetSolution getSolutionFor(CompiledDependencyIdentification dependency) {
 			return solutionsByDependencyName.get(CompiledDependencyIdentification.asString(dependency));
-		}
-
-		private <T> Promise<T> submit(Callable<T> callable) {
-			HubPromise<T> promise = new HubPromise<>();
-
-			executorService.execute(() -> {
-				try {
-					promise.accept(callable.call());
-				} catch (Throwable e) {
-					promise.onFailure(e);
-				}
-			});
-
-			return promise;
 		}
 
 		private void collectConfigurationSolution(PlatformAssetSolution classifiedSolution) {
@@ -612,19 +563,6 @@ public class PlatformAssetResolver implements AssetDependencyResolver, PlatformA
 			return nature;
 		}
 
-	}
-
-	private static void appendTime(ConfigurableConsoleOutputContainer sequence, TimeSpan span) {
-		double seconds = span.convertTo(TimeUnit.second).getValue();
-		String time = span.formatWithFloorUnitAndSubUnit();
-
-		if (seconds < 1) {
-			sequence.append(ConsoleOutputs.brightBlack(time));
-		} else if (seconds < 5) {
-			sequence.append(ConsoleOutputs.yellow(time));
-		} else {
-			sequence.append(ConsoleOutputs.red(time));
-		}
 	}
 
 }
