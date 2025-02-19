@@ -42,7 +42,6 @@ import com.braintribe.console.ConsoleOutputs;
 import com.braintribe.console.output.ConfigurableConsoleOutputContainer;
 import com.braintribe.devrock.mc.api.download.PartEnrichingContext;
 import com.braintribe.devrock.mc.api.event.EventBroadcasterAttribute;
-import com.braintribe.devrock.mc.api.event.EventContext;
 import com.braintribe.devrock.mc.api.event.EventHub;
 import com.braintribe.devrock.mc.api.repository.configuration.RepositoryReflection;
 import com.braintribe.devrock.mc.api.resolver.ArtifactDataResolution;
@@ -51,7 +50,6 @@ import com.braintribe.devrock.mc.api.transitive.ArtifactPathElement;
 import com.braintribe.devrock.mc.api.transitive.TransitiveDependencyResolver;
 import com.braintribe.devrock.mc.api.transitive.TransitiveResolutionContext;
 import com.braintribe.devrock.mc.core.commons.DownloadMonitor;
-import com.braintribe.devrock.model.mc.core.event.OnPartDownloaded;
 import com.braintribe.devrock.model.mc.reason.IncompleteArtifactResolution;
 import com.braintribe.devrock.model.mc.reason.UnresolvedDependency;
 import com.braintribe.devrock.model.mc.reason.UnresolvedPart;
@@ -184,8 +182,6 @@ public class PlatformAssetResolver implements AssetDependencyResolver, PlatformA
 		public PlatformAssetResolution resolve() {
 			EventHub eventHub = new EventHub();
 
-			// eventHub.addListener(OnPartDownloaded.T, this::onPartDownloaded);
-
 			AttributeContext attributeContext = AttributeContexts.derivePeek() //
 					.set(EventBroadcasterAttribute.class, eventHub) //
 					.build(); //
@@ -312,16 +308,6 @@ public class PlatformAssetResolver implements AssetDependencyResolver, PlatformA
 			}
 
 			return Collections.emptyList();
-		}
-
-		private void onPartDownloaded(EventContext context, OnPartDownloaded event) {
-			ConfigurableConsoleOutputContainer sequence = ConsoleOutputs.configurableSequence();
-			sequence.append("Downloaded ");
-			sequence.append(ArtifactOutputs.part(event.getPart()));
-
-			appendTime(sequence, event.getElapsedTime());
-
-			ConsoleOutputs.println(sequence);
 		}
 
 		private void markCoreSyncModelsAsProvidedIfNeccessary() {
