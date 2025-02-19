@@ -27,6 +27,7 @@ import com.braintribe.cfg.Required;
 import com.braintribe.exception.Exceptions;
 import com.braintribe.gm.model.reason.Maybe;
 import com.braintribe.gm.model.reason.Reason;
+import com.braintribe.logging.Logger;
 import com.braintribe.model.generic.GenericEntity;
 import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.processing.session.api.managed.ManagedGmSession;
@@ -46,6 +47,8 @@ import tribefire.module.api.DenotationTransformerRegistry;
 public class DenotationTransformationExecutor {
 
 	private DenotationTransformerRegistryImpl transformerRegistry;
+
+	private static final Logger log = Logger.getLogger(DenotationTransformationExecutor.class);
 
 	@Required
 	public void setTransformerRegistry(DenotationTransformerRegistryImpl transformerRegistry) {
@@ -86,14 +89,20 @@ public class DenotationTransformationExecutor {
 			try {
 				Maybe<T> result = tryRun(entity);
 
-				if (result.isSatisfied())
-					return result;
-				else
+				if (!result.isSatisfied())
 					return Reason.create(writeFailedProtocol(), result.<Reason> whyUnsatisfied()).asMaybe();
+
+				logProtocol();
+
+				return result;
 
 			} catch (Exception e) {
 				throw Exceptions.unchecked(e, writeFailedProtocol());
 			}
+		}
+
+		private void logProtocol() {
+			log.debug("Denotation transformation succeeded:" + writeProtocol());
 		}
 
 		private <T extends GenericEntity> Maybe<T> tryRun(GenericEntity entity) {
@@ -123,10 +132,15 @@ public class DenotationTransformationExecutor {
 		}
 
 		private String writeFailedProtocol() {
+			return "DENOTATION TRANFORMATION FAILED: " + writeProtocol();
+		}
+
+		private String writeProtocol() {
 			Iterator<GenericEntity> entityIt = entityEvolution.iterator();
 
 			StringBuilder sb = new StringBuilder();
-			sb.append("DENOTATION TRANFORMATION FAILED:");
+			sb.append("\n    DenotationId:");
+			sb.append(context.denotationId());
 			sb.append("\n    Input:\n        ");
 			sb.append(entityIt.next());
 			sb.append("\n    Target Type:\n        ");
