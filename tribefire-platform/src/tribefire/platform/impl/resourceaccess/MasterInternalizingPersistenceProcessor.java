@@ -54,6 +54,8 @@ public class MasterInternalizingPersistenceProcessor extends AbstractDispatching
 		this.delegateResourceAccessFactory = delegateResourceAccessFactory;
 	}
 	
+	// TODO delete this and completely get rid of AccessAspectAroundProceedRequest
+	// then accesses are no longer ServiceProcessors!!!
 	@Override
 	protected void configureDispatching(DispatchConfiguration<ServiceRequest, Object> dispatching) {
 		dispatching.register(AccessAspectAroundProceedRequest.T, (c,r) -> delegate.proceedAround(r));
