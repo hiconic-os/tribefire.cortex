@@ -58,6 +58,7 @@ import com.braintribe.model.aopaccessapi.AccessAspectInterceptorRequest;
 import com.braintribe.model.asset.PlatformAsset;
 import com.braintribe.model.check.service.CheckRequest;
 import com.braintribe.model.cortexapi.access.ExplorerStyle;
+import com.braintribe.model.cortexapi.access.collaboration.CollaborativePersistenceRequest;
 import com.braintribe.model.crypto.configuration.hashing.HashingConfiguration;
 import com.braintribe.model.deployment.Deployable;
 import com.braintribe.model.deployment.HardwiredDeployable;
@@ -385,6 +386,7 @@ public class CortexAccessInitializersSpace implements WireSpace {
 
 			mdEditor.onEntityType(CollaborativeAccess.T).addMetaData( //
 					extendDataModelWith_EveryIdIsString(session), //
+					extendServiceModelWith_CollaborativeSmoodApiModel(session), //
 					extendCsaModel_Set_StreamWith_ModuleSourceBinRetrieval(session) //
 			);
 
@@ -405,6 +407,15 @@ public class CortexAccessInitializersSpace implements WireSpace {
 		return result;
 	}
 
+	private ServiceModelExtension extendServiceModelWith_CollaborativeSmoodApiModel(ManagedGmSession session) {
+		GmMetaModel collabSmoodApiModel = session.getEntityByGlobalId(CollaborativePersistenceRequest.T.getModel().globalId());
+		
+		ServiceModelExtension result = session.create(ServiceModelExtension.T, "md:service-model-extension:" + CollaborativeAccess.T.getShortName());
+		result.getModels().add(collabSmoodApiModel);
+
+		return result;
+	}
+	
 	private ServiceModelExtension extendServiceModel_Process_PersistenceRequest_With_HardwiredDispatchingPersistenceProcessor(
 			ManagedGmSession session) {
 
