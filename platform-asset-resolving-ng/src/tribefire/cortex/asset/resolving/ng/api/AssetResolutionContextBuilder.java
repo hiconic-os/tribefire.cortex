@@ -28,6 +28,7 @@ public interface AssetResolutionContextBuilder {
 	AssetResolutionContextBuilder selectorFiltering(boolean selectorFiltering);
 	AssetResolutionContextBuilder includeDocumentation(boolean includeDocument);
 	AssetResolutionContextBuilder verboseOutput(boolean verboseOutput);
+	AssetResolutionContextBuilder dynamicOutput(boolean dynamicOutput);
 	AssetResolutionContextBuilder lenient(boolean lenient);
 	AssetResolutionContextBuilder runtime(boolean runtime);
 	AssetResolutionContextBuilder designtime(boolean designtime);

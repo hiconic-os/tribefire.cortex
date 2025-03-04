@@ -34,11 +34,16 @@ public class BasicAssetResolutionContext implements AssetResolutionContext, Asse
 	private boolean includeDocumentation;
 	private boolean selectorFiltering;
 	private boolean verboseOutput;
+	private boolean dynamicOutput;
 	private boolean runtime;
 	private boolean designtime;
+	private boolean lenient;
 	private String stage;
 	private final Set<String> tags = new HashSet<>();
-	private boolean lenient = false;
+
+	// ###################################################
+	// ## . . . . AssetResolutionContextBuilder . . . . ##
+	// ###################################################
 
 	@Override
 	public AssetResolutionContextBuilder session(ManagedGmSession session) {
@@ -71,6 +76,12 @@ public class BasicAssetResolutionContext implements AssetResolutionContext, Asse
 	}
 
 	@Override
+	public AssetResolutionContextBuilder dynamicOutput(boolean dynamicOutput) {
+		this.dynamicOutput = dynamicOutput;
+		return this;
+	}
+
+	@Override
 	public AssetResolutionContextBuilder runtime(boolean runtime) {
 		this.runtime = runtime;
 		return this;
@@ -93,10 +104,10 @@ public class BasicAssetResolutionContext implements AssetResolutionContext, Asse
 		this.tags.addAll(tags);
 		return this;
 	}
-	
+
 	@Override
 	public AssetResolutionContextBuilder lenient(boolean lenient) {
-		this.lenient  = lenient;
+		this.lenient = lenient;
 		return this;
 	}
 
@@ -105,54 +116,22 @@ public class BasicAssetResolutionContext implements AssetResolutionContext, Asse
 		return this;
 	}
 
-	@Override
-	public boolean isRuntime() {
-		return runtime;
-	}
+	// ###################################################
+	// ## . . . . . . AssetResolutionContext . . . . . .##
+	// ###################################################
 
-	@Override
-	public boolean isDesigntime() {
-		return designtime;
-	}
-
-	@Override
-	public String getStage() {
-		return stage;
-	}
-
-	@Override
-	public Set<String> getTags() {
-		return tags;
-	}
-	
-	@Override
-	public boolean lenient() {
-		return lenient;
-	}
-
-	@Override
-	public ManagedGmSession session() {
-		return session;
-	}
-
-	@Override
-	public DenotationMap<PlatformAssetNature, List<String>> natureParts() {
-		return natureParts;
-	}
-
-	@Override
-	public boolean selectorFiltering() {
-		return selectorFiltering;
-	}
-
-	@Override
-	public boolean includeDocumentation() {
-		return includeDocumentation;
-	}
-
-	@Override
-	public boolean verboseOutput() {
-		return verboseOutput;
-	}
+	// @formatter:off
+	@Override public boolean isRuntime() { return runtime; }
+	@Override public boolean isDesigntime() { return designtime; }
+	@Override public String getStage() { return stage; }
+	@Override public Set<String> getTags() { return tags; }
+	@Override public boolean lenient() { return lenient; }
+	@Override public ManagedGmSession session() { return session; }
+	@Override public DenotationMap<PlatformAssetNature, List<String>> natureParts() { return natureParts; }
+	@Override public boolean selectorFiltering() { return selectorFiltering; }
+	@Override public boolean includeDocumentation() { return includeDocumentation; }
+	@Override public boolean verboseOutput() { return verboseOutput; }
+	@Override public boolean dynamicOutput() { return dynamicOutput; }
+	// @formatter:on
 
 }

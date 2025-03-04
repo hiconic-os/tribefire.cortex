@@ -76,6 +76,8 @@ import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.generic.reflection.Property;
 import com.braintribe.model.generic.reflection.StandardCloningContext;
 import com.braintribe.model.processing.core.expert.api.DenotationMap;
+import com.braintribe.model.processing.service.api.OutputConfig;
+import com.braintribe.model.processing.service.api.OutputConfigAspect;
 import com.braintribe.utils.collection.impl.AttributeContexts;
 import com.braintribe.utils.lcd.LazyInitialized;
 
@@ -169,7 +171,7 @@ public class PlatformAssetResolver implements AssetDependencyResolver, PlatformA
 
 			AttributeContexts.push(attributeContext);
 
-			try (DownloadMonitor downloadMonitor = new DownloadMonitor(eventHub)) {
+			try (DownloadMonitor downloadMonitor = new DownloadMonitor(eventHub, false, 0, context.dynamicOutput())) {
 				downloadMonitor.setIndent(2);
 				downloadMonitor.setInitialLinebreak(true);
 

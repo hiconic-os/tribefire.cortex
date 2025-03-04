@@ -29,6 +29,7 @@ public interface AssetResolutionContext extends DependencySelectorContext {
 	boolean selectorFiltering();
 	boolean includeDocumentation();
 	boolean verboseOutput();
+	boolean dynamicOutput();
 	boolean lenient();
 	
 	static AssetResolutionContextBuilder build() {
