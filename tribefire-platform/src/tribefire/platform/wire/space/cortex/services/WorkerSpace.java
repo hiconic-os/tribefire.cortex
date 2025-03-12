@@ -15,6 +15,7 @@
 // ============================================================================
 package tribefire.platform.wire.space.cortex.services;
 
+import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 
 import com.braintribe.common.concurrent.TaskScheduler;
@@ -23,9 +24,6 @@ import com.braintribe.execution.ExtendedScheduledThreadPoolExecutor;
 import com.braintribe.execution.virtual.CountingVirtualThreadFactory;
 import com.braintribe.execution.virtual.VirtualThreadExecutor;
 import com.braintribe.execution.virtual.VirtualThreadExecutorBuilder;
-import com.braintribe.logging.Logger;
-import com.braintribe.model.processing.bootstrapping.TribefireRuntime;
-import com.braintribe.utils.lcd.StringTools;
 import com.braintribe.wire.api.annotation.Import;
 import com.braintribe.wire.api.annotation.Managed;
 
@@ -35,8 +33,6 @@ import tribefire.platform.wire.space.security.AuthContextSpace;
 
 @Managed
 public class WorkerSpace implements WorkerContract {
-
-	private static final Logger logger = Logger.getLogger(WorkerSpace.class);
 
 	@Import
 	private AuthContextSpace authContext;
@@ -58,19 +54,13 @@ public class WorkerSpace implements WorkerContract {
 	@Override
 	@Managed
 	public ExecutorService threadPool() {
-
-		int threadPoolSize = 250;
-		String threadPoolSizeString = TribefireRuntime.getProperty("TRIBEFIRE_PLATFORM_THREAD_POOL_SIZE");
-		if (!StringTools.isBlank(threadPoolSizeString)) {
-			try {
-				threadPoolSize = Integer.parseInt(threadPoolSizeString);
-			} catch (NumberFormatException nfe) {
-				logger.error("Could not parse the value " + threadPoolSizeString + " defined in variable TRIBEFIRE_PLATFORM_THREAD_POOL_SIZE", nfe);
-			}
-		}
-
-		VirtualThreadExecutor bean = VirtualThreadExecutorBuilder.newPool().concurrency(threadPoolSize).threadNamePrefix("tf.platform-")
-				.description("Platform Thread-Pool").build();
+		VirtualThreadExecutor bean = VirtualThreadExecutorBuilder.newPool() //
+				.concurrency(Integer.MAX_VALUE) //
+				.threadNamePrefix("tf.platform-") //
+				.description("Platform Thread-Pool") //
+				.interruptThreadsOnShutdown(true) //
+				.terminationTimeout(Duration.ofSeconds(30)) //
+				.build();
 		return bean;
 	}
 

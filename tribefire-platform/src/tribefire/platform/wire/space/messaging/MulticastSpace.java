@@ -99,7 +99,11 @@ public class MulticastSpace implements WireSpace {
 
 	@Managed
 	private ExecutorService threadPool() {
-		VirtualThreadExecutor bean = VirtualThreadExecutorBuilder.newPool().concurrency(250).threadNamePrefix("tribefire.multicast-master-").description("Master Multicast Consumer").build();
+		VirtualThreadExecutor bean = VirtualThreadExecutorBuilder.newPool() //
+				.concurrency(250) //
+				.threadNamePrefix("tribefire.multicast-master-") //
+				.description("Master Multicast Consumer") //
+				.build();
 		return bean;
 	}
 }

@@ -26,7 +26,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -107,7 +106,7 @@ public class GmMqRpcServer implements MessageListener, LifecycleAware, Worker {
 	private EntityType<? extends Destination> requestDestinationType;
 	private InstanceId consumerId;
 	private ExecutorService executor;
-	private Function<Message, ServiceRequest> requestExtractor = this::extractRequest;
+	private final Function<Message, ServiceRequest> requestExtractor = this::extractRequest;
 	private ThreadRenamer threadRenamer = ThreadRenamer.NO_OP;
 	private boolean trusted;
 	private long keepAliveInterval;
@@ -116,8 +115,6 @@ public class GmMqRpcServer implements MessageListener, LifecycleAware, Worker {
 	private String fromTag;
 	private Map<String, Message> processingRequests;
 	private DelayQueue<StillProcessingCheck> processingRequestsDelayQueue;
-	private volatile boolean shutdown = false;
-	private Future<?> stillProcessingTaskFuture;
 
 	private Function<ServiceRequest, CmdResolver> metaDataResolverProvider;
 
@@ -126,13 +123,14 @@ public class GmMqRpcServer implements MessageListener, LifecycleAware, Worker {
 	// lazy initialized
 	private final LazyInitialized<GmMqRpcServerMsg> msg = new LazyInitialized<>(GmMqRpcServerMsg::new);
 
+	private Thread stillProcessingTaskThread;
+
 	private class GmMqRpcServerMsg implements AutoCloseable {
 		public final MessagingSession messagingSession;
 		public final MessageProducer responseProducer;
 		public final MessageConsumer requestConsumer;
 		public final boolean enforceLocalOnly;
-		public volatile boolean closed = false;
-		private ActivityCounter activityCounter = new ActivityCounter();
+		private final ActivityCounter activityCounter = new ActivityCounter();
 
 		public GmMqRpcServerMsg() {
 			messagingSession = messagingSessionProvider.provideMessagingSession();
@@ -167,15 +165,11 @@ public class GmMqRpcServer implements MessageListener, LifecycleAware, Worker {
 			activityCounter.awaitZeroActivity(60_000);
 			try {
 				messagingSession.close();
-				closed = true;
 			} catch (MessagingException e) {
 				log.error("Failed to close the messaging session", e);
 			}
 		}
 
-		public boolean isClosed() {
-			return closed;
-		}
 	}
 
 	@Required
@@ -238,7 +232,7 @@ public class GmMqRpcServer implements MessageListener, LifecycleAware, Worker {
 		if (keepAliveInterval > 0) {
 			this.processingRequests = new ConcurrentHashMap<>();
 			this.processingRequestsDelayQueue = new DelayQueue<>();
-			this.stillProcessingTaskFuture = this.executor.submit(this::stillProcessingSignalTask);
+			this.stillProcessingTaskThread = Thread.ofVirtual().name("GmMqRpcServer-still-processing").start(this::stillProcessingSignalTask);
 		}
 
 		fromTag = "from(" + requestDestinationName + "/" + consumerId + ")";
@@ -248,13 +242,13 @@ public class GmMqRpcServer implements MessageListener, LifecycleAware, Worker {
 	public void preDestroy() {
 		log.debug(() -> getClass().getSimpleName() + " from " + consumerId + " is getting closed.");
 
-		shutdown = true;
-
 		msg.close();
 
-		if (stillProcessingTaskFuture != null)
+		if (stillProcessingTaskThread != null)
 			try {
-				stillProcessingTaskFuture.cancel(true);
+				stillProcessingTaskThread.interrupt();
+				stillProcessingTaskThread.join();
+
 			} catch (Exception e) {
 				log.error("Failed to cancel the keep alive task", e);
 			}
@@ -488,11 +482,11 @@ public class GmMqRpcServer implements MessageListener, LifecycleAware, Worker {
 
 			log.debug(() -> "Starting still processing signal task");
 
-			while (!shutdown) {
+			while (true) {
 				try {
 					StillProcessingCheck check = processingRequestsDelayQueue.poll(1, TimeUnit.SECONDS);
 
-					if (check != null && !shutdown) {
+					if (check != null) {
 						// Here we check if an expired entry matches a request which is still being processed
 
 						Message requestMessage = processingRequests.get(check.correlationId);
@@ -527,7 +521,7 @@ public class GmMqRpcServer implements MessageListener, LifecycleAware, Worker {
 						}
 					}
 				} catch (InterruptedException e) {
-					// Expected when shutting down.
+					break;
 				}
 			}
 
