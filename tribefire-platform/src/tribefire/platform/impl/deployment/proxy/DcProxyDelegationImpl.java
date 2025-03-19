@@ -17,8 +17,10 @@ package tribefire.platform.impl.deployment.proxy;
 
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import com.braintribe.cfg.InitializationAware;
 import com.braintribe.logging.Logger;
@@ -48,6 +50,7 @@ public class DcProxyDelegationImpl implements DeployRegistryListener, Initializa
 
 	private static final Logger log = Logger.getLogger(DcProxyDelegationImpl.class);
 
+	private final int proxyId;
 	private Object delegate;
 	private Object defaultDelegate;
 	private EntityType<? extends Deployable> componentType;
@@ -62,8 +65,15 @@ public class DcProxyDelegationImpl implements DeployRegistryListener, Initializa
 
 	private final Set<DcProxyListener> dcProxyListeners = new CopyOnWriteArraySet<>();
 
+	private static AtomicInteger counter = new AtomicInteger(1);
+
+	public DcProxyDelegationImpl() {
+		proxyId = counter.getAndIncrement();
+	}
+
 	public void setExternalId(String externalId) {
 		this.externalId = externalId;
+		logDebug(() -> "Setting externalId to " + externalId);
 	}
 
 	@Override
@@ -109,9 +119,11 @@ public class DcProxyDelegationImpl implements DeployRegistryListener, Initializa
 
 	@Override
 	public final Object getDelegate() throws DeploymentException {
-		if (delegate == null)
+		if (delegate == null) {
 			// wait for deployment if externalId is currently in deployment
+			logDebug(() -> "Waiting for deployment of [" + externalId + "]");
 			inDeploymentBlocker.accept(externalId);
+		}
 
 		Object component = delegate;
 		if (component != null)
@@ -124,8 +136,8 @@ public class DcProxyDelegationImpl implements DeployRegistryListener, Initializa
 	}
 
 	private String deployableCannotBeAccessedMsg() {
-		String msg = processingInstanceId.getApplicationId() + " cannot access deployable with external id [" + externalId + "]. Component type: "
-				+ componentType.getTypeSignature() + " It is probably not deployed.";
+		String msg = proxyUniqueName() + processingInstanceId.getApplicationId() + " cannot access deployable with external id [" + externalId
+				+ "]. Component type: " + componentType.getTypeSignature() + " It is probably not deployed.";
 
 		if (SchrodingerBean.isSchrodingerBeanId(externalId))
 			msg += " As this is a Schrodinger bean, it can only be accessed after cortex has been initialied. Maybe it's accessed too early? "
@@ -181,7 +193,8 @@ public class DcProxyDelegationImpl implements DeployRegistryListener, Initializa
 			}
 
 		} else if (log.isTraceEnabled()) {
-			log.trace("Proxy for [ " + externalId + " ] got notification from unrelated deployment: [ " + deployable.getExternalId() + " ]");
+			log.trace(proxyUniqueName() + "Proxy for [ " + externalId + " ] got notification from unrelated deployment: [ "
+					+ deployable.getExternalId() + " ]");
 		}
 	}
 
@@ -194,8 +207,6 @@ public class DcProxyDelegationImpl implements DeployRegistryListener, Initializa
 			lock.lock();
 			try {
 				clearDelegate();
-				if (log.isDebugEnabled())
-					log.debug("Proxy for [ " + externalId + " ] unreferenced delegate upon undeploy");
 			} finally {
 				lock.unlock();
 			}
@@ -229,10 +240,9 @@ public class DcProxyDelegationImpl implements DeployRegistryListener, Initializa
 		this.deployedUnit = deployedUnit;
 		this.delegate = deployedUnit.getComponent(componentType);
 
-		dcProxyListeners.forEach(l -> l.onDelegateSet(delegate));
+		logDebug(() -> "Delegate set for [" + externalId + "] upon " + source + ": " + delegate);
 
-		if (log.isDebugEnabled())
-			log.debug("Proxy for [ " + externalId + " ] resolved delegate upon " + source + ": " + delegate);
+		dcProxyListeners.forEach(l -> l.onDelegateSet(delegate));
 	}
 
 	private void clearDelegate() {
@@ -241,15 +251,28 @@ public class DcProxyDelegationImpl implements DeployRegistryListener, Initializa
 		this.deployedUnit = null;
 		this.delegate = null;
 
-		if (oldDelegate != null)
+
+		if (oldDelegate != null) {
+			logDebug(() -> "Cleared delegate for [" + externalId + "]: " + oldDelegate);
 			dcProxyListeners.forEach(l -> l.onDelegateCleared(oldDelegate));
+		}
 	}
 
 	private boolean haltCallback(Deployable deployable, DeployedUnit deployedUnit) {
 		if (deployable != null && deployedUnit != null)
 			return false;
 
-		log.error("Invalid callback state. deployable: [ " + deployable + " ] deployedUnit: [ " + deployedUnit + " ]", new NullPointerException());
+		log.error(proxyUniqueName() + "Invalid callback state. deployable: [ " + deployable + " ] deployedUnit: [ " + deployedUnit + " ]",
+				new NullPointerException());
 		return true;
+	}
+
+	private void logDebug(Supplier<String> msg) {
+		if (log.isDebugEnabled())
+			log.debug(proxyUniqueName() + msg.get());
+	}
+
+	private String proxyUniqueName() {
+		return "Proxy[" + proxyId + "] ";
 	}
 }
