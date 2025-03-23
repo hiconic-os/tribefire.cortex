@@ -51,14 +51,16 @@ public class DcProxyDelegationImpl implements DeployRegistryListener, Initializa
 	private static final Logger log = Logger.getLogger(DcProxyDelegationImpl.class);
 
 	private final int proxyId;
-	private Object delegate;
-	private Object defaultDelegate;
-	private EntityType<? extends Deployable> componentType;
-	private String externalId;
-	private DeployRegistry deployRegistry;
 	private final ReentrantLock lock = new ReentrantLock();
-	private InstanceId processingInstanceId;
-	private Consumer<String> inDeploymentBlocker = s -> {
+
+	// There was a real bug where delegate would be accessed and not seen even though it was set a few ms earlier (according to logs) 
+	private volatile String externalId;
+	private volatile Object delegate;
+	private volatile Object defaultDelegate;
+	private volatile EntityType<? extends Deployable> componentType;
+	private volatile DeployRegistry deployRegistry;
+	private volatile InstanceId processingInstanceId;
+	private volatile Consumer<String> inDeploymentBlocker = s -> {
 		/* noop */ };
 
 	private DeployedUnit deployedUnit;
