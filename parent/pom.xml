@@ -38,7 +38,7 @@ limitations under the License.
 
         <!-- externals -->
         <V.com.auxilii>1.1</V.com.auxilii>
-        <V.com.github.ben-manes.caffeine>2.8.8</V.com.github.ben-manes.caffeine>
+        <V.com.github.ben-manes.caffeine>3.2.0</V.com.github.ben-manes.caffeine>
         <V.com.github.jsqlparser>1.1</V.com.github.jsqlparser>
         <V.com.github.oshi>6.4.5</V.com.github.oshi>
         <V.com.google.guava>33.4.0-jre</V.com.google.guava>
