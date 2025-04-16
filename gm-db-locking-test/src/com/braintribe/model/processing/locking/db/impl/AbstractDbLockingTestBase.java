@@ -27,7 +27,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 import com.braintribe.common.db.DbVendor;
-import com.braintribe.common.db.SimpleDbTestSession;
+import com.braintribe.common.db.DerbySupportingDbTestSession;
 import com.braintribe.common.db.wire.contract.DbTestDataSourcesContract;
 import com.braintribe.model.processing.lock.api.ReentrableReadWriteLock;
 import com.braintribe.model.processing.locking.db.test.wire.contract.DbLockingTestContract;
@@ -52,7 +52,7 @@ public abstract class AbstractDbLockingTestBase {
 
 	protected static final int TIMEOUT_MS = 5000;
 
-	private static SimpleDbTestSession dbTestSession;
+	private static DerbySupportingDbTestSession dbTestSession;
 
 	private static WireContext<DbLockingTestContract> lockingWireContext;
 
@@ -60,7 +60,7 @@ public abstract class AbstractDbLockingTestBase {
 	public static void beforeClass() throws Exception {
 		FileTools.deleteDirectoryRecursively(new File("res"));
 
-		dbTestSession = SimpleDbTestSession.startDbTest();
+		dbTestSession = DerbySupportingDbTestSession.startDbTest();
 
 		lockingWireContext = Wire.context(DbLockingTestContract.class) //
 				.bindContracts(DbLockingTestContract.class) //
