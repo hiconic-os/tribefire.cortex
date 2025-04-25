@@ -25,6 +25,7 @@ import com.braintribe.cfg.Configurable;
 import com.braintribe.codec.marshaller.api.CharacterMarshaller;
 import com.braintribe.codec.marshaller.api.EntityFactory;
 import com.braintribe.codec.marshaller.api.GmDeserializationOptions;
+import com.braintribe.codec.marshaller.api.PlaceholderSupport;
 import com.braintribe.codec.marshaller.json.JsonStreamMarshaller;
 import com.braintribe.common.lcd.Numbers;
 import com.braintribe.config.configurator.Configurator;
@@ -32,9 +33,11 @@ import com.braintribe.config.configurator.ConfiguratorContext;
 import com.braintribe.config.configurator.ConfiguratorException;
 import com.braintribe.config.configurator.ContextAware;
 import com.braintribe.exception.Exceptions;
+import com.braintribe.gm.config.ConfigVariableResolver;
 import com.braintribe.logging.Logger;
 import com.braintribe.model.generic.GenericEntity;
 import com.braintribe.model.generic.reflection.EntityType;
+import com.braintribe.model.processing.bootstrapping.TribefireRuntime;
 import com.braintribe.utils.stream.TeeReader;
 
 import tribefire.platform.impl.configuration.EnvironmentDenotationRegistry;
@@ -49,10 +52,13 @@ public abstract class AbstractExternalConfigurator implements Configurator, Cont
 
 	private static final Logger log = Logger.getLogger(AbstractExternalConfigurator.class);
 
-	protected CharacterMarshaller marshaller = new JsonStreamMarshaller();
+	protected CharacterMarshaller marshaller;
 	protected ConfiguratorContext context;
 
 	public AbstractExternalConfigurator() {
+		JsonStreamMarshaller marshaller = new JsonStreamMarshaller();
+		marshaller.setUseBufferingDecoder(true);
+		this.marshaller = marshaller;
 	}
 
 	@Configurable
@@ -126,9 +132,18 @@ public abstract class AbstractExternalConfigurator implements Configurator, Cont
 
 			TeeReader teeReader = new TeeReader(reader, Numbers.MILLION);
 
-			GmDeserializationOptions options = GmDeserializationOptions.deriveDefaults().set(EntityFactory.class, EntityType::create).build();
+			boolean placeholderSupport = Boolean.TRUE.toString().equals(
+					TribefireRuntime.getProperty("CX_EXTERNAL_CONFIG_PLACEHOLDER_SUPPORT"));
+			
+			GmDeserializationOptions options = GmDeserializationOptions.deriveDefaults() //
+					.set(EntityFactory.class, EntityType::create) //
+					.set(PlaceholderSupport.class, placeholderSupport) //
+					.build();
 
 			Object result = marshaller.unmarshall(teeReader, options);
+			
+			if (placeholderSupport)
+				result = new ConfigVariableResolver().resolvePlaceholders(result).get();
 
 			if (result instanceof RegistryEntry) {
 				entries.add((RegistryEntry) result);
