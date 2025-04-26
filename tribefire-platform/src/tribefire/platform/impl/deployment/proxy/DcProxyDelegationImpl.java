@@ -53,7 +53,7 @@ public class DcProxyDelegationImpl implements DeployRegistryListener, Initializa
 	private final int proxyId;
 	private final ReentrantLock lock = new ReentrantLock();
 
-	// There was a real bug where delegate would be accessed and not seen even though it was set a few ms earlier (according to logs) 
+	// There was a real bug where delegate would be accessed and not seen even though it was set a few ms earlier (according to logs)
 	private volatile String externalId;
 	private volatile Object delegate;
 	private volatile Object defaultDelegate;
@@ -80,6 +80,7 @@ public class DcProxyDelegationImpl implements DeployRegistryListener, Initializa
 
 	@Override
 	public void changeExternalId(String externalId) {
+		logDebug(() -> "Changing externalId from " + this.externalId + " to " + externalId);
 		this.externalId = externalId;
 		this.fetchDelegate();
 	}
@@ -121,11 +122,8 @@ public class DcProxyDelegationImpl implements DeployRegistryListener, Initializa
 
 	@Override
 	public final Object getDelegate() throws DeploymentException {
-		if (delegate == null) {
-			// wait for deployment if externalId is currently in deployment
-			logDebug(() -> "Waiting for deployment of [" + externalId + "]");
-			inDeploymentBlocker.accept(externalId);
-		}
+		if (delegate == null)
+			waitForDeploymentIfNeeded();
 
 		Object component = delegate;
 		if (component != null)
@@ -135,6 +133,18 @@ public class DcProxyDelegationImpl implements DeployRegistryListener, Initializa
 			return defaultDelegate;
 
 		throw new DeploymentException(deployableCannotBeAccessedMsg());
+	}
+
+	private void waitForDeploymentIfNeeded() {
+		// wait for deployment if externalId is currently in deployment
+		logDebug(() -> "Waiting for deployment of [" + externalId + "]");
+
+		inDeploymentBlocker.accept(externalId);
+
+		if (delegate == null)
+			log.warn(proxyUniqueName() + "Something is broken, delegate is still null after waiting for deployment of [" + externalId + "].");
+		else
+			logDebug(() -> "Done waiting for deployment of [" + externalId + "].");
 	}
 
 	private String deployableCannotBeAccessedMsg() {
@@ -250,9 +260,8 @@ public class DcProxyDelegationImpl implements DeployRegistryListener, Initializa
 	private void clearDelegate() {
 		Object oldDelegate = delegate;
 
-		this.deployedUnit = null;
-		this.delegate = null;
-
+		deployedUnit = null;
+		delegate = null;
 
 		if (oldDelegate != null) {
 			logDebug(() -> "Cleared delegate for [" + externalId + "]: " + oldDelegate);
