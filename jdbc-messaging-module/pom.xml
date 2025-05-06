@@ -5,23 +5,25 @@
         <artifactId>parent</artifactId>
         <version>[3.0,3.1)</version>
     </parent>
-    <artifactId>jdbc-messaging-deployment-model</artifactId>
-    <version>3.0.2</version>
-    <properties>
-        <archetype>model</archetype>
-    </properties>
+    <artifactId>jdbc-messaging-module</artifactId>
+    <version>3.0.1</version>
+    <properties/>
     <dependencies>
         <dependency>
             <groupId>tribefire.cortex</groupId>
-            <artifactId>messaging-deployment-model</artifactId>
+            <artifactId>tribefire-web-module-api</artifactId>
+            <version>${V.tribefire.cortex}</version>
+        </dependency>
+        <dependency>
+            <groupId>tribefire.cortex</groupId>
+            <artifactId>jdbc-messaging-deployment-model</artifactId>
             <version>${V.tribefire.cortex}</version>
             <?tag asset ?>
         </dependency>
         <dependency>
             <groupId>tribefire.cortex</groupId>
-            <artifactId>database-deployment-model</artifactId>
+            <artifactId>jdbc-messaging</artifactId>
             <version>${V.tribefire.cortex}</version>
-            <?tag asset ?>
         </dependency>
     </dependencies>
 </project>

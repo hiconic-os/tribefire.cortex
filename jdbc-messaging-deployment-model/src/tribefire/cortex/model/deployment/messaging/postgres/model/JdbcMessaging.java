@@ -18,20 +18,15 @@ import com.braintribe.model.generic.annotation.Initializer;
 import com.braintribe.model.generic.annotation.meta.Mandatory;
 import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.generic.reflection.EntityTypes;
-import com.braintribe.model.messaging.expert.Messaging;
-import com.braintribe.model.plugin.Plugable;
+import com.braintribe.model.messagingdeployment.Messaging;
 
-/**
- * <p>
- * A {@link Plugable} denotation type holding the basic configuration properties of a Etcd connection factory.
- * 
- */
 public interface JdbcMessaging extends Messaging {
 
 	final EntityType<JdbcMessaging> T = EntityTypes.T(JdbcMessaging.class);
 
-	// TODO replace later with something else so also entra-id can be supported
-
+	/**
+	 * WARNING: the implementation only supports PostgreSQL.
+	 */
 	@Mandatory
 	DatabaseConnectionPool getConnectionPool();
 	void setConnectionPool(DatabaseConnectionPool connectionPool);

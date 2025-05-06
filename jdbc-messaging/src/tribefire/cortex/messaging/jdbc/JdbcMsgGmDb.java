@@ -1,9 +1,10 @@
 package tribefire.cortex.messaging.jdbc;
 
-import static com.braintribe.utils.SysPrint.spOut;
 import static com.braintribe.utils.lcd.CollectionTools2.isEmpty;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Base64;
 import java.util.List;
@@ -63,6 +64,8 @@ public class JdbcMsgGmDb {
 	private final AtomicInteger notificationCounter = new AtomicInteger();
 
 	public JdbcMsgGmDb(DataSource _dataSource, String _sqlPrefix, MessagingContext _msgContext, JdbcMsgConnection _msgConnection) {
+		verifyPostgres(_dataSource);
+
 		dataSource = _dataSource;
 		msgContext = _msgContext;
 		msgConnection = _msgConnection;
@@ -83,6 +86,27 @@ public class JdbcMsgGmDb {
 		tableQueue = new MsgTable(false);
 
 		newMsgListener = new JdbcMsgListener();
+	}
+
+	private static void verifyPostgres(DataSource dataSource) {
+		try (Connection conn = dataSource.getConnection()) {
+			DatabaseMetaData md = conn.getMetaData();
+			String databaseProductName = md.getDatabaseProductName();
+			if (!databaseProductName.toLowerCase().contains("postgre"))
+				throw new IllegalStateException(
+						"Cannot initialize JDBC messaging. Data source doesn't point to a PostgreSQL database, but: " + databaseProductName);
+
+			try {
+				conn.unwrap(org.postgresql.PGConnection.class);
+			} catch (Exception e) {
+				throw new IllegalStateException("Cannot initialize JDBC messaging. "
+						+ "Data source seems to be PostgreSQL, but obtaining PGConnection faile. Product name: " + databaseProductName, e);
+			}
+
+		} catch (SQLException e) {
+			throw Exceptions.unchecked(e, "Error while verifying database connection");
+		}
+
 	}
 
 	private class MsgTable {
@@ -117,8 +141,6 @@ public class JdbcMsgGmDb {
 			String bodyShort = null;
 			String bodyLong = null;
 
-			spOut(envelope.body.length());
-			
 			if (envelope.body.length() <= SHORT_BODY_LIMIT)
 				bodyShort = envelope.body;
 			else
@@ -317,7 +339,7 @@ public class JdbcMsgGmDb {
 			private MsgTable table;
 
 			private Set<JdbcMessageConsumer> consumers;
-			
+
 			/** For parameter format see {@link JdbcMsgGmDb#ensureTriggerFunction()} above. */
 			public MessageNotificationDispatcher(String parameterJson) {
 				this.parameterJson = parameterJson;
@@ -341,10 +363,10 @@ public class JdbcMsgGmDb {
 			private void tryDispatchMessageNotification() {
 				if (!parseNotification())
 					return;
-				
+
 				if (!loadConsumers())
 					return;
-				
+
 				if (!messageAcceptable())
 					return;
 
@@ -384,7 +406,7 @@ public class JdbcMsgGmDb {
 				consumers = msgConnection.getConsumersMap(isTopic).get(dstName);
 				if (!isEmpty(consumers))
 					return true;
-				
+
 				log.trace(() -> "No message consumers found. Message parameters: " + parameterJson);
 				return false;
 			}
