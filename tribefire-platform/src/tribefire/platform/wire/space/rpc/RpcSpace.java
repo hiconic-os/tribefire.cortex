@@ -28,6 +28,7 @@ import com.braintribe.gm.model.persistence.reflection.api.PersistenceReflectionR
 import com.braintribe.gm.model.user_session_service.CleanupUserSessions;
 import com.braintribe.gm.model.user_session_service.UserSessionRequest;
 import com.braintribe.logging.Logger;
+import com.braintribe.logging.Logger.LogLevel;
 import com.braintribe.model.accessapi.GmqlRequest;
 import com.braintribe.model.accessory.ModelRetrievingRequest;
 import com.braintribe.model.bapi.AvailableAccessesRequest;
@@ -350,7 +351,19 @@ public class RpcSpace implements WireSpace {
 
 	@Managed
 	public CompositeServiceProcessor compositeServiceProcessor() {
-		return new CompositeServiceProcessor();
+		CompositeServiceProcessor bean = new CompositeServiceProcessor();
+		String logLevelString = TribefireRuntime.getProperty("TF_COMPOSITE_SERVICE_PROCESSOR_ERROR_LOG_LEVEL");
+		if (!StringTools.isBlank(logLevelString)) {
+			try {
+				LogLevel logLevel = LogLevel.valueOf(logLevelString);
+				bean.setSwallowedExceptionsLogLevel(logLevel);
+			} catch (Exception e) {
+				logger.warn(
+						() -> "Could not parse the value " + logLevelString + " defined in variable TF_COMPOSITE_SERVICE_PROCESSOR_ERROR_LOG_LEVEL",
+						e);
+			}
+		}
+		return bean;
 	}
 
 	public ServiceProcessor<AsynchronousRequest, AsynchronousResponse> asynchronousServiceProcessor() {
