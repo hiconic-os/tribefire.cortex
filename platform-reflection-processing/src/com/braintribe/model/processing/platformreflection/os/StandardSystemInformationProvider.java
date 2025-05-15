@@ -15,6 +15,8 @@
 // ============================================================================
 package com.braintribe.model.processing.platformreflection.os;
 
+import static java.util.Collections.emptyMap;
+
 import java.awt.GraphicsEnvironment;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
@@ -32,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.TreeMap;
 import java.util.function.Supplier;
@@ -502,26 +505,38 @@ public class StandardSystemInformationProvider implements SystemInformationProvi
 	}
 
 	private Map<String, String> getFilteredMap(Map<String, String> sourceMap) {
+		if (sourceMap == null)
+			return emptyMap();
+
 		Map<String, String> filteredMap = new HashMap<>();
-		if (sourceMap != null) {
-			sourceMap.entrySet().stream().forEach(entry -> {
-				String name = entry.getKey();
-				String value = entry.getValue();
-				if (name != null) {
-					if (value == null) {
-						value = "null";
-					}
-					String lcName = name.toLowerCase();
-					if (!TribefireRuntime.isPropertyPrivate(name) && !lcName.contains("password") && !lcName.contains("pwd")
-							&& !lcName.contains("credential")) {
-						filteredMap.put(name, entry.getValue());
-					} else {
-						filteredMap.put(name, StringTools.simpleObfuscatePassword(value));
-					}
-				}
-			});
+
+		for (Entry<String, String> e : sourceMap.entrySet()) {
+			String name = e.getKey();
+			String value = e.getValue();
+
+			if (name == null)
+				continue;
+
+			if (needsObfuscation(name))
+				value = StringTools.simpleObfuscatePassword(value == null ? "null" : value);
+
+			filteredMap.put(name, value);
 		}
+
 		return filteredMap;
+	}
+
+	private boolean needsObfuscation(String name) {
+		String lcName = name.toLowerCase();
+
+		return TribefireRuntime.isPropertyPrivate(name) || //
+				lcName.endsWith("password") || //
+				lcName.endsWith("pwd") || //
+				lcName.endsWith("key") || //
+				lcName.endsWith("secret") || //
+				lcName.endsWith("token") || //
+				lcName.endsWith("credential") || //
+				lcName.endsWith("credentials");
 	}
 
 	protected List<PowerSource> getPowerInfo(oshi.SystemInfo si) {
