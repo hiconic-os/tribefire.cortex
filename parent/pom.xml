@@ -68,7 +68,7 @@ limitations under the License.
         <V.org.mariadb.jdbc>1.1.8</V.org.mariadb.jdbc>
         <V.org.mitre.dsmiley.httpproxy>1.9</V.org.mitre.dsmiley.httpproxy>
         <V.org.mockito>1.10.19</V.org.mockito>
-        <V.org.postgresql>42.2.12</V.org.postgresql>
+        <V.org.postgresql>42.7.7</V.org.postgresql>
 
         <!-- Tests -->
         <V.com.zaxxer>5.1.0</V.com.zaxxer>
