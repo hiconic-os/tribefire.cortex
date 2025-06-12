@@ -82,7 +82,7 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 	private Supplier<PersistenceGmSession> userStatisticsGmSessionProvider;
 	private TimeSpan sessionMaxIdleTime;
 	private TimeSpan sessionMaxAge;
-	private CredentialsHasher credentialsHasher = new CredentialsHasher();
+	private final CredentialsHasher credentialsHasher = new CredentialsHasher();
 	private Supplier<PersistenceGmSession> authGmSessionProvider;
 
 	/**
@@ -193,8 +193,10 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 		String acquirationKey = null;
 
 		if (credentials.acquirationSupportive()) {
-			// !
-			acquirationKey = credentialsHasher.hash(credentials, m -> requestContext.getRequestorAddress());
+			// The idea behind acquiring is that we don't open a new session but use an existing one in some cases
+			// E.g. when the client just always sends the same token (3rd party system)
+			// But when the requester address is different, i.e. it is the same user on a different device, we want a new session
+			acquirationKey = credentialsHasher.hash(credentials, m -> m.put("requestorAddress", requestContext.getRequestorAddress()));
 
 			Maybe<UserSession> acquiredUserSessionMaybe = acquireUserSession(requestContext, acquirationKey);
 

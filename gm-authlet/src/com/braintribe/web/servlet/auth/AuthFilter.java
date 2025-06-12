@@ -76,13 +76,27 @@ import com.braintribe.web.servlet.auth.providers.CookieProvider;
 import com.braintribe.web.servlet.auth.providers.CookieValueProvider;
 
 /**
- * AuthFilter extracts {@link Credentials} with help of configured web credential {@link WebCredentialsProvider providers} from
- * {@link HttpServletRequest}. Then it tries to open a {@link UserSession} with {@link OpenUserSession} and to authorize it based on optionally
- * configured {@link #setGrantedRoles(Set) granted roles}. All relevant information of an authorized {@link UserSession} will be pushed as a new
- * {@link AttributeContext} and the filter will proceed.
+ * AuthFilter handles authentication of the request. It:
+ * <ul>
+ * <li>extracts {@link Credentials} (sessionId/token/user+password) with help of configured {@link WebCredentialsProvider web credential providers}
+ * from the request
+ * <li>opens a {@link UserSession} with {@link OpenUserSession}
+ * <li>optionally checks authorization for this request - if {@link #setGrantedRoles(Set) granted roles} are configured, it verifies at least one of
+ * them is present in the UserSession's {@link UserSession#getEffectiveRoles() effective roles}
+ * </ul>
+ * 
+ * All relevant information of an authorized {@link UserSession} will be pushed as a new {@link AttributeContext} and the filter will proceed. The set
+ * aspects are:
+ * <ul>
+ * <li>{@link UserSessionAspect}
+ * <li>{@link IsAuthorizedAspect}
+ * <li>{@link RequestorUserNameAspect}
+ * <li>{@link RequestorSessionIdAspect}
+ * </ul>
+ * 
  * <p>
  * In case of an authentication or authorization problem the filter will act differently based its {@link #setStrict(boolean) strictness}. If strict
- * it will not proceed and will directy respond according to configuration. If lenient it will proceed without a {@link UserSession} but preserve the
+ * it will not proceed and will directly respond according to configuration. If lenient it will proceed without a {@link UserSession} but preserve the
  * reasoning of the missing {@link UserSession} with a {@link LenientAuthenticationFailure} attribute pushed as a new {@link AttributeContext}.
  * 
  * @author dirk.scheffler
@@ -100,7 +114,7 @@ public class AuthFilter implements HttpFilter, InitializationAware {
 	private Evaluator<ServiceRequest> requestEvaluator;
 	private CookieHandler cookieHandler;
 	private ThreadRenamer threadRenamer = ThreadRenamer.NO_OP;
-	private Map<String, WebCredentialsProvider> webCredentialProviders = new LinkedHashMap<>();
+	private final Map<String, WebCredentialsProvider> webCredentialProviders = new LinkedHashMap<>();
 
 	private Function<HttpServletRequest, String> sessionCookieProvider = new CookieValueProvider(new CookieProvider(Constants.COOKIE_SESSIONID));
 	private boolean throwExceptionOnAuthFailure = false;
@@ -153,10 +167,10 @@ public class AuthFilter implements HttpFilter, InitializationAware {
 	}
 
 	private class StatefulAuthFilter {
-		private HttpServletRequest request;
-		private HttpServletResponse response;
-		private FilterChain chain;
-		private AttributeContextBuilder contextBuilder = AttributeContexts.peek().derive();
+		private final HttpServletRequest request;
+		private final HttpServletResponse response;
+		private final FilterChain chain;
+		private final AttributeContextBuilder contextBuilder = AttributeContexts.peek().derive();
 
 		public StatefulAuthFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) {
 			super();
@@ -440,7 +454,6 @@ public class AuthFilter implements HttpFilter, InitializationAware {
 	/**
 	 * @param userSession
 	 *            the UserSession from which the thread name will be build or null to see a name with unauthorized mark
-	 * @return
 	 */
 	private String threadNamePart(UserSession userSession) {
 
