@@ -36,7 +36,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.braintribe.cfg.Required;
-import com.braintribe.execution.generic.ContextualizedFuture;
 import com.braintribe.execution.virtual.VirtualThreadExecutorBuilder;
 import com.braintribe.logging.Logger;
 import com.braintribe.model.deployment.Deployable;
@@ -100,7 +99,7 @@ public class ParallelDeploymentService implements DeploymentService {
 	private DeployedComponentResolver deployedComponentResolver;
 
 	// post initialized
-	private final Map<String, ContextualizedFuture<?, Deployable>> futures = new ConcurrentHashMap<>();
+	private final Map<String, DeploymentFuture> futures = new ConcurrentHashMap<>();
 	private final ReentrantLock deploymentLock = new ReentrantLock();
 
 	private ThreadContextScoping threadContextScoping;
@@ -156,7 +155,7 @@ public class ParallelDeploymentService implements DeploymentService {
 		private final DeployContext context;
 		private final ParallelDeploymentStatistics stats;
 
-		public ParallelDeploymentController(int deployableAmount, DeployContext context, ParallelDeploymentStatistics stats) {
+		public ParallelDeploymentController(DeployContext context, ParallelDeploymentStatistics stats) {
 			this.context = context;
 			this.stats = stats;
 
@@ -175,15 +174,14 @@ public class ParallelDeploymentService implements DeploymentService {
 		}
 
 		void waitForFinishedDeployment() {
-
 			stats.waitForFinishedDeploymentStart();
 
-			for (ContextualizedFuture<?, Deployable> f : futures.values()) {
+			for (DeploymentFuture f : futures.values()) {
 				try {
-					f.get();
-					context.succeeded(f.getContext());
+					f.waitForDeployment();
+					context.succeeded(f.deployable);
 				} catch (Throwable e) {
-					context.failed(f.getContext(), e);
+					context.failed(f.deployable, e);
 				}
 			}
 
@@ -262,7 +260,7 @@ public class ParallelDeploymentService implements DeploymentService {
 		final int size = deployContext.deployables().size();
 		stats.deployablesCount = size;
 
-		ParallelDeploymentController controller = new ParallelDeploymentController(size, deployContext, stats);
+		ParallelDeploymentController controller = new ParallelDeploymentController(deployContext, stats);
 		stats.stopWatch.intermediate("Controller Init");
 
 		stats.deploymentStarts();
@@ -273,10 +271,15 @@ public class ParallelDeploymentService implements DeploymentService {
 			if (externalId == null) {
 				log.error("No externalId set on deployable of type '" + deployable.entityType().getTypeSignature() + "'. Instance: " + deployable);
 			} else {
-				Future<?> future = controller.enqueue(deployable, stats);
-				futures.put(externalId, new ContextualizedFuture<>(future, deployable));
-				deployContext.started(deployable);
+				futures.put(externalId, new DeploymentFuture(deployable));
 			}
+		}
+
+		for (DeploymentFuture deploymentFuture : futures.values()) {
+			Deployable deployable = deploymentFuture.deployable;
+			Future<?> future = controller.enqueue(deployable, stats);
+			deploymentFuture.setFuture(future);
+			deployContext.started(deployable);
 		}
 
 		stats.stopWatch.intermediate("Promises Enqueued");
@@ -564,14 +567,13 @@ public class ParallelDeploymentService implements DeploymentService {
 	}
 
 	public void waitForDeployableIfInDeployment(String externalId) {
-
-		ContextualizedFuture<?, Deployable> contextualizedFuture = futures.get(externalId);
+		DeploymentFuture contextualizedFuture = futures.get(externalId);
 		if (contextualizedFuture == null) {
 			return;
 		}
 
 		try {
-			contextualizedFuture.get();
+			contextualizedFuture.waitForDeployment();
 		} catch (Throwable t) {
 			return;
 		}
