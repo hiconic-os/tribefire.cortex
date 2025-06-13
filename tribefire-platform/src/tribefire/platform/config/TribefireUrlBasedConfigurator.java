@@ -15,6 +15,9 @@
 // ============================================================================
 package tribefire.platform.config;
 
+import java.util.Arrays;
+import java.util.List;
+
 import com.braintribe.config.configurator.Configurator;
 import com.braintribe.model.processing.bootstrapping.TribefireRuntime;
 
@@ -30,6 +33,11 @@ public class TribefireUrlBasedConfigurator extends AbstractUrlBasedConfigurator 
 	@Override
 	protected String buildDefaultFileName() {
 		return "configuration.json";
+	}
+	
+	@Override
+	protected List<String> buildAltDefaultFileNames() {
+		return Arrays.asList("configuration.yaml");
 	}
 
 	@Override

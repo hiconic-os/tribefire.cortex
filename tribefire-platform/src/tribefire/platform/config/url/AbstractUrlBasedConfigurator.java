@@ -22,8 +22,11 @@ import java.io.Reader;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import com.braintribe.cartridge.common.processing.configuration.url.model.RegistryEntry;
 import com.braintribe.config.configurator.ConfiguratorException;
@@ -63,12 +66,18 @@ public abstract class AbstractUrlBasedConfigurator extends AbstractExternalConfi
 		String configurationInjectionUrlProperty = buildUrlProperty();
 		String configurationUrl = TribefireRuntime.getProperty(configurationInjectionUrlProperty);
 		if (configurationUrl == null) {
-			// No configuration URL found. Now try to find it in default location.
-			File defaultCfgFile = getDefaultConfigFile(this::buildDefaultFileName);
-			if (defaultCfgFile.exists()) {
-				log.info(() -> "No explicit configuration URL defined but found configuration file at default location: "
-						+ defaultCfgFile.getAbsolutePath());
-				configurationUrl = defaultCfgFile.toURI().toString();
+			
+			Iterator<String> it = Stream.concat(Stream.of(buildDefaultFileName()), buildAltDefaultFileNames().stream()).iterator();
+			
+			while (it.hasNext()) {
+				// No configuration URL found. Now try to find it in default location.
+				File defaultCfgFile = getDefaultConfigFile(it::next);
+				if (defaultCfgFile.exists()) {
+					log.info(() -> "No explicit configuration URL defined but found configuration file at default location: "
+							+ defaultCfgFile.getAbsolutePath());
+					configurationUrl = defaultCfgFile.toURI().toString();
+					break;
+				}
 			}
 		}
 
@@ -108,10 +117,14 @@ public abstract class AbstractUrlBasedConfigurator extends AbstractExternalConfi
 		String configurationInjectionUrlProperty = buildUrlProperty();
 		String configurationUrl = TribefireRuntime.getProperty(configurationInjectionUrlProperty);
 		if (configurationUrl == null) {
-			// No configuration URL found. Now try to find it in default location.
-			File defaultCfgFile = getDefaultConfigFile(this::buildDefaultFileName);
-			if (defaultCfgFile.exists()) {
-				return defaultCfgFile.toURI().toString();
+			Iterator<String> it = Stream.concat(Stream.of(buildDefaultFileName()), buildAltDefaultFileNames().stream()).iterator();
+			
+			while (it.hasNext()) {
+				// No configuration URL found. Now try to find it in default location.
+				File defaultCfgFile = getDefaultConfigFile(it::next);
+				if (defaultCfgFile.exists()) {
+					return defaultCfgFile.toURI().toString();
+				}
 			}
 		}
 		return configurationUrl;
@@ -126,15 +139,21 @@ public abstract class AbstractUrlBasedConfigurator extends AbstractExternalConfi
 	}
 
 	protected abstract String buildDefaultFileName();
+	
+	protected List<String> buildAltDefaultFileNames() {
+		return Collections.emptyList();
+	};
 
 	protected abstract String buildUrlProperty();
 
 	private List<RegistryEntry> readConfigurationUrl(String configurationUrl) {
 		try {
 			URL url = new URI(configurationUrl).toURL();
+			
+			String filename = url.getFile();
 
 			try (Reader is = new InputStreamReader(new BufferedInputStream(url.openStream()), "UTF-8")) {
-				return super.readConfigurationFromInputStream(is);
+				return super.readConfigurationFromInputStream(is, filename);
 			}
 
 		} catch (Exception e) {
