@@ -65,6 +65,7 @@ import com.braintribe.model.platformsetup.api.data.AssetNature;
 import com.braintribe.model.platformsetup.api.request.GetAssets;
 import com.braintribe.model.platformsetup.api.response.AssetCollection;
 import com.braintribe.model.processing.bootstrapping.TribefireRuntime;
+import com.braintribe.model.processing.platformreflection.os.StandardSystemInformationProvider;
 import com.braintribe.model.processing.query.fluent.EntityQueryBuilder;
 import com.braintribe.model.processing.session.api.persistence.PersistenceGmSession;
 import com.braintribe.model.processing.session.api.persistence.PersistenceGmSessionFactory;
@@ -363,32 +364,20 @@ public class StandardTribefireInformationProvider implements TribefireInformatio
 	}
 
 	protected Map<String, String> getRuntimeProperties() {
-
 		Map<String, String> map = new TreeMap<>();
 
 		Set<String> propertyNames = TribefireRuntime.getPropertyNames();
 
-		if (propertyNames != null) {
-			for (String name : propertyNames) {
-				if (name != null) {
+		for (String name : propertyNames) {
+			if (name == null)
+				continue;
 
-					if (!TribefireRuntime.isPropertyPrivate(name)) {
-
-						String property = TribefireRuntime.getProperty(name);
-						if (property != null) {
-							map.put(name, property);
-						}
-
-					} else {
-
-						map.put(name, "***");
-
-					}
-				}
-			}
+			String property = TribefireRuntime.getProperty(name);
+			if (property != null)
+				map.put(name, property);
 		}
 
-		return map;
+		return StandardSystemInformationProvider.getFilteredMap(map);
 	}
 
 	protected List<DeployableInfo> prepareDeployableInfos(List<Deployable> ds) {

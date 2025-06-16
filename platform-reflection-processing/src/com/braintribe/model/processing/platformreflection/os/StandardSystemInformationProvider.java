@@ -504,7 +504,7 @@ public class StandardSystemInformationProvider implements SystemInformationProvi
 		return getFilteredMap(System.getenv());
 	}
 
-	private Map<String, String> getFilteredMap(Map<String, String> sourceMap) {
+	public static Map<String, String> getFilteredMap(Map<String, String> sourceMap) {
 		if (sourceMap == null)
 			return emptyMap();
 
@@ -526,7 +526,7 @@ public class StandardSystemInformationProvider implements SystemInformationProvi
 		return filteredMap;
 	}
 
-	private boolean needsObfuscation(String name) {
+	private static boolean needsObfuscation(String name) {
 		String lcName = name.toLowerCase();
 
 		return TribefireRuntime.isPropertyPrivate(name) || //

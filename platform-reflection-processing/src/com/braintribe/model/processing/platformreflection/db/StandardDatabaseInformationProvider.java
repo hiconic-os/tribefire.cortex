@@ -142,23 +142,39 @@ public class StandardDatabaseInformationProvider implements DatabaseInformationP
 					entry.setConnectionDescription(oldDesc + ", " + dcp.getName());
 				}
 
-				entry.setMaximumPoolSize(dcp.getMaximumPoolSize() + entry.getMaximumPoolSize());
-				entry.setMinimumPoolSize(dcp.getMinimumPoolSize() + entry.getMinimumPoolSize());
+				entry.setMaximumPoolSize(addIntegers(dcp.getMaximumPoolSize(), entry.getMaximumPoolSize()));
+				entry.setMinimumPoolSize(addIntegers(entry.getMinimumPoolSize(), entry.getMinimumPoolSize()));
 				DatabaseConnectionPoolMetrics dcpMetrics = dcp.getMetrics();
 				if (dcpMetrics != null) {
 					DatabaseConnectionPoolMetrics entryMetrics = entry.getMetrics();
 
-					entryMetrics.setActiveConnections(dcpMetrics.getActiveConnections() + entryMetrics.getActiveConnections());
-					entryMetrics.setIdleConnections(dcpMetrics.getIdleConnections() + entryMetrics.getIdleConnections());
-					entryMetrics.setLeaseCount(dcpMetrics.getLeaseCount() + entryMetrics.getLeaseCount());
-					entryMetrics
-							.setThreadsAwaitingConnections(dcpMetrics.getThreadsAwaitingConnections() + entryMetrics.getThreadsAwaitingConnections());
-					entryMetrics.setTotalConnections(dcpMetrics.getTotalConnections() + entryMetrics.getTotalConnections());
+					entryMetrics.setActiveConnections(addIntegers(dcpMetrics.getActiveConnections(), entryMetrics.getActiveConnections()));
+					entryMetrics.setIdleConnections(addIntegers(dcpMetrics.getIdleConnections(), entryMetrics.getIdleConnections()));
+					entryMetrics.setLeaseCount(addLongs(dcpMetrics.getLeaseCount(), entryMetrics.getLeaseCount()));
+					entryMetrics.setThreadsAwaitingConnections(
+							addIntegers(dcpMetrics.getThreadsAwaitingConnections(), entryMetrics.getThreadsAwaitingConnections()));
+					entryMetrics.setTotalConnections(addIntegers(dcpMetrics.getTotalConnections(), entryMetrics.getTotalConnections()));
 				}
 			}
 		}
 
 		return newList(map.values());
+	}
+
+	private Integer addIntegers(Integer i1, Integer i2) {
+		if (i1 == null)
+			return i2;
+		if (i2 == null)
+			return i1;
+		return i1 + i2;
+	}
+
+	private Long addLongs(Long l1, Long l2) {
+		if (l1 == null)
+			return l2;
+		if (l2 == null)
+			return l1;
+		return l1 + l2;
 	}
 
 	private static String createMapKeyFromConnectionPool(DatabaseConnectionInfo dcp) {
