@@ -57,7 +57,7 @@ public class LockingWorker implements Runnable {
 	public void run() {
 
 		try {
-			Lock lock = locking.forIdentifier(IDENTIFIER).readLock();
+			Lock lock = locking.forIdentifier(IDENTIFIER).writeLock();
 
 			long start = System.currentTimeMillis();
 			int expectedNumber = -1;
