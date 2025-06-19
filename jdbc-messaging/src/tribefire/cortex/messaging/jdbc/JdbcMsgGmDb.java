@@ -100,7 +100,7 @@ public class JdbcMsgGmDb {
 				conn.unwrap(org.postgresql.PGConnection.class);
 			} catch (Exception e) {
 				throw new IllegalStateException("Cannot initialize JDBC messaging. "
-						+ "Data source seems to be PostgreSQL, but obtaining PGConnection faile. Product name: " + databaseProductName, e);
+						+ "Data source seems to be PostgreSQL, but obtaining PGConnection failed. Product name: " + databaseProductName, e);
 			}
 
 		} catch (SQLException e) {

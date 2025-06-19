@@ -28,8 +28,8 @@ import tribefire.cortex.messaging.jdbc.tests.JdbcMessagingInstance;
 @Category(SpecialEnvironment.class)
 public class JdbcMessagingTest {
 
-	private static JdbcMessagingInstance msgInstanceA = new JdbcMessagingInstance();
-	private static JdbcMessagingInstance msgInstanceB = new JdbcMessagingInstance();
+	private static JdbcMessagingInstance msgInstanceA;
+	private static JdbcMessagingInstance msgInstanceB;
 
 	@BeforeClass
 	public static void setup() {
