@@ -387,13 +387,12 @@ public class DbLocking implements Locking, LifecycleAware {
 		private final DbRwLock rwLock;
 		private final String reentranceId;
 		private final boolean isWriteLock;
-		private boolean s_locking; // to make sure writeLock is not re-entrant
+		private volatile boolean isWriteLocking; // to make sure writeLock is not re-entrant
 
 		public DistributedLock(DbRwLock rwLock, String reentranceId, boolean isWriteLock) {
 			this.rwLock = rwLock;
 			this.reentranceId = reentranceId;
 			this.isWriteLock = isWriteLock;
-			this.s_locking = false;
 		}
 
 		private String lockContext() {
@@ -437,7 +436,6 @@ public class DbLocking implements Locking, LifecycleAware {
 		}
 
 		private boolean tryLockMs(long tryMs) throws InterruptedException {
-			markLocking();
 
 			long now = System.currentTimeMillis();
 			long tryUntil = now + tryMs;
@@ -449,47 +447,52 @@ public class DbLocking implements Locking, LifecycleAware {
 			currentThread.setName(oldThreadName + " > waiting for lock " + rwLock.id);
 			try {
 				var successIndicator = new Box<Boolean>();
+				boolean hasWriteLocking = false;
 				while (true) {
-					JdbcTools.withConnection(dataSource, true, () -> "Trying to acquire lock " + rwLock.id, connection -> {
-						if (tryInsert(connection)) {
-							successIndicator.value = Boolean.TRUE;
-							return;
+					if (!hasWriteLocking)
+						hasWriteLocking = acquireWriteLocking();
+
+					if (hasWriteLocking) {
+						JdbcTools.withConnection(dataSource, true, () -> "Trying to acquire lock " + rwLock.id, connection -> {
+							if (tryInsert(connection)) {
+								successIndicator.value = Boolean.TRUE;
+								return;
+							}
+
+							if (tryIncreaseCount(connection)) {
+								successIndicator.value = Boolean.TRUE;
+								return;
+							}
+
+							if (!deleteLockIfExpired(connection))
+								return;
+
+							if (tryInsert(connection)) {
+								successIndicator.value = Boolean.TRUE;
+								return;
+							}
+						});
+
+						if (successIndicator.value != null) {
+							refresher.startRefreshing(rwLock);
+							return true;
 						}
-
-						if (tryIncreaseCount(connection)) {
-							successIndicator.value = Boolean.TRUE;
-							return;
-						}
-
-						if (!deleteLockIfExpired(connection))
-							return;
-
-						if (tryInsert(connection)) {
-							successIndicator.value = Boolean.TRUE;
-							return;
-						}
-					});
-
-					if (successIndicator.value != null) {
-						refresher.startRefreshing(rwLock);
-						return true;
 					}
 
 					long millisLeft = tryUntil - System.currentTimeMillis();
 					if (millisLeft <= 0) {
-						unmarkLocking();
+						releaseWriteLocking();
 						return false;
 					}
-
 					waitBeforeTryLockAgain(millisLeft);
 				}
 
 			} catch (InterruptedException e) {
-				unmarkLocking();
+				releaseWriteLocking();
 				throw e;
 
 			} catch (Exception e) {
-				unmarkLocking();
+				releaseWriteLocking();
 				throw new RuntimeException("Could not get lock.", e);
 
 			} finally {
@@ -633,7 +636,7 @@ public class DbLocking implements Locking, LifecycleAware {
 			} catch (Exception e) {
 				log.warn("Error while releasing lock " + rwLock.id, e);
 			} finally {
-				unmarkLocking();
+				releaseWriteLocking();
 			}
 		}
 
@@ -655,25 +658,24 @@ public class DbLocking implements Locking, LifecycleAware {
 			return deleted.value > 0;
 		}
 
-		private void markLocking() {
+		private boolean acquireWriteLocking() {
 			if (!isWriteLock)
-				return;
+				return true;
+
+			if (isWriteLocking)
+				return false;
 
 			synchronized (this) {
-				if (s_locking)
-					throw new IllegalStateException("Cannot try lock " + lockContext() + " instance, it is already locked.");
-				s_locking = true;
+				if (isWriteLocking)
+					return false;
+
+				return isWriteLocking = true;
 			}
 		}
 
-		private void unmarkLocking() {
-			if (!isWriteLock)
-				return;
-
-			// Is this needed to be sure that another thread who enters markLocking sees this?
-			synchronized (this) {
-				s_locking = false;
-			}
+		private void releaseWriteLocking() {
+			if (isWriteLock)
+				isWriteLocking = false;
 		}
 
 		@Override
