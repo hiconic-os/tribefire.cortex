@@ -76,10 +76,11 @@ import com.braintribe.web.servlet.auth.providers.CookieProvider;
 import com.braintribe.web.servlet.auth.providers.CookieValueProvider;
 
 /**
- * AuthFilter handles authentication of the request. It:
+ * AuthFilter handles authentication of the request if needed. It:
  * <ul>
  * <li>extracts {@link Credentials} (sessionId/token/user+password) with help of configured {@link WebCredentialsProvider web credential providers}
  * from the request
+ * <li>
  * <li>opens a {@link UserSession} with {@link OpenUserSession}
  * <li>optionally checks authorization for this request - if {@link #setGrantedRoles(Set) granted roles} are configured, it verifies at least one of
  * them is present in the UserSession's {@link UserSession#getEffectiveRoles() effective roles}
