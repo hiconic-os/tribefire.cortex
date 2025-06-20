@@ -198,4 +198,9 @@ public class JdbcMsgConnection implements MessagingConnection {
 		db.sendMessage(envelope, destination);
 	}
 
+	/** @see JdbcConnectionProvider#deleteExpiredMessages() */
+	public int deleteExpiredMessages() {
+		return db.deleteExpiredMessages();
+	}
+
 }

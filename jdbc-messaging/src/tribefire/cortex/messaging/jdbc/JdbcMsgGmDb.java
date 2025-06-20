@@ -7,6 +7,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Base64;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -109,6 +110,14 @@ public class JdbcMsgGmDb {
 
 	}
 
+	/** @see JdbcConnectionProvider#deleteExpiredMessages() */
+	public int deleteExpiredMessages() {
+		int tDeleted = tableTopic.deleteExpiredMessages();
+		int qDeleted = tableQueue.deleteExpiredMessages();
+
+		return tDeleted + qDeleted;
+	}
+
 	private class MsgTable {
 
 		private static final int SHORT_BODY_LIMIT = 1000;
@@ -117,12 +126,13 @@ public class JdbcMsgGmDb {
 		// short one - up to SHORT_BODY_LIMIT, is passed as part of the notification (which has a limit of 8K bytes)
 		// long one has to be queried extra
 		public final GmColumn<Long> colIdLong = gmDb.autoIncrementPrimaryKeyCol("id");
+		public final GmColumn<Date> colCreated = gmDb.date("created").done();
 		public final GmColumn<String> colBodyShort = gmDb.string("bodyShort").done();
 		public final GmColumn<String> colBodyLong = gmDb.string("bodyLong").done();
 		public final GmColumn<String> colDstName = gmDb.shortString255("dstName").done();
 		public final GmColumn<String> colAddresseeNodeId = gmDb.shortString255("nodeId").done();
 		public final GmColumn<String> colAddresseeAppId = gmDb.shortString255("appId").done();
-		public final GmColumn<Long> colExpiration = gmDb.longCol("expiration").done();
+		public final GmColumn<Long> colExpiration = gmDb.longCol("expiration").done(); // null is treated as never expired
 
 		public final GmTable table;
 
@@ -132,7 +142,7 @@ public class JdbcMsgGmDb {
 			GmIndex idxExpir = gmDb.index(sqlPrefix + "idx_expir_" + topicOrQueue, colExpiration);
 
 			table = gmDb.newTable(sqlPrefix + topicOrQueue) //
-					.withColumns(colIdLong, colBodyShort, colBodyLong, colDstName, colAddresseeNodeId, colAddresseeAppId, colExpiration) //
+					.withColumns(colIdLong, colCreated, colBodyShort, colBodyLong, colDstName, colAddresseeNodeId, colAddresseeAppId, colExpiration) //
 					.withIndices(idxExpir) //
 					.done();
 		}
@@ -148,7 +158,7 @@ public class JdbcMsgGmDb {
 
 			try {
 				table.insert( //
-						colBodyShort, bodyShort, //
+						colCreated, new Date(), colBodyShort, bodyShort, //
 						colBodyLong, bodyLong, //
 						colDstName, destination.getName(), //
 						colAddresseeNodeId, envelope.addresseeNodeId, //
@@ -177,6 +187,21 @@ public class JdbcMsgGmDb {
 				log.warn("Unexpected null message body for id " + id + ". Table: " + table.getName());
 
 			return value;
+		}
+
+		public int deleteExpiredMessages() {
+			Long expirationCutoff = System.currentTimeMillis();
+			Date yesterday = new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000);
+
+			// For now... since expiration is 0 by default, let's delete every message older than 1 day.
+			String _expiration = colExpiration.getSingleSqlColumn();
+			String _created = colCreated.getSingleSqlColumn();
+
+			// @formatter:off
+			return table.delete()
+					.where("(" + _expiration + "< ? and " + _expiration + " != ?) or ( " + _created + " < ? )",
+							                      expirationCutoff,            0,                         yesterday);
+			// @formatter:on
 		}
 
 	}
@@ -493,6 +518,7 @@ public class JdbcMsgGmDb {
 		}
 
 	}
+
 	// #################################################
 	// # . . . . . . . . . . Misc . . . . . . . . . . .#
 	// #################################################

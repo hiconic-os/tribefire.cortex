@@ -7,5 +7,5 @@ public class JdbcMessageEnvelope {
 	public String body;
 	public String addresseeNodeId;
 	public String addresseeAppId;
-	public Long expiration;
+	public long expiration;
 }

@@ -22,6 +22,7 @@ import javax.sql.DataSource;
 
 import com.braintribe.cfg.Required;
 import com.braintribe.logging.Logger;
+import com.braintribe.model.messaging.Message;
 import com.braintribe.transport.messaging.api.MessagingConnectionProvider;
 import com.braintribe.transport.messaging.api.MessagingContext;
 import com.braintribe.transport.messaging.api.MessagingException;
@@ -29,6 +30,8 @@ import com.braintribe.transport.messaging.impl.StandardMessagingSessionProvider;
 
 /**
  * {@link MessagingConnectionProvider} implementation for providing {@link JdbcMsgConnection}(s).
+ * <p>
+ * NOTE: Messages with {@link Message#getExpiration()} b
  * 
  * @see MessagingConnectionProvider
  * @see JdbcMsgConnection
@@ -71,6 +74,18 @@ public class JdbcConnectionProvider implements MessagingConnectionProvider<JdbcM
 		}
 
 		return connection;
+	}
+
+	/**
+	 * This method should be called periodically to delete expired topic messages.
+	 */
+	public int deleteExpiredMessages() {
+		int deleted = 0;
+
+		for (JdbcMsgConnection connection : connections)
+			deleted += connection.deleteExpiredMessages();
+
+		return deleted;
 	}
 
 	@Override

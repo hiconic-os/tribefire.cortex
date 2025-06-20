@@ -88,6 +88,45 @@ public class JdbcMessagingTest {
 		qConsumerA1.close();
 	}
 
+	/**
+	 * IMPORTANT!!!
+	 * 
+	 * This might in theory fail, if previous tests left some messages over, which expire during the run of this test. To be sure, run as a stand
+	 * alone test.
+	 */
+	@Test
+	public void testDeletesExpiredMessages() throws Exception {
+		Topic topic = Topic.create("T1");
+
+		MessageConsumer tConsumerA1 = msgInstanceA.session.createMessageConsumer(topic);
+		MessageConsumer tConsumerB1 = msgInstanceB.session.createMessageConsumer(topic);
+
+		// clean as much as possible
+		deleteExpiredMessages();
+
+		MessageProducer msgProducer = msgInstanceA.session.createMessageProducer();
+
+		Message msg = createMessage("TOPIC");
+		msg.setTimeToLive(100L);
+
+		msgProducer.sendMessage(msg, topic);
+		msgProducer.close();
+
+		assertReceive(tConsumerA1, "TOPIC");
+		assertReceive(tConsumerB1, "TOPIC");
+
+		assertNoMoreMessage(tConsumerA1);
+		assertNoMoreMessage(tConsumerB1);
+
+		Thread.sleep(100);
+
+		assertDeletesExpired(1);
+		assertDeletesExpired(0);
+
+		tConsumerA1.close();
+		tConsumerB1.close();
+	}
+
 	private void assertReceive(MessageConsumer consumer, String expectedText) {
 		Message msg = consumer.receive();
 		assertThat(msg).isNotNull();
@@ -135,6 +174,15 @@ public class JdbcMessagingTest {
 	private void assertNoMoreMessage(MessageConsumer consumer) {
 		Message msg = consumer.receive(100);
 		assertThat(msg).isNull();
+	}
+
+	private void assertDeletesExpired(int expected) {
+		int deleted = deleteExpiredMessages();
+		assertThat(deleted).isEqualTo(expected);
+	}
+
+	private int deleteExpiredMessages() {
+		return msgInstanceA.connectionProvider.deleteExpiredMessages();
 	}
 
 	private Message createMessage(String text) {

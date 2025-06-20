@@ -1,14 +1,19 @@
 
 package tribefire.cortex.messaging.jdbc.wire.space;
 
+import java.util.concurrent.TimeUnit;
+
 import javax.sql.DataSource;
 
+import com.braintribe.common.concurrent.ScheduledTask;
+import com.braintribe.common.concurrent.TaskScheduler;
 import com.braintribe.gm.model.reason.Maybe;
 import com.braintribe.model.deployment.database.pool.DatabaseConnectionPool;
 import com.braintribe.model.processing.deployment.api.ExpertContext;
 import com.braintribe.model.processing.deployment.api.binding.DenotationBindingBuilder;
 import com.braintribe.wire.api.annotation.Import;
 import com.braintribe.wire.api.annotation.Managed;
+import com.braintribe.wire.api.scope.InstanceConfiguration;
 
 import tribefire.cortex.messaging.jdbc.JdbcConnectionProvider;
 import tribefire.cortex.model.deployment.messaging.postgres.model.JdbcMessaging;
@@ -65,7 +70,23 @@ public class JdbcMessagingModuleSpace implements TribefireModuleContract {
 		bean.setDataSource(dataSource);
 		bean.setMessagingContext(tfPlatform.messaging().context());
 
+		configureLockRefreshing(bean, InstanceConfiguration.currentInstance());
+
 		return bean;
+	}
+
+	private void configureLockRefreshing(JdbcConnectionProvider bean, InstanceConfiguration instanceConfiguration) {
+
+		int refreshHour = 1;
+
+		TaskScheduler scheduler = tfPlatform.worker().taskScheduler();
+		ScheduledTask task = scheduler
+				.scheduleAtFixedRate("db-locking-refresher", bean::deleteExpiredMessages, refreshHour, refreshHour, TimeUnit.HOURS).done();
+
+		instanceConfiguration.onDestroy(() -> {
+			task.cancel();
+			// Await termination?
+		});
 	}
 
 }

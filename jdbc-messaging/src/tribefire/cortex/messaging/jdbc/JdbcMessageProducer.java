@@ -104,9 +104,11 @@ public class JdbcMessageProducer extends JdbcAbstractMessageHandler implements M
 		byte[] messageBody = messagingContext.marshallMessage(message);
 		String encodedMessageBody = Base64.getEncoder().encodeToString(messageBody);
 
+		Long expiration = message.getExpiration();
+
 		JdbcMessageEnvelope envelope = new JdbcMessageEnvelope();
 		envelope.body = encodedMessageBody;
-		envelope.expiration = message.getExpiration();
+		envelope.expiration = expiration != null ? expiration : System.currentTimeMillis() + timeToLive;
 
 		Map<String, Object> props = message.getProperties();
 		envelope.addresseeNodeId = (String) props.get(MessageProperties.addreseeAppId.getName());
