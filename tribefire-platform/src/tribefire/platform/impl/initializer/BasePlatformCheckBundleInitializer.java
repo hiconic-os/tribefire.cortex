@@ -39,7 +39,6 @@ public class BasePlatformCheckBundleInitializer extends SimplePersistenceInitial
 
 		CheckBundle baseCheckBundleFunctionality = session.create(CheckBundle.T, "398c462e-685d-4286-8b46-fdd46d000dca");
 		baseCheckBundleFunctionality.setName("Base Platform Functionality Checks");
-		baseCheckBundleFunctionality.setIsPlatformRelevant(false);
 		baseCheckBundleFunctionality.setCoverage(CheckCoverage.functional);
 		baseCheckBundleFunctionality.getChecks().add(functionalityProcessor);
 
@@ -47,7 +46,6 @@ public class BasePlatformCheckBundleInitializer extends SimplePersistenceInitial
 
 		CheckBundle baseCheckBundleConnectivity = session.create(CheckBundle.T, "31798088-af54-4467-b33f-5794f9bb573c");
 		baseCheckBundleConnectivity.setName("Base Platform Connectivity Checks");
-		baseCheckBundleConnectivity.setIsPlatformRelevant(false);
 		baseCheckBundleConnectivity.setCoverage(CheckCoverage.connectivity);
 		baseCheckBundleConnectivity.getChecks().add(connectivityProcessor);
 
@@ -55,7 +53,6 @@ public class BasePlatformCheckBundleInitializer extends SimplePersistenceInitial
 
 		CheckBundle baseCheckBundleVitality = session.create(CheckBundle.T, "a8a61b8d-d354-4be3-a084-c353e7ae0268");
 		baseCheckBundleVitality.setName("Base Platform Vitality Checks");
-		baseCheckBundleVitality.setIsPlatformRelevant(true);
 		baseCheckBundleVitality.setCoverage(CheckCoverage.vitality);
 		baseCheckBundleVitality.getChecks().add(vitalityProcessor);
 

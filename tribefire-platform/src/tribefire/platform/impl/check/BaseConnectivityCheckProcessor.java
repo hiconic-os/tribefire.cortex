@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import com.braintribe.cfg.Configurable;
@@ -59,8 +60,6 @@ public class BaseConnectivityCheckProcessor implements CheckProcessor {
 
 	private static final Logger logger = Logger.getLogger(BaseConnectivityCheckProcessor.class);
 
-	private final CheckResultEntry lockCheckResultEntry = null;
-	private final CheckResultEntry leadershipCheckResultEntry = null;
 	private ScheduledExecutorService scheduledExecutorService;
 	private DatabaseInformationProvider databaseInformationProvider;
 
@@ -70,41 +69,50 @@ public class BaseConnectivityCheckProcessor implements CheckProcessor {
 
 	@Override
 	public CheckResult check(ServiceRequestContext requestContext, CheckRequest request) {
-
 		CheckResult response = CheckResult.T.create();
-
-		if (lockCheckResultEntry != null) {
-			response.getEntries().add(lockCheckResultEntry);
-		}
-		if (leadershipCheckResultEntry != null) {
-			response.getEntries().add(leadershipCheckResultEntry);
-		}
 
 		Map<String, Future<List<CheckResultEntry>>> futures = new HashMap<>();
 		futures.put("Connection Pools", scheduledExecutorService.submit(this::checkConnectionPools));
 		futures.put("Messaging", scheduledExecutorService.submit(this::checkMessaging));
 
+		long waitTill = System.currentTimeMillis() + 10_000;
 		for (Map.Entry<String, Future<List<CheckResultEntry>>> futureSet : futures.entrySet()) {
 			String type = futureSet.getKey();
 			Future<List<CheckResultEntry>> future = futureSet.getValue();
 
 			try {
-				List<CheckResultEntry> list = future.get(10, TimeUnit.SECONDS);
-				if (list != null) {
-					response.getEntries().addAll(list);
-				}
+				long waitFor = Math.max(10,  waitTill - System.currentTimeMillis());
+
+				List<CheckResultEntry> list = future.get(waitFor, TimeUnit.MILLISECONDS);
+				response.getEntries().addAll(list);
+
 			} catch (InterruptedException ie) {
 				logger.debug(() -> "Got interrupted while waiting for check results.");
 				break;
+
 			} catch (TimeoutException te) {
 				logger.warn(() -> "Got a timeout while waiting for check results of " + type);
+				response.getEntries().add( //
+						newEntry(type, "Timed out within 10 seconds.", CheckStatus.warn));
+
 			} catch (Exception e) {
 				logger.warn(() -> "Got an error while getting result for " + type, e);
+				response.getEntries().add( //
+						newEntry(type, "Exception: " + e.getMessage(), CheckStatus.fail));
 			}
 		}
 
 		return response;
 
+	}
+
+	private CheckResultEntry newEntry(String type, String description, CheckStatus status) {
+		CheckResultEntry entry = CheckResultEntry.T.create();
+		entry.setName("Type: " + type);
+		entry.setDetails(description);
+		entry.setCheckStatus(status);
+
+		return entry;
 	}
 
 	private List<CheckResultEntry> checkMessaging() {
@@ -251,37 +259,23 @@ public class BaseConnectivityCheckProcessor implements CheckProcessor {
 		for (DatabaseConnectionInfo cp : connectionPools) {
 			DatabaseConnectionPoolMetrics metrics = cp.getMetrics();
 
-			Integer idleConnections = metrics.getIdleConnections();
-			if (idleConnections == null) {
-				idleConnections = 0;
-			}
-
-			Integer awaiting = metrics.getThreadsAwaitingConnections();
-			if (awaiting == null) {
-				awaiting = 0;
-			}
-
-			Integer active = metrics.getActiveConnections();
-			if (active == null) {
-				active = 0;
-			}
-
-			Integer total = metrics.getTotalConnections();
-			if (total == null) {
-				total = 0;
-			}
+			String idleConnections = getNumberOrDash(metrics, DatabaseConnectionPoolMetrics::getIdleConnections);
+			String awaiting = getNumberOrDash(metrics, DatabaseConnectionPoolMetrics::getThreadsAwaitingConnections);
+			String active = getNumberOrDash(metrics, DatabaseConnectionPoolMetrics::getActiveConnections);
+			String total = getNumberOrDash(metrics, DatabaseConnectionPoolMetrics::getTotalConnections);
 
 			Integer maxPoolSize = cp.getMaximumPoolSize();
 			if (maxPoolSize == null) {
 				maxPoolSize = 0;
 			}
 
-			if (awaiting > 5) {
+			if (metrics != null && metrics.getThreadsAwaitingConnections() > 5) {
 				if (logger.isDebugEnabled())
 					logger.debug("There are " + awaiting + " threads waiting for a connection.");
 				// Note: this used to trigger a warning, but it might be legit that there are way more processes
 				// than connections in the pool
 				entry.setCheckStatus(CheckStatus.ok);
+
 			} else {
 				entry.setCheckStatus(CheckStatus.ok);
 			}
@@ -296,6 +290,17 @@ public class BaseConnectivityCheckProcessor implements CheckProcessor {
 		}
 		entry.setDetails(sb.toString());
 		return result;
+	}
+
+	private String getNumberOrDash(DatabaseConnectionPoolMetrics metrics, Function<DatabaseConnectionPoolMetrics, Integer> getter) {
+		if (metrics == null)
+			return "-";
+
+		Integer value = getter.apply(metrics);
+		if (value == null)
+			return "0";
+
+		return value.toString();
 	}
 
 	@Required

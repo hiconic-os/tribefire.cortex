@@ -695,8 +695,6 @@ public class CheckBundlesProcessor extends AbstractDispatchingServiceProcessor<C
 			if (b instanceof HealthCheck) {
 				b.setCoverage(CheckCoverage.vitality);
 				b.setName("Health Check");
-
-				b.setIsPlatformRelevant(true);
 			}
 		}
 

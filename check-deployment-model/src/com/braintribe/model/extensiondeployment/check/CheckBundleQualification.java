@@ -58,11 +58,10 @@ public interface CheckBundleQualification extends HasName {
 	Set<String> getRoles();
 	void setRoles(Set<String> roles);
 	
-	/**
-	 * @deprecated This used to mark deployables which are not in custom cartridges. They don't exist anymore, so this is always set to true and thus
-	 *             pointless.
-	 */
+	/** @deprecated Allegedly made sense with cartridges. Ignored now. */
 	@Deprecated
 	boolean getIsPlatformRelevant();
+	/** @deprecated Allegedly made sense with cartridges. Ignored now. */
+	@Deprecated
 	void setIsPlatformRelevant(boolean isPlatformRelevant);
 }

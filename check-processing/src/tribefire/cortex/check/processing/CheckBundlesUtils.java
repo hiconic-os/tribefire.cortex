@@ -48,10 +48,10 @@ import tribefire.cortex.model.check.CheckWeight;
  * @author christina.wilpernig
  */
 public class CheckBundlesUtils {
-	
-	private static NavigableMap<Double,CheckWeight> msToWeight = new TreeMap<>();
-	private static Map<CheckWeight,String> weightToPrettyDesc = new HashMap<>();
-	
+
+	private static NavigableMap<Double, CheckWeight> msToWeight = new TreeMap<>();
+	private static Map<CheckWeight, String> weightToPrettyDesc = new HashMap<>();
+
 	static {
 		msToWeight.put(100.0, CheckWeight.under100ms);
 		msToWeight.put(1000.0, CheckWeight.under1s);
@@ -63,7 +63,7 @@ public class CheckBundlesUtils {
 		msToWeight.put(24 * 60 * 60 * 1000.0, CheckWeight.under1d);
 		msToWeight.put(7 * 24 * 60 * 60 * 1000.0, CheckWeight.under1w);
 		msToWeight.put(Double.MAX_VALUE, CheckWeight.unlimited);
-		
+
 		weightToPrettyDesc.put(CheckWeight.under100ms, "< 100 ms");
 		weightToPrettyDesc.put(CheckWeight.under1s, "< 1 s");
 		weightToPrettyDesc.put(CheckWeight.under10s, "< 10 s");
@@ -75,7 +75,7 @@ public class CheckBundlesUtils {
 		weightToPrettyDesc.put(CheckWeight.under1w, "< 1 w");
 		weightToPrettyDesc.put(CheckWeight.unlimited, "unlimited");
 	}
-	
+
 	public static CheckStatus getStatus(Collection<CheckResult> results) {
 		return results.stream() //
 				.flatMap(c -> c.getEntries().stream()) //
@@ -83,130 +83,121 @@ public class CheckBundlesUtils {
 				.max(Comparator.naturalOrder()) //
 				.orElse(CheckStatus.ok);
 	}
-	
+
 	public static CheckStatus getStatus(CheckResult result) {
 		return result.getEntries().stream() //
 				.map(CheckResultEntry::getCheckStatus) //
 				.max(Comparator.naturalOrder()) //
 				.orElse(CheckStatus.ok);
 	}
-	
+
 	public static Predicate<CheckBundle> buildBundleFilter(RunCheckBundles request) {
 		Predicate<CheckBundle> bundleFilter = b -> true;
-		
+
 		// # Coverage
 		Set<CheckCoverage> coverages = request.getCoverage();
 		if (!coverages.isEmpty())
-			bundleFilter = bundleFilter.and(b -> coverages.contains(b.getCoverage()));
-		
-		
+			bundleFilter = bundleFilter.and(//
+					b -> coverages.contains(b.getCoverage()));
+
 		// # Weight
 		CheckWeight weight = request.getWeight();
 		if (weight != null)
-			bundleFilter = bundleFilter.and(b -> b.getWeight().ordinal() <= weight.ordinal());
-		
-		
+			bundleFilter = bundleFilter.and( //
+					b -> b.getWeight().ordinal() <= weight.ordinal());
+
 		// # Deployable
 		Set<String> deployables = request.getDeployable();
-		if(!deployables.isEmpty())
-			bundleFilter = bundleFilter.and(b -> deployables.contains(b.getDeployable().getExternalId()));
+		if (!deployables.isEmpty())
+			bundleFilter = bundleFilter.and( //
+					b -> deployables.contains(b.getDeployable().getExternalId()));
 
 		// # Label
 		Set<String> labels = request.getLabel();
 		Predicate<CheckBundle> labelFilter = b -> true;
 		for (String l : labels)
 			labelFilter = labelFilter.or(b -> b.getLabels().contains(l));
-		
+
 		bundleFilter = bundleFilter.and(labelFilter);
-		
-		
+
 		// # Module
 		Set<String> modules = request.getModule();
-		if(!modules.isEmpty())
+		if (!modules.isEmpty())
 			bundleFilter = bundleFilter.and(b -> {
-				Module module = b.getModule();
-				if(module != null)
-					return modules.contains(module.getGlobalId());
-					
-				return false;
+				Module m = b.getModule();
+				return m != null && modules.contains(m.getGlobalId());
 			});
 
-		
 		// # Check Bundles
 		Set<String> names = request.getName();
-		if(!names.isEmpty())
+		if (!names.isEmpty())
 			bundleFilter = bundleFilter.and(b -> names.contains(b.getName()));
-		
-		
+
 		// # Roles
 		Set<String> roles = request.getRole();
 		Predicate<CheckBundle> rolesFilter = b -> true;
 		for (String r : roles)
 			rolesFilter = rolesFilter.or(b -> b.getRoles().contains(r));
 		bundleFilter = bundleFilter.and(rolesFilter);
-		
-		
-		// # Platform relevant
-		Boolean isPlatformRelevant = request.getIsPlatformRelevant();
-		if (isPlatformRelevant != null)
-			bundleFilter = bundleFilter.and(b -> b.getIsPlatformRelevant() == isPlatformRelevant);
-		
+
 		return bundleFilter;
 	}
-	
+
 	public static Function<CheckBundleResult, Collection<?>> getAccessor(CbrAggregationKind kind) {
+		// @formatter:off
 		switch (kind) {
-		case coverage: 			return r -> Collections.singleton(r.getCoverage());
-		case deployable: 		return r -> Collections.singleton(r.getDeployable());
-		case label: 			return r -> r.getLabels();
-		case module: 			return r -> Collections.singleton(r.getModule());
-		case node: 				return r -> Collections.singleton(r.getNode());
-		case processor: 		return r -> Collections.singleton(r.getCheck());
-		case status: 			return r -> Collections.singleton(r.getStatus());
-		case weight: 			return r -> Collections.singleton(r.getWeight());
-		case effectiveWeight: 	return r -> Collections.singleton(mapToWeight(r.getResult().getElapsedTimeInMs()));
-		case bundle: 			return r -> Collections.singleton(r.getName());
-		case role: 				return r -> r.getRoles();
-		default:
-			throw new IllegalStateException("Unknown CbrAggregationKind: " + kind);
+			case coverage: 			return r -> Collections.singleton(r.getCoverage());
+			case deployable: 		return r -> Collections.singleton(r.getDeployable());
+			case label: 			return r -> r.getLabels();
+			case module: 			return r -> Collections.singleton(r.getModule());
+			case node: 				return r -> Collections.singleton(r.getNode());
+			case processor: 		return r -> Collections.singleton(r.getCheck());
+			case status: 			return r -> Collections.singleton(r.getStatus());
+			case weight: 			return r -> Collections.singleton(r.getWeight());
+			case effectiveWeight: 	return r -> Collections.singleton(mapToWeight(r.getResult().getElapsedTimeInMs()));
+			case bundle: 			return r -> Collections.singleton(r.getName());
+			case role: 				return r -> r.getRoles();
+			default:
+				throw new IllegalStateException("Unknown CbrAggregationKind: " + kind);
 		}
+		// @formatter:on
 	}
 
 	public static CheckWeight mapToWeight(double elapsedTimeInMs) {
 		return msToWeight.tailMap(elapsedTimeInMs, false).firstEntry().getValue();
 	}
-	
+
 	public static String getIdentification(CbrAggregatable a) {
 		if (a.isResult())
-			return ((CheckBundleResult)a).getName();
-		
-		CbrAggregation aggr = (CbrAggregation)a;
+			return ((CheckBundleResult) a).getName();
+
+		CbrAggregation aggr = (CbrAggregation) a;
 		CbrAggregationKind kind = aggr.getKind();
 		Object d = aggr.getDiscriminator();
-		
+
 		switch (kind) {
 			case bundle:
-				return (String)d;
+				return (String) d;
 			case coverage:
-				return ((CheckCoverage)d).name();
+				return ((CheckCoverage) d).name();
 			case deployable:
-				return ((Deployable)d).getName();
+				return ((Deployable) d).getName();
 			case label:
-				return (String)d;
+				return (String) d;
 			case module:
-				return ((Module)d).getName();
+				return ((Module) d).getName();
 			case node:
-				return (String)d;
+				return (String) d;
 			case processor:
-				return((CheckProcessor)d).getName();
+				return ((CheckProcessor) d).getName();
 			case role:
-				return (String)d;
+				return (String) d;
 			case status:
-				return ((CheckStatus)d).name();
+				return ((CheckStatus) d).name();
 			case effectiveWeight:
-				return weightToPrettyDesc.get((CheckWeight)d);
+				return weightToPrettyDesc.get(d);
 			case weight:
-				return ((CheckWeight)d).name();
+				return ((CheckWeight) d).name();
 			default:
 				throw new IllegalStateException("Unknown CheckAggregationKind: " + kind);
 		}

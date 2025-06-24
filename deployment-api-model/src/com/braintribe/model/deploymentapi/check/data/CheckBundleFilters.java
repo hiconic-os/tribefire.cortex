@@ -52,7 +52,12 @@ public interface CheckBundleFilters extends GenericEntity {
 	Set<String> getRole();
 	void setRole(Set<String> role);
 	
+
+	/** @deprecated Allegedly made sense with cartridges. Ignored now. */
+	@Deprecated
 	Boolean getIsPlatformRelevant();
+	/** @deprecated Allegedly made sense with cartridges. Ignored now. */
+	@Deprecated
 	void setIsPlatformRelevant(Boolean isPlatformRelevant);
 	
 }
