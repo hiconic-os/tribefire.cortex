@@ -44,8 +44,7 @@ public class SessionLogoutTestBase extends SecurityServiceTest {
 	 * <p>
 	 * Assertions:
 	 * <ul>
-	 * <li>session id must be considered invalid by
-	 * {@link com.braintribe.model.processing.securityservice.basic.SecurityServiceProcessor#isSessionValid(String)}
+	 * <li>session id must be considered invalid - see {@link #isValidSession(String)}
 	 * <li>No exceptions shall be thrown
 	 * </ul>
 	 */
@@ -67,8 +66,7 @@ public class SessionLogoutTestBase extends SecurityServiceTest {
 	 * <p>
 	 * Assertions:
 	 * <ul>
-	 * <li>session id must be remain invalid by
-	 * {@link com.braintribe.model.processing.securityservice.basic.SecurityServiceProcessor#isSessionValid(String)}
+	 * <li>session id must be remain invalid  - see {@link #isValidSession(String)}
 	 * <li>No exceptions shall be thrown
 	 * </ul>
 	 */
