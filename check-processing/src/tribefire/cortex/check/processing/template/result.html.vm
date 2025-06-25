@@ -330,7 +330,7 @@
 		}
 		
 		.div-markdown-content th {
-            background-color: #777;
+            background-color: #755;
             color: white;
             text-align: left;
 			font-weight: 450;
