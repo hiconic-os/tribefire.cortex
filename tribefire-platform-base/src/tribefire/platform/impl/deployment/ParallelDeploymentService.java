@@ -31,12 +31,13 @@ import java.util.Stack;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.braintribe.cfg.Required;
-import com.braintribe.execution.virtual.VirtualThreadExecutorBuilder;
+import com.braintribe.execution.ThreadPoolBuilder;
 import com.braintribe.logging.Logger;
 import com.braintribe.model.deployment.Deployable;
 import com.braintribe.model.deployment.DeployableComponent;
@@ -147,7 +148,7 @@ public class ParallelDeploymentService implements DeploymentService {
 		}
 	}
 
-	class ParallelDeploymentController {
+	class ParallelDeploymentController implements AutoCloseable {
 
 		// TODO this brings dependency to com.braintribe.execution:execution.
 		// Thread pool should injected (or rather ThreadPoolFactory that takes params like thread name should be injected)
@@ -159,11 +160,16 @@ public class ParallelDeploymentService implements DeploymentService {
 			this.context = context;
 			this.stats = stats;
 
-			standardDeploymentThreadPool = VirtualThreadExecutorBuilder.newPool().concurrency(Integer.MAX_VALUE).threadNamePrefix("Deployer")
-					.description("Deployer").build();
+			// Please do not change this to a virtual thread factory, at least until we're on Java 24.
+			// This was causing actual deadlocks (well, carrier thread starvation)
+			// https://openjdk.org/jeps/491
+			standardDeploymentThreadPool = ThreadPoolBuilder.newPool() //
+					.poolSize(5, Integer.MAX_VALUE) //
+					.workQueue(new SynchronousQueue<>()) //
+					.threadNamePrefix("Deployer")
+					.description("Deployer") //
+					.build();
 			stats.standardThreadCount = Integer.MAX_VALUE;
-
-			/* Note(RKU): Since we're using virtual threads now, there seems to be no need for 2 different thread pools */
 		}
 
 		Future<?> enqueue(Deployable deployable, ParallelDeploymentStatistics stats) {
@@ -188,6 +194,11 @@ public class ParallelDeploymentService implements DeploymentService {
 			stats.endOfWaitForFinishedDeploymentStart();
 
 			futures.clear();
+		}
+
+		@Override
+		public void close() {
+			standardDeploymentThreadPool.shutdownNow();
 		}
 	}
 
@@ -260,34 +271,35 @@ public class ParallelDeploymentService implements DeploymentService {
 		final int size = deployContext.deployables().size();
 		stats.deployablesCount = size;
 
-		ParallelDeploymentController controller = new ParallelDeploymentController(deployContext, stats);
-		stats.stopWatch.intermediate("Controller Init");
+		try (ParallelDeploymentController controller = new ParallelDeploymentController(deployContext, stats)) {
+			stats.stopWatch.intermediate("Controller Init");
 
-		stats.deploymentStarts();
-		deployContext.deploymentStarted();
+			stats.deploymentStarts();
+			deployContext.deploymentStarted();
 
-		for (Deployable deployable : deployContext.deployables()) {
-			String externalId = deployable.getExternalId();
-			if (externalId == null) {
-				log.error("No externalId set on deployable of type '" + deployable.entityType().getTypeSignature() + "'. Instance: " + deployable);
-			} else {
-				futures.put(externalId, new DeploymentFuture(deployable));
+			for (Deployable deployable : deployContext.deployables()) {
+				String externalId = deployable.getExternalId();
+				if (externalId == null) {
+					log.error(
+							"No externalId set on deployable of type '" + deployable.entityType().getTypeSignature() + "'. Instance: " + deployable);
+				} else {
+					futures.put(externalId, new DeploymentFuture(deployable));
+				}
 			}
+
+			for (DeploymentFuture deploymentFuture : futures.values()) {
+				Deployable deployable = deploymentFuture.deployable;
+				Future<?> future = controller.enqueue(deployable, stats);
+				deploymentFuture.setFuture(future);
+				deployContext.started(deployable);
+			}
+
+			stats.stopWatch.intermediate("Promises Enqueued");
+
+			controller.waitForFinishedDeployment();
+			stats.stopWatch.intermediate("Deployment Finish Waiting");
+			stats.deploymentFinished();
 		}
-
-		for (DeploymentFuture deploymentFuture : futures.values()) {
-			Deployable deployable = deploymentFuture.deployable;
-			Future<?> future = controller.enqueue(deployable, stats);
-			deploymentFuture.setFuture(future);
-			deployContext.started(deployable);
-		}
-
-		stats.stopWatch.intermediate("Promises Enqueued");
-
-		controller.waitForFinishedDeployment();
-		stats.stopWatch.intermediate("Deployment Finish Waiting");
-		stats.deploymentFinished();
-
 	}
 
 	@Override
