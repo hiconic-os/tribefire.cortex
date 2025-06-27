@@ -1,5 +1,6 @@
 package tribefire.cortex.messaging.jdbc;
 
+import static com.braintribe.utils.SysPrint.spOut;
 import static com.braintribe.utils.lcd.CollectionTools2.isEmpty;
 
 import java.sql.Connection;
@@ -51,6 +52,7 @@ public class JdbcMsgGmDb {
 	public final MsgTable tableTopic;
 	public final MsgTable tableQueue;
 
+	private final String identifier;
 	private final String sqlPrefix;
 
 	private static final Logger log = Logger.getLogger(JdbcMsgGmDb.class);
@@ -81,7 +83,8 @@ public class JdbcMsgGmDb {
 				.withStreamPipeFactory(StreamPipes.simpleFactory()) //
 				.withExecutor(executor).done();
 
-		sqlPrefix = _sqlPrefix + "_msg_";
+		identifier = _sqlPrefix; // typically hc
+		sqlPrefix = _sqlPrefix + "_msg_"; // typically hc_msg_
 
 		tableTopic = new MsgTable(true);
 		tableQueue = new MsgTable(false);
@@ -311,7 +314,7 @@ public class JdbcMsgGmDb {
 	private synchronized void ensureMsgListenerThreadsRunningSync() {
 		if (listenerThread == null)
 			listenerThread = Thread.ofVirtual() //
-					.name("Jdbc Msg Listener (" + sqlPrefix + "-)") //
+					.name("Jdbc Msg Listener (" + identifier + ")") //
 					.start(newMsgListener);
 	}
 
@@ -321,31 +324,64 @@ public class JdbcMsgGmDb {
 
 		private final ObjectMapper mapper = new ObjectMapper();
 
+		private final int MIN_RETRY_SECONDS = 1;
+		private final int MAX_RETRY_SECONDS = 10 * 60; // 10 minutes
+
+		private int retrySeconds = MIN_RETRY_SECONDS;
+
 		@Override
 		public void run() {
-			try (Connection conn = dataSource.getConnection()) {
-				Statement stmt = conn.createStatement();
-				stmt.execute("LISTEN new_message"); // Subscribe to the channel
-				stmt.close();
+			while (true) {
 
-				org.postgresql.PGConnection pgConn = conn.unwrap(org.postgresql.PGConnection.class);
+				try (Connection conn = dataSource.getConnection()) {
+					listen(conn);
 
-				while (running) {
-					// Check for notifications
-					org.postgresql.PGNotification[] notifications = pgConn.getNotifications(0);
-					if (notifications == null)
-						continue;
+				} catch (Exception e) {
 
-					for (org.postgresql.PGNotification notification : notifications)
-						Thread.ofVirtual() //
-								.name("JDBC Message Dispatcher" + notificationCounter.getAndIncrement()) //
-								.start(new MessageNotificationDispatcher(notification.getParameter()));
+					if (Thread.currentThread().isInterrupted()) {
+						logThreadInterrupted();
+						return;
+					}
+
+					log.warn(Thread.currentThread().getName() + " encountered an error. Retry in " + retrySeconds + " seconds.", e);
+
+					try {
+						Thread.sleep(retrySeconds * 1000L);
+					} catch (InterruptedException ignored) {
+						logThreadInterrupted();
+						return;
+					}
+
+					retrySeconds = Math.min(2 * retrySeconds, MAX_RETRY_SECONDS);
 				}
 
-			} catch (Exception e) {
-				if (Thread.currentThread().isInterrupted())
-					return;
-				e.printStackTrace();
+			}
+		}
+
+		private void logThreadInterrupted() {
+			log.info(Thread.currentThread().getName() + " thread interrupted. Shutting down.");
+		}
+
+		private void listen(Connection conn) throws SQLException {
+			Statement stmt = conn.createStatement();
+			stmt.execute("LISTEN new_message"); // Subscribe to the channel
+			stmt.close();
+
+			org.postgresql.PGConnection pgConn = conn.unwrap(org.postgresql.PGConnection.class);
+
+			log.info(Thread.currentThread().getName() + " is now listening to new messages.");
+			retrySeconds = MIN_RETRY_SECONDS;
+
+			while (running) {
+				// Check for notifications
+				org.postgresql.PGNotification[] notifications = pgConn.getNotifications(0);
+				if (notifications == null)
+					continue;
+
+				for (org.postgresql.PGNotification notification : notifications)
+					Thread.ofVirtual() //
+							.name("JDBC Message Dispatcher" + notificationCounter.getAndIncrement()) //
+							.start(new MessageNotificationDispatcher(notification.getParameter()));
 			}
 		}
 
@@ -425,6 +461,15 @@ public class JdbcMsgGmDb {
 				table = isTopic ? tableTopic : tableQueue;
 
 				return true;
+			}
+
+			private Map<String, Object> parseJson() {
+				try {
+					return mapper.readValue(parameterJson, Map.class);
+				} catch (JsonProcessingException e) {
+					log.warn("Error while parsing new message notification: " + parameterJson, e);
+					return null;
+				}
 			}
 
 			private boolean loadConsumers() {
@@ -507,14 +552,6 @@ public class JdbcMsgGmDb {
 				throw new IllegalArgumentException("Value '" + value + "' for key '" + key + "' is not an integer nor a long.");
 			}
 
-			private Map<String, Object> parseJson() {
-				try {
-					return mapper.readValue(parameterJson, Map.class);
-				} catch (JsonProcessingException e) {
-					log.warn("Error while parsing new message notification: " + parameterJson, e);
-					return null;
-				}
-			}
 		}
 
 	}
