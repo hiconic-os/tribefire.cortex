@@ -15,6 +15,8 @@
 // ============================================================================
 package tribefire.module.wire.contract;
 
+import java.util.List;
+
 import com.braintribe.model.service.api.InstanceId;
 import com.braintribe.wire.api.space.WireSpace;
 
@@ -31,5 +33,12 @@ public interface PlatformReflectionContract extends WireSpace {
 	String globalId();
 
 	String getProperty(String propertyName);
+
+	/**
+	 * Unmodifiable list of {@link ModuleReflectionContract}s for modules that have already been wired.
+	 * <p>
+	 * Note that all the modules are wired before the binding phase begins, as explained here: {@link TribefireModuleContract#onBeforeBinding()}
+	 */
+	List<ModuleReflectionContract> modules();
 
 }

@@ -15,12 +15,15 @@
 // ============================================================================
 package tribefire.platform.wire.space.module;
 
+import java.util.List;
+
 import com.braintribe.model.processing.bootstrapping.TribefireRuntime;
 import com.braintribe.model.service.api.InstanceId;
 import com.braintribe.wire.api.annotation.Import;
 import com.braintribe.wire.api.annotation.Managed;
 
 import tribefire.module.api.EnvironmentDenotations;
+import tribefire.module.wire.contract.ModuleReflectionContract;
 import tribefire.module.wire.contract.WebPlatformReflectionContract;
 import tribefire.platform.wire.space.common.CartridgeInformationSpace;
 import tribefire.platform.wire.space.common.EnvironmentSpace;
@@ -36,6 +39,9 @@ public class WebPlatformReflectionSpace implements WebPlatformReflectionContract
 
 	@Import
 	private EnvironmentSpace environment;
+
+	@Import
+	private ModuleInitializationSpace moduleInitialization;
 
 	@Override
 	public InstanceId instanceId() {
@@ -61,6 +67,11 @@ public class WebPlatformReflectionSpace implements WebPlatformReflectionContract
 	@Override
 	public EnvironmentDenotations environmentDenotations() {
 		return environment.environmentDenotations();
+	}
+
+	@Override
+	public List<ModuleReflectionContract> modules() {
+		return moduleInitialization.moduleLoader().moduleReflectionContracts();
 	}
 
 }

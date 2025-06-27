@@ -17,10 +17,13 @@ package tribefire.cortex.module.loading;
 
 import static com.braintribe.utils.lcd.CollectionTools2.acquireSet;
 import static com.braintribe.utils.lcd.CollectionTools2.newIdentityMap;
+import static com.braintribe.utils.lcd.CollectionTools2.newList;
 import static com.braintribe.utils.lcd.CollectionTools2.newMap;
 import static java.util.Collections.emptySet;
 
 import java.io.File;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -64,6 +67,9 @@ import tribefire.module.wire.contract.TribefireModuleContract;
 
 	private final Map<Class<? extends WireSpace>, WireSpace> spaces = newIdentityMap();
 	private final Map<Class<? extends WireSpace>, ComponentDescriptor> spaceOrigins = newIdentityMap();
+
+	private final List<ModuleReflectionContract> modulesReflectionContracts = newList();
+	public final List<ModuleReflectionContract> modulesReflectionContracts_Unmodifiable = Collections.unmodifiableList(modulesReflectionContracts);
 
 	public ModuleContractsRegistry(ModulesCortexInitializer cortexInitializer) {
 		this.cortexInitializer = cortexInitializer;
@@ -167,7 +173,10 @@ import tribefire.module.wire.contract.TribefireModuleContract;
 	}
 
 	private ModuleReflectionSpace newModuleReflectionSpace() {
-		return new ModuleReflectionSpace((ModuleDescriptor) currentComponent, currentModuleClassLoader);
+		ModuleReflectionSpace result = new ModuleReflectionSpace((ModuleDescriptor) currentComponent, currentModuleClassLoader);
+		modulesReflectionContracts.add(result);
+
+		return result;
 	}
 
 	private final Map<String, ModuleResourcesSpace> moduleNameToResourcesSpace = newMap();

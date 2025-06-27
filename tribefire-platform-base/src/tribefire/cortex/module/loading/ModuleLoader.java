@@ -58,6 +58,7 @@ import tribefire.cortex.module.loading.api.PlatformContractsRegistry;
 import tribefire.descriptor.model.ModuleDescriptor;
 import tribefire.descriptor.model.ModulePackagingInfo;
 import tribefire.descriptor.model.PlatformDescriptor;
+import tribefire.module.wire.contract.ModuleReflectionContract;
 import tribefire.module.wire.contract.ModuleResourcesContract;
 import tribefire.module.wire.contract.TribefireModuleContract;
 import tribefire.platform.impl.deployment.DenotationBindingsRegistry;
@@ -179,6 +180,10 @@ public class ModuleLoader implements DestructionAware {
 	@Required
 	public void setAccessStorageResolver(Function<String, File> accessStorageResolver) {
 		this.accessStorageResolver = accessStorageResolver;
+	}
+
+	public List<ModuleReflectionContract> moduleReflectionContracts() {
+		return contractsRegistry.modulesReflectionContracts_Unmodifiable;
 	}
 
 	public ModuleResourcesContract resolveModuleResourcesContract(String moduleName) {
