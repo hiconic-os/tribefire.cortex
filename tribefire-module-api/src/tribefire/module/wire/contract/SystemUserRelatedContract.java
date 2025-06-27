@@ -15,8 +15,11 @@
 // ============================================================================
 package tribefire.module.wire.contract;
 
+import com.braintribe.model.processing.securityservice.api.UserSessionScoping;
 import com.braintribe.wire.api.space.WireSpace;
 
 public interface SystemUserRelatedContract extends UserRelated, WireSpace {
-	// nothing more
+
+	UserSessionScoping userSessionScoping();
+
 }

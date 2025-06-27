@@ -48,6 +48,8 @@ public interface TribefireWebPlatformContract extends TribefirePlatformContract 
 
 	HttpContract http();
 
+	/** @deprecated Doesn't even make sense to use this... Replace with {@link SystemUserRelatedContract#userSessionScoping()}? */
+	@Deprecated
 	MasterUserAuthContextContract masterUserAuthContext();
 
 	WebPlatformMarshallingContract marshalling();

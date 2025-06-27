@@ -19,6 +19,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import com.braintribe.model.generic.eval.Evaluator;
+import com.braintribe.model.processing.securityservice.api.UserSessionScoping;
 import com.braintribe.model.processing.session.api.managed.ModelAccessoryFactory;
 import com.braintribe.model.processing.session.api.persistence.PersistenceGmSessionFactory;
 import com.braintribe.model.processing.session.api.persistence.auth.SessionAuthorization;
@@ -64,6 +65,11 @@ public class SystemUserRelatedSpace extends UserRelatedSpace implements SystemUs
 	@Override
 	public ModelAccessoryFactory modelAccessoryFactory() {
 		return gmSessions.systemModelAccessoryFactory();
+	}
+
+	@Override
+	public UserSessionScoping userSessionScoping() {
+		return internalUserAuth.userSessionScoping();
 	}
 
 	@Override

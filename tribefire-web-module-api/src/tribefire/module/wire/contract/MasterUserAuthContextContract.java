@@ -18,6 +18,10 @@ package tribefire.module.wire.contract;
 import com.braintribe.model.processing.securityservice.api.UserSessionScoping;
 import com.braintribe.wire.api.space.WireSpace;
 
+/**
+ * @deprecated Doesn't even make sense to use this... Replace with {@link SystemUserRelatedContract#userSessionScoping()}?
+ */
+@Deprecated
 public interface MasterUserAuthContextContract extends WireSpace {
 
 	UserSessionScoping userSessionScoping();
