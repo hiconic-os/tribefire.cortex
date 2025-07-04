@@ -33,22 +33,10 @@
 		</dependency>
 
 		<dependency>
-			<!--Copied from tribefire.extension.jdbcdriver:postgresql -->
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.7.5</version>
-            <exclusions>
-				<!-- PostgreSQL uses the checker-qual library for annotations such as Nullable.
-                This dependency was introduced with 42.2.15, which is briefly mentioned in the release notes
-                ('Verify nullness with CheckerFramework'). However, the download page still just provides
-                the postgres jar file and doesn't mention checker-qual at all. Also tests have shown that
-                it is not needed. Therefore it's excluded here, also to avoid clashes with other libraries
-                which depend on a different version of this artifact. -->
-                <exclusion>
-                    <groupId>org.checkerframework</groupId>
-                    <artifactId>checker-qual</artifactId>
-                </exclusion>
-            </exclusions>
+            <version>42.7.7</version>
+            <scope>provided</scope>
         </dependency>
 	</dependencies>
 </project>
