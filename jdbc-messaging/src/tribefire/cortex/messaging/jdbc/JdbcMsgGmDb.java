@@ -1,6 +1,5 @@
 package tribefire.cortex.messaging.jdbc;
 
-import static com.braintribe.utils.SysPrint.spOut;
 import static com.braintribe.utils.lcd.CollectionTools2.isEmpty;
 
 import java.sql.Connection;
