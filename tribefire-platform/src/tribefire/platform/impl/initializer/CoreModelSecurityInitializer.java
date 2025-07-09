@@ -24,7 +24,6 @@ import java.util.Set;
 
 import com.braintribe.cfg.Configurable;
 import com.braintribe.logging.Logger;
-import com.braintribe.model.accessdeployment.HardwiredAccess;
 import com.braintribe.model.accessdeployment.IncrementalAccess;
 import com.braintribe.model.meta.GmEntityType;
 import com.braintribe.model.meta.data.prompt.Hidden;
@@ -64,25 +63,26 @@ public class CoreModelSecurityInitializer extends SimplePersistenceInitializer {
 	
 	@Override
 	public void initializeData(PersistenceInitializationContext context) throws ManipulationPersistenceException {
-		logger.info("Start synchronization of hardwired deployables.");
+		logger.info("Start synchronization of system accesses.");
 
 		//@formatter:off
 		Set<String> systemAccessIds = new HashSet<String>(
 				Arrays.asList(
-						"auth", "auth.wb", 
+						"auth", "auth.wb",
 						"cortex", "cortex.wb",
 						"setup", "setup.wb",
 						"transient-messaging-data", "transient-messaging-data.wb",
 						"user-sessions", "user-sessions.wb",
 						"user-statistics", "user-statistics.wb",
 						"workbench"));
-		//@formatter:on
+
 		ManagedGmSession session = context.getSession();
 		EntityQuery coreAccessQuery =
 				EntityQueryBuilder
 					.from(IncrementalAccess.T)
 					.where().property(IncrementalAccess.externalId).in(systemAccessIds)
 				.done();
+		//@formatter:on
 		
 		
 		RoleSelector adminRoleSelector = createAdminRolesSelector(session);
@@ -92,8 +92,8 @@ public class CoreModelSecurityInitializer extends SimplePersistenceInitializer {
 		Hidden hiddenMd = session.create(Hidden.T,"metadata:hidden/coreModelsForNonAdmins");
 		hiddenMd.setSelector(adminVisibilitySelector);
 		
-		List<HardwiredAccess> coreAccesses = session.query().entities(coreAccessQuery).list();
-		for (HardwiredAccess a : coreAccesses) {
+		List<IncrementalAccess> coreAccesses = session.query().entities(coreAccessQuery).list();
+		for (IncrementalAccess a : coreAccesses) {
 			if (!excludedAccesses.contains(a.getExternalId())) {
 				ModelMetaDataEditor modelEditor = BasicModelMetaDataEditor.create(a.getMetaModel()).withSession(session).done();
 				modelEditor.addModelMetaData(hiddenMd);

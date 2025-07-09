@@ -242,7 +242,6 @@ public class CortexAccessInitializersSpace implements WireSpace {
 				environmentDenotationRegistryInitializer(),
 				knownUseCasesInitializer(),
 				cortexModelMetaDataInitializer(),
-				coreModelSecurityInitializer(),
 				defaultDeployablesInitializer(),
 				cortexConfigurationInitializer(),
 				rootModelMetaDataInitializer(),
@@ -277,11 +276,6 @@ public class CortexAccessInitializersSpace implements WireSpace {
 				uxModulesInitializer()
 			);
 		// @formatter:on
-	}
-
-	private CoreModelSecurityInitializer coreModelSecurityInitializer() {
-		CoreModelSecurityInitializer bean = new CoreModelSecurityInitializer();
-		return bean;
 	}
 
 	@Managed

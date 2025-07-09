@@ -43,6 +43,7 @@ import tribefire.platform.impl.denotrans.SystemAccessesDenotationEnricher;
 import tribefire.platform.impl.denotrans.SystemDeployablesAutoDeployEnsuringEnricher;
 import tribefire.platform.impl.denotrans.TransientMessagingAccessWithSqlBinaryProcessorEnricher;
 import tribefire.platform.impl.denotrans.UserSessionServiceEnricher;
+import tribefire.platform.impl.initializer.CoreModelSecurityInitializer;
 import tribefire.platform.impl.initializer.CortexConfigurationPostInitializer;
 import tribefire.platform.impl.initializer.Edr2ccPostInitializer;
 import tribefire.platform.impl.configuration.denotrans.DenotationTransformationExecutor;
@@ -142,6 +143,7 @@ public class CortexAccessSpace extends CollaborativeSystemAccessSpaceBase {
 		List<PersistenceInitializer> result = TfEnvCsaPriming.getEnvironmentInitializersFor(id());
 		result.add(edr2ccPostInitializer());
 		result.add(cortexConfigurationPostInitializer());
+		result.add(coreModelSecurityInitializer());
 		result.add(deployables.schrodingerBeanCoupler());
 		return result;
 	}
@@ -158,6 +160,12 @@ public class CortexAccessSpace extends CollaborativeSystemAccessSpaceBase {
 		Edr2ccPostInitializer bean = new Edr2ccPostInitializer();
 		bean.setTransformationExecutor(transformationExecutor());
 
+		return bean;
+	}
+
+	@Managed
+	private CoreModelSecurityInitializer coreModelSecurityInitializer() {
+		CoreModelSecurityInitializer bean = new CoreModelSecurityInitializer();
 		return bean;
 	}
 
