@@ -17,12 +17,15 @@ package tribefire.platform.impl.initializer;
 
 import static com.braintribe.wire.api.util.Sets.set;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import com.braintribe.cfg.Configurable;
 import com.braintribe.logging.Logger;
 import com.braintribe.model.accessdeployment.HardwiredAccess;
+import com.braintribe.model.accessdeployment.IncrementalAccess;
 import com.braintribe.model.meta.GmEntityType;
 import com.braintribe.model.meta.data.prompt.Hidden;
 import com.braintribe.model.meta.selector.ConjunctionSelector;
@@ -63,10 +66,22 @@ public class CoreModelSecurityInitializer extends SimplePersistenceInitializer {
 	public void initializeData(PersistenceInitializationContext context) throws ManipulationPersistenceException {
 		logger.info("Start synchronization of hardwired deployables.");
 
+		//@formatter:off
+		Set<String> systemAccessIds = new HashSet<String>(
+				Arrays.asList(
+						"auth", "auth.wb", 
+						"cortex", "cortex.wb",
+						"setup", "setup.wb",
+						"transient-messaging-data", "transient-messaging-data.wb",
+						"user-sessions", "user-sessions.wb",
+						"user-statistics", "user-statistics.wb",
+						"workbench"));
+		//@formatter:on
 		ManagedGmSession session = context.getSession();
 		EntityQuery coreAccessQuery =
 				EntityQueryBuilder
-					.from(HardwiredAccess.T)
+					.from(IncrementalAccess.T)
+					.where().property(IncrementalAccess.externalId).in(systemAccessIds)
 				.done();
 		
 		
