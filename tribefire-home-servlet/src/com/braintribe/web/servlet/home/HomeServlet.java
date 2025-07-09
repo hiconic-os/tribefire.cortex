@@ -148,20 +148,17 @@ public class HomeServlet extends BasicTemplateBasedServlet {
 	private Set<String> grantedRoles = Collections.singleton("tf-admin");
 
 	/* Application Links */
-	private String tfJsUrl = TribefireRuntime.getTribefireJsUrl();
 	private String explorerUrl = TribefireRuntime.getExplorerUrl();
 	// private String controlCenterUrl = NullSafe.get(TribefireRuntime.getControlCenterUrl(), explorerUrl);
 	private String controlCenterUrl = (TribefireRuntime.getControlCenterUrl() == null || TribefireRuntime.getControlCenterUrl().isEmpty())
 			? explorerUrl
 			: TribefireRuntime.getControlCenterUrl();
-	private String modelerUrl = TribefireRuntime.getModelerUrl();
 
 	/* Relative Paths */
 	private String relativeLogPath = "logs";
 	private String relativeAboutPath = "about";
 	private String relativeDeploymentSummaryPath = "deployment-summary";
-	private String relativeHealthPath = "healthz"; // TODO CORETS-553 remove as cartridges will soon no longer be
-													// supported
+
 	private final String relativePlatformBaseChecksPath = "api/v1/checkPlatform";
 	private final String relativePlatformChecksPath = "api/v1/check";
 	private String relativeModuleCheckPath = "api/v1/checkDistributed?aggregateBy=node&aggregateBy=bundle&module=";
@@ -245,15 +242,6 @@ public class HomeServlet extends BasicTemplateBasedServlet {
 		this.controlCenterUrl = controlCenterUrl;
 	}
 
-	@Configurable
-	public void setTfJsUrl(String tfJsUrl) {
-		this.tfJsUrl = tfJsUrl;
-	}
-	@Configurable
-	public void setModelerUrl(String modelerUrl) {
-		this.modelerUrl = modelerUrl;
-	}
-
 	/* Relative servlet paths */
 	@Configurable
 	public void setRelativeAboutPath(String aboutUrl) {
@@ -273,11 +261,6 @@ public class HomeServlet extends BasicTemplateBasedServlet {
 	@Configurable
 	public void setRelativeSignInPath(String relativeSignInPath) {
 		this.relativeSignInPath = relativeSignInPath;
-	}
-
-	@Configurable
-	public void setRelativeHealthPath(String relativeHealthPath) {
-		this.relativeHealthPath = relativeHealthPath;
 	}
 
 	@Configurable
@@ -457,13 +440,11 @@ public class HomeServlet extends BasicTemplateBasedServlet {
 
 	private class GroupContext {
 		PersistenceGmSession cortexSession;
-		UserSession userSession;
 	}
 
 	private void handleOverview(Home home, UserSession userSession) {
 		GroupContext context = new GroupContext();
 		context.cortexSession = cortexSessionFactory.get();
-		context.userSession = userSession;
 
 		handleGroup(userSession, home, true, () -> buildAdminGroup(context));
 		handleGroup(userSession, home, true, () -> buildModelGroup(context));
@@ -535,7 +516,7 @@ public class HomeServlet extends BasicTemplateBasedServlet {
 		return adminGroup;
 	}
 
-	private void fillAdminGroup(LinkGroup administrationGroup, @SuppressWarnings("unused") GroupContext context) {
+	private void fillAdminGroup(LinkGroup administrationGroup, GroupContext context) {
 
 		LinkCollection cortexgroup = LinkCollection.T.create();
 		cortexgroup.setDisplayName("Cortex");
@@ -890,7 +871,7 @@ public class HomeServlet extends BasicTemplateBasedServlet {
 
 				setDisplayName(sd, links);
 				if ((sd instanceof IncrementalAccess)) {
-					addAccessLinks(context, (IncrementalAccess) sd, links);
+					addAccessLinks((IncrementalAccess) sd, links);
 				}
 
 				configurers.forEach(c -> c.accept(sd, links));
@@ -906,33 +887,23 @@ public class HomeServlet extends BasicTemplateBasedServlet {
 		});
 	}
 
-	private boolean isModelVisible(GmMetaModel model, String... useCases) {
-		if (model == null)
-			return false;
+	private boolean isModelVisible(IncrementalAccess access, String... useCases) {
+		String accessId = access.getExternalId();
 
-		ModelAccessory modelAccessory = modelAccessoryFactory.getForModel(model.getName());
+		ModelAccessory modelAccessory = modelAccessoryFactory.getForAccess(accessId);
 		CmdResolver resolver = modelAccessory.getCmdResolver();
 
 		ModelMdResolver mdResolver = resolver.getMetaData();
 		if (useCases != null && useCases.length > 0) {
 			mdResolver.useCases(useCases);
 		}
+
 		return mdResolver.is(Visible.T);
 	}
 
-	private String tabLink(String title, String path) {
-		return "./home?selectedTab=" + title + "&selectedTabPath=" + urlEncode(path);
-	}
-
-	private void addAccessLinks(GroupContext context, IncrementalAccess access, LinkCollection links) {
-
-		GmMetaModel model = access.getMetaModel();
-		if (model == null) {
-			return;
-		}
-
+	private void addAccessLinks(IncrementalAccess access, LinkCollection links) {
 		try {
-			if (isModelVisible(model, USECASE_GME_LOGON)) {
+			if (isModelVisible(access, USECASE_GME_LOGON)) {
 				links.getNestedLinks()
 						.add(createLink("Explore", ensureTrailingSlash(explorerUrl) + "?accessId=" + urlEncode(access.getExternalId()) + "#default",
 								"tfExplorer-" + access.getExternalId(), null));
