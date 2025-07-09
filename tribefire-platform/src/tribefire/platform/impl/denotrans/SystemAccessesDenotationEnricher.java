@@ -30,13 +30,13 @@ import static com.braintribe.model.processing.tfconstants.TribefireConstants.ACC
 import static tribefire.module.api.DenotationEnrichmentResult.allDone;
 
 import com.braintribe.common.artifact.ArtifactReflection;
-import com.braintribe.common.artifact.StandardArtifactReflection;
 import com.braintribe.logging.Logger;
 import com.braintribe.model.accessdeployment.IncrementalAccess;
 import com.braintribe.model.generic.reflection.Model;
 import com.braintribe.model.meta.GmMetaModel;
 import com.braintribe.utils.lcd.StringTools;
 
+import tribefire.cortex._TribefirePlatform_;
 import tribefire.module.api.DenotationEnrichmentResult;
 import tribefire.module.api.DenotationTransformationContext;
 import tribefire.module.api.PlatformBindIds;
@@ -108,10 +108,7 @@ public class SystemAccessesDenotationEnricher extends SimpleDenotationEnricher<I
 		}
 
 		private GmMetaModel rawConfiguredModel(String rawModelName) {
-			// ArtifactReflection currentArtifact = _TribefireWebPlatform_.reflection;
-			// TODO: THIS MUST BE REVERTED TO REAL ARTIFACT REFLECTION AS SOON AS POSSIBLE.
-			ArtifactReflection currentArtifact = new StandardArtifactReflection("tribefire.cortex.services", "tribefire-web-platform", "3.0.81-pc",
-					(String) null);
+			ArtifactReflection currentArtifact = _TribefirePlatform_.reflection;
 
 			String name = currentArtifact.groupId() + ":configuration-" + simpleModelName(rawModelName);
 
