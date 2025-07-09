@@ -36,6 +36,8 @@ import com.braintribe.model.processing.sp.api.StateChangeProcessorRule;
 import com.braintribe.wire.api.annotation.Import;
 import com.braintribe.wire.api.annotation.Managed;
 
+import tribefire.platform.impl.configuration.denotrans.DenotationTransformationExecutor;
+import tribefire.platform.impl.configuration.denotrans.DenotationTransformerRegistryImpl;
 import tribefire.platform.impl.denotrans.AccessToAccessCleanupUserSessionsProcessorMorpher;
 import tribefire.platform.impl.denotrans.AccessToAccessUserSessionServiceMorpher;
 import tribefire.platform.impl.denotrans.CleanupUserSessionsProcessorEnricher;
@@ -44,10 +46,9 @@ import tribefire.platform.impl.denotrans.SystemDeployablesAutoDeployEnsuringEnri
 import tribefire.platform.impl.denotrans.TransientMessagingAccessWithSqlBinaryProcessorEnricher;
 import tribefire.platform.impl.denotrans.UserSessionServiceEnricher;
 import tribefire.platform.impl.initializer.CoreModelSecurityInitializer;
+import tribefire.platform.impl.initializer.CoreModelSecurityPostInitializer;
 import tribefire.platform.impl.initializer.CortexConfigurationPostInitializer;
 import tribefire.platform.impl.initializer.Edr2ccPostInitializer;
-import tribefire.platform.impl.configuration.denotrans.DenotationTransformationExecutor;
-import tribefire.platform.impl.configuration.denotrans.DenotationTransformerRegistryImpl;
 import tribefire.platform.wire.space.common.MarshallingSpace;
 import tribefire.platform.wire.space.common.ResourceProcessingSpace;
 import tribefire.platform.wire.space.cortex.deployment.StateChangeProcessorsSpace;
@@ -143,7 +144,7 @@ public class CortexAccessSpace extends CollaborativeSystemAccessSpaceBase {
 		List<PersistenceInitializer> result = TfEnvCsaPriming.getEnvironmentInitializersFor(id());
 		result.add(edr2ccPostInitializer());
 		result.add(cortexConfigurationPostInitializer());
-		result.add(coreModelSecurityInitializer());
+		result.add(coreModelSecurityPostInitializer());
 		result.add(deployables.schrodingerBeanCoupler());
 		return result;
 	}
@@ -164,8 +165,8 @@ public class CortexAccessSpace extends CollaborativeSystemAccessSpaceBase {
 	}
 
 	@Managed
-	private CoreModelSecurityInitializer coreModelSecurityInitializer() {
-		CoreModelSecurityInitializer bean = new CoreModelSecurityInitializer();
+	private CoreModelSecurityPostInitializer coreModelSecurityPostInitializer() {
+		CoreModelSecurityPostInitializer bean = new CoreModelSecurityPostInitializer();
 		return bean;
 	}
 
