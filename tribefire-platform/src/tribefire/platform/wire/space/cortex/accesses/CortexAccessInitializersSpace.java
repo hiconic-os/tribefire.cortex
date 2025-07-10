@@ -125,6 +125,7 @@ import com.braintribe.model.meta.selector.NegationSelector;
 import com.braintribe.model.meta.selector.PropertyNameSelector;
 import com.braintribe.model.meta.selector.PropertyOfSelector;
 import com.braintribe.model.meta.selector.UseCaseSelector;
+import com.braintribe.model.platformreflection.request.PlatformReflectionRequest;
 import com.braintribe.model.platformsetup.api.request.CloseTrunkAsset;
 import com.braintribe.model.platformsetup.api.request.RenameAsset;
 import com.braintribe.model.platformsetup.api.request.TransferAsset;
@@ -264,7 +265,7 @@ public class CortexAccessInitializersSpace implements WireSpace {
 				basicResourceModelMetaDataInitializer(),
 				i18nModelMetaDataInitializer(),
 				serviceDomainInitializer(),
-				platformDomainModelInitializer(),
+				platformDomainModelInitializer(), // depends on coreModelSecurityInitializer()
 				defaultDomainModelInitializer(),
 				checkApiModelMetaDataInitializer(),
 				advancedPropertyGroupInitializer(),
@@ -1187,7 +1188,10 @@ public class CortexAccessInitializersSpace implements WireSpace {
 		bean.setModelName(platformServiceModelName);
 		bean.setMetaDataConfigurer((modelEditor, session) -> {
 			// by default we hide generic exposure of requests for swagger and GME.
-			modelEditor.onEntityType(ServiceRequest.T).addMetaData(hiddenServiceRequestUiOrSwagger(session));
+			modelEditor.onEntityType(ServiceRequest.T) //
+					.addMetaData(hiddenServiceRequestUiOrSwagger(session));
+			modelEditor.onEntityType(PlatformReflectionRequest.T) //
+					.addMetaData(CoreModelSecurityInitializer.getHiddenForNonAdminMd(session));
 		});
 
 		return bean;

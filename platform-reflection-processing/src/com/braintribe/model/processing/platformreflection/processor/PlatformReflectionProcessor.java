@@ -42,6 +42,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -65,6 +66,11 @@ import com.braintribe.common.lcd.Numbers;
 import com.braintribe.devrock.model.repositoryview.resolution.RepositoryViewResolution;
 import com.braintribe.exception.Exceptions;
 import com.braintribe.gm.model.marshaller.api.request.ExecuteAndMarshallResponse;
+import com.braintribe.gm.model.reason.Maybe;
+import com.braintribe.gm.model.reason.Reasons;
+import com.braintribe.gm.model.security.reason.Forbidden;
+import com.braintribe.gm.model.security.reason.MissingSession;
+import com.braintribe.gm.model.security.reason.SecurityReason;
 import com.braintribe.logging.Logger;
 import com.braintribe.model.access.collaboration.distributed.api.DcsaIterable;
 import com.braintribe.model.access.collaboration.distributed.api.DcsaSharedStorage;
@@ -153,6 +159,7 @@ import com.braintribe.model.processing.platformreflection.processor.ReflectionRe
 import com.braintribe.model.processing.platformreflection.tf.TribefireInformationProvider;
 import com.braintribe.model.processing.service.api.ServiceRequestContext;
 import com.braintribe.model.processing.service.common.FailureCodec;
+import com.braintribe.model.processing.service.common.context.UserSessionAspect;
 import com.braintribe.model.processing.service.common.topology.InstanceIdComparator;
 import com.braintribe.model.processing.service.impl.AbstractDispatchingServiceProcessor;
 import com.braintribe.model.processing.service.impl.DispatchConfiguration;
@@ -168,6 +175,7 @@ import com.braintribe.model.service.api.result.MulticastResponse;
 import com.braintribe.model.service.api.result.ResponseEnvelope;
 import com.braintribe.model.service.api.result.ServiceResult;
 import com.braintribe.model.service.api.result.StillProcessing;
+import com.braintribe.model.usersession.UserSession;
 import com.braintribe.processing.async.api.AsyncCallback;
 import com.braintribe.provider.Holder;
 import com.braintribe.utils.DateTools;
@@ -266,6 +274,38 @@ public class PlatformReflectionProcessor extends AbstractDispatchingServiceProce
 	@Override
 	public void postConstruct() {
 		initHotspotMBean();
+	}
+
+	@Override
+	public Maybe<? extends Object> processReasoned(ServiceRequestContext context, PlatformReflectionRequest request) {
+		SecurityReason reason = authorize(context);
+		if (reason != null)
+			return reason.asMaybe();
+
+		return super.processReasoned(context, request);
+	}
+
+	private SecurityReason authorize(ServiceRequestContext context) {
+		UserSession userSession = context.findAspect(UserSessionAspect.class);
+		if (userSession == null)
+			return Reasons.build(MissingSession.T) //
+					.text("Missing UserSession information.") //
+					.toReason();
+
+		if (!isAdminOrInternal(userSession))
+			return Reasons.build(Forbidden.T) //
+					.text("Access denied.") //
+					.toReason();
+
+		return null;
+	}
+
+	private boolean isAdminOrInternal(UserSession userSession) {
+		Set<String> roles = userSession.getEffectiveRoles();
+
+		return roles.contains("tf-admin") || //
+				roles.contains("tf-internal") || //
+				roles.contains("tf-locksmith");
 	}
 
 	protected PackagingInformation getPackagingInformation(ServiceRequestContext context, GetPackagingInformation request) {

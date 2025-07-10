@@ -45,7 +45,6 @@ import tribefire.platform.impl.denotrans.SystemAccessesDenotationEnricher;
 import tribefire.platform.impl.denotrans.SystemDeployablesAutoDeployEnsuringEnricher;
 import tribefire.platform.impl.denotrans.TransientMessagingAccessWithSqlBinaryProcessorEnricher;
 import tribefire.platform.impl.denotrans.UserSessionServiceEnricher;
-import tribefire.platform.impl.initializer.CoreModelSecurityInitializer;
 import tribefire.platform.impl.initializer.CoreModelSecurityPostInitializer;
 import tribefire.platform.impl.initializer.CortexConfigurationPostInitializer;
 import tribefire.platform.impl.initializer.Edr2ccPostInitializer;
