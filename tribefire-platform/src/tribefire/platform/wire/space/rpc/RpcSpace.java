@@ -427,8 +427,6 @@ public class RpcSpace implements WireSpace {
 	@Managed
 	public CurrentUserInformationRequestProcessor currentUserInformationProcessor() {
 		CurrentUserInformationRequestProcessor bean = new CurrentUserInformationRequestProcessor();
-		bean.setAuthAccessSupplier(authAccess::access);
-		bean.setUserSessionProvider(authContext.currentUser().userSessionSupplier());
 		return bean;
 	}
 
