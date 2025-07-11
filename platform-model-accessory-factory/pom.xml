@@ -20,7 +20,7 @@ limitations under the License.
         <version>[3.0,3.1)</version>
     </parent>
     <artifactId>platform-model-accessory-factory</artifactId>
-    <version>3.0.10</version>
+    <version>3.0.11</version>
     <properties/>
     <licenses>
         <license>
