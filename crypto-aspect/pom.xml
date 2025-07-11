@@ -20,7 +20,7 @@ limitations under the License.
         <version>[3.0,3.1)</version>
     </parent>
     <artifactId>crypto-aspect</artifactId>
-    <version>3.0.8</version>
+    <version>3.0.9</version>
     <properties>
         <archetype>library</archetype>
     </properties>
