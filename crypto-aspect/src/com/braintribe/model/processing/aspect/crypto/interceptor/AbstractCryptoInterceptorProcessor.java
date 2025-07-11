@@ -16,7 +16,6 @@
 package com.braintribe.model.processing.aspect.crypto.interceptor;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import com.braintribe.crypto.Cryptor;
@@ -26,9 +25,6 @@ import com.braintribe.logging.Logger;
 import com.braintribe.model.generic.GMF;
 import com.braintribe.model.generic.GenericEntity;
 import com.braintribe.model.generic.reflection.EntityType;
-import com.braintribe.model.generic.reflection.Property;
-import com.braintribe.model.meta.data.MetaData;
-import com.braintribe.model.meta.data.constraint.Unique;
 import com.braintribe.model.meta.data.crypto.PropertyCrypting;
 import com.braintribe.model.processing.aop.api.context.AroundContext;
 import com.braintribe.model.processing.aop.api.interceptor.AroundInterceptor;
@@ -298,34 +294,6 @@ public abstract class AbstractCryptoInterceptorProcessor<I, O> implements Crypto
 
 	}
 
-	public boolean isUniqueKeyProperty(EntityType<? extends GenericEntity> entityType, Property property) throws CryptoInterceptionException {
-		
-		boolean isKey = false;
-		
-		if (property.isIdentifier()) {
-			isKey = true;
-			
-		} else {
-			List<? extends MetaData> result = null;
-
-			try {
-				isKey = metaDataResolver.getMetaData().entityType(entityType).property(property).is(Unique.T);
-
-			} catch (Exception e) {
-				throw asCryptoInterceptionException("Failed to resolve predicate 'Unique' for [ " + entityType.getTypeSignature() + " ] property [ " + property + " ]", e);
-			}
-			
-			isKey = result != null && !result.isEmpty();
-			
-		}
-		
-		if (isTraceLogEnabled) {
-			logger.trace(" [ " + entityType.getTypeSignature() + " ] property [ " + property.getName() + " ] is "+(!isKey ? "not " :"")+"a unique key");
-		}
-
-		return isKey;
-	}
-	
 	protected static CryptoInterceptionException asCryptoInterceptionException(String message, Throwable e) {
 		return new CryptoInterceptionException(message + (e.getMessage() != null ? ": " + e.getMessage() : ""), e);
 	}

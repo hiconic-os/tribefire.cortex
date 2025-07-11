@@ -44,23 +44,20 @@ import com.braintribe.model.processing.aspect.crypto.interceptor.CryptoIntercept
 
 /**
  * <p>
- * A
- * {@link com.braintribe.model.processing.aspect.crypto.interceptor.CryptoInterceptorProcessor}
- * which performs cryptographic operations on manipulation data.
+ * A {@link com.braintribe.model.processing.aspect.crypto.interceptor.CryptoInterceptorProcessor} which performs cryptographic operations on
+ * manipulation data.
  * 
  * <p>
- * When applicable, {@link ManipulationRequest} data is encrypted, whereas
- * {@link ManipulationResponse} data is decrypted.
+ * When applicable, {@link ManipulationRequest} data is encrypted, whereas {@link ManipulationResponse} data is decrypted.
  * 
  */
-public class CryptoManipulationInterceptorProcessor
-		extends AbstractCryptoInterceptorProcessor<ManipulationRequest, ManipulationResponse> {
+public class CryptoManipulationInterceptorProcessor extends AbstractCryptoInterceptorProcessor<ManipulationRequest, ManipulationResponse> {
 
 	private static final Logger log = Logger.getLogger(CryptoManipulationInterceptorProcessor.class);
 
-	private Map<PropertyManipulation, Object> encryptedValues = new HashMap<>();
+	private final Map<PropertyManipulation, Object> encryptedValues = new HashMap<>();
 
-	private boolean overwriteNewValuesWithCloning = true;
+	private final boolean overwriteNewValuesWithCloning = true;
 
 	protected CryptoManipulationInterceptorProcessor(CryptoInterceptorConfiguration cryptoInterceptorConfiguration,
 			AroundContext<ManipulationRequest, ManipulationResponse> aroundContext) {
@@ -69,30 +66,24 @@ public class CryptoManipulationInterceptorProcessor
 
 	@Override
 	public boolean mustProcessRequest() throws CryptoInterceptionException {
-
 		encryptChangedValues();
-
 		return encryptedValues != null && !encryptedValues.isEmpty();
 
 	}
 
 	@Override
 	public ManipulationRequest processRequest() throws CryptoInterceptionException {
-
 		if (overwriteNewValuesWithCloning) {
 			ManipulationRequest manipulationRequest = cloneManipulationRequest(aroundContext.getRequest());
 			return manipulationRequest;
 		} else {
 			return aroundContext.getRequest();
 		}
-
 	}
 
 	@Override
 	public boolean mustProcessResponse() {
-
 		// Manipulation responses are currently not encrypted nor decrypted.
-
 		return false;
 	}
 
@@ -101,23 +92,17 @@ public class CryptoManipulationInterceptorProcessor
 		return response;
 	}
 
-	protected ManipulationRequest cloneManipulationRequest(ManipulationRequest manipulationRequest)
-			throws CryptoInterceptionException {
-
+	protected ManipulationRequest cloneManipulationRequest(ManipulationRequest manipulationRequest) throws CryptoInterceptionException {
 		if (manipulationRequest == null) {
 			throw new CryptoInterceptionException("No manipulation request.");
 		}
 
-		long t = 0;
+		long t = System.currentTimeMillis();
 		try {
-			if (isTraceLogEnabled) {
-				t = System.currentTimeMillis();
-			}
-
 			EntityType<ManipulationRequest> manipulationRequestType = manipulationRequest.entityType();
 
-			ManipulationRequest clonedManipulationRequest = (ManipulationRequest) manipulationRequestType.clone(
-					new NewValueReplacingCloningContext(), manipulationRequest, StrategyOnCriterionMatch.reference);
+			ManipulationRequest clonedManipulationRequest = (ManipulationRequest) manipulationRequestType.clone(new NewValueReplacingCloningContext(),
+					manipulationRequest, StrategyOnCriterionMatch.reference);
 
 			return clonedManipulationRequest;
 
@@ -138,8 +123,7 @@ public class CryptoManipulationInterceptorProcessor
 
 		if (requestManipulation instanceof CompoundManipulation) {
 
-			for (Manipulation manipulation : ((CompoundManipulation) requestManipulation)
-					.getCompoundManipulationList()) {
+			for (Manipulation manipulation : ((CompoundManipulation) requestManipulation).getCompoundManipulationList()) {
 				if (manipulation instanceof PropertyManipulation) {
 
 					PropertyManipulation atomicManipulation = (PropertyManipulation) manipulation;
@@ -147,7 +131,6 @@ public class CryptoManipulationInterceptorProcessor
 					if (isEligibleForEncryption(atomicManipulation)) {
 						encryptChangedValues(atomicManipulation);
 					}
-
 				}
 			}
 
@@ -161,26 +144,21 @@ public class CryptoManipulationInterceptorProcessor
 
 		} else {
 			if (isTraceLogEnabled) {
-				log.trace("Manipulaton won't be inspected for encryptable properties due to its type: "
-						+ requestManipulation);
+				log.trace("Manipulaton won't be inspected for encryptable properties due to its type: " + requestManipulation);
 			}
 		}
-
 	}
 
 	protected void encryptChangedValues(PropertyManipulation manipulation) throws CryptoInterceptionException {
 
 		Owner owner = manipulation.getOwner();
-
 		if (owner == null) {
 			throw new CryptoInterceptionException("Cannot encrypt the new value of a manipulation with no owner");
 		}
 
 		String propertyName = manipulation.getOwner().getPropertyName();
-
 		if (propertyName == null) {
-			throw new CryptoInterceptionException(
-					"Cannot encrypt the new value of a manipulation with no property name on its owner");
+			throw new CryptoInterceptionException("Cannot encrypt the new value of a manipulation with no property name on its owner");
 		}
 
 		EntityType<? extends GenericEntity> entityType = getEntityTypeFromOwner(owner);
@@ -188,24 +166,21 @@ public class CryptoManipulationInterceptorProcessor
 		Encryptor encryptor = mustEncrypt(entityType, propertyName);
 
 		if (encryptor != null) {
-
 			switch (manipulation.manipulationType()) {
-			case ADD:
-				encryptChangedValues(encryptor, (AddManipulation) manipulation);
-				break;
-			case CHANGE_VALUE:
-				encryptChangedValues(encryptor, (ChangeValueManipulation) manipulation);
-				break;
-			default:
-				return;
+				case ADD:
+					encryptChangedValues(encryptor, (AddManipulation) manipulation);
+					break;
+				case CHANGE_VALUE:
+					encryptChangedValues(encryptor, (ChangeValueManipulation) manipulation);
+					break;
+				default:
+					return;
 			}
 		}
 
 	}
 
-	protected void encryptChangedValues(Encryptor encryptor, ChangeValueManipulation manipulation)
-			throws CryptoInterceptionException {
-
+	protected void encryptChangedValues(Encryptor encryptor, ChangeValueManipulation manipulation) throws CryptoInterceptionException {
 		if (!(manipulation.getNewValue() instanceof String)) {
 			return;
 		}
@@ -225,8 +200,7 @@ public class CryptoManipulationInterceptorProcessor
 
 	}
 
-	protected void encryptChangedValues(Encryptor encryptor, AddManipulation manipulation)
-			throws CryptoInterceptionException {
+	protected void encryptChangedValues(Encryptor encryptor, AddManipulation manipulation) throws CryptoInterceptionException {
 
 		try {
 
@@ -266,11 +240,11 @@ public class CryptoManipulationInterceptorProcessor
 
 	private static boolean isEligibleForEncryption(PropertyManipulation atomicManipulation) {
 		switch (atomicManipulation.manipulationType()) {
-		case ADD:
-		case CHANGE_VALUE:
-			return true;
-		default:
-			return false;
+			case ADD:
+			case CHANGE_VALUE:
+				return true;
+			default:
+				return false;
 		}
 	}
 
@@ -315,16 +289,13 @@ public class CryptoManipulationInterceptorProcessor
 
 	protected class NewValueReplacingCloningContext extends StandardCloningContext {
 
-		private Map<GenericEntity, String> skipProperties = new HashMap<>();
+		private final Map<GenericEntity, String> skipProperties = new HashMap<>();
 
 		public NewValueReplacingCloningContext() {
 		}
 
 		@Override
-		@SuppressWarnings("unchecked")
-		public GenericEntity supplyRawClone(EntityType<? extends GenericEntity> entityType,
-				GenericEntity instanceToBeCloned) {
-
+		public GenericEntity supplyRawClone(EntityType<? extends GenericEntity> entityType, GenericEntity instanceToBeCloned) {
 			GenericEntity clonedInstance = super.supplyRawClone(entityType, instanceToBeCloned);
 
 			if (!(clonedInstance instanceof PropertyManipulation)) {
@@ -347,20 +318,17 @@ public class CryptoManipulationInterceptorProcessor
 		}
 
 		@Override
-		public boolean canTransferPropertyValue(EntityType<? extends GenericEntity> entityType, Property property,
-				GenericEntity instanceToBeCloned, GenericEntity clonedInstance,
-				AbsenceInformation sourceAbsenceInformation) {
+		public boolean canTransferPropertyValue(EntityType<? extends GenericEntity> entityType, Property property, GenericEntity instanceToBeCloned,
+				GenericEntity clonedInstance, AbsenceInformation sourceAbsenceInformation) {
 
 			if (!(clonedInstance instanceof PropertyManipulation)) {
-				return super.canTransferPropertyValue(entityType, property, instanceToBeCloned, clonedInstance,
-						sourceAbsenceInformation);
+				return super.canTransferPropertyValue(entityType, property, instanceToBeCloned, clonedInstance, sourceAbsenceInformation);
 			}
 
 			String skipProp = skipProperties.get(clonedInstance);
 
 			if (skipProp == null || !property.getName().equals(skipProp)) {
-				return super.canTransferPropertyValue(entityType, property, instanceToBeCloned, clonedInstance,
-						sourceAbsenceInformation);
+				return super.canTransferPropertyValue(entityType, property, instanceToBeCloned, clonedInstance, sourceAbsenceInformation);
 			} else {
 				return false;
 			}
