@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.braintribe.common.lcd.Tuple;
 import com.braintribe.common.lcd.Tuple.Tuple3;
+import com.braintribe.exception.Exceptions;
 import com.braintribe.model.meta.GmMetaModel;
 import com.braintribe.model.processing.accessory.api.PlatformModelEssentials;
 import com.braintribe.model.processing.accessory.api.PlatformModelEssentialsSupplier;
@@ -59,9 +60,15 @@ import com.braintribe.model.processing.session.impl.managed.BasicManagedGmSessio
 	}
 
 	private PlatformModelEssentials createNewAccessPme(Tuple3<String, String, Boolean> k) {
-		PlatformModelEssentials result = createNewAccessPme(k.val0(), k.val1(), k.val2());
-		result.addListener(() -> accessPmeCache.remove(k));
-		return result;
+		try {
+			PlatformModelEssentials result = createNewAccessPme(k.val0(), k.val1(), k.val2());
+			result.addListener(() -> accessPmeCache.remove(k));
+			return result;
+
+		} catch (RuntimeException e) {
+			throw Exceptions.contextualize(e, "Error while creating model essentials for accessId: " + k.val0());
+		}
+
 	}
 
 	/** Cannot return null! */
@@ -80,9 +87,14 @@ import com.braintribe.model.processing.session.impl.managed.BasicManagedGmSessio
 	}
 
 	private PlatformModelEssentials createNewServiceDomainPme(Tuple3<String, String, Boolean> k) {
-		PlatformModelEssentials result = createNewServiceDomainPme(k.val0(), k.val1(), k.val2());
-		result.addListener(() -> sdPmeCache.remove(k));
-		return result;
+		try {
+			PlatformModelEssentials result = createNewServiceDomainPme(k.val0(), k.val1(), k.val2());
+			result.addListener(() -> sdPmeCache.remove(k));
+			return result;
+
+		} catch (RuntimeException e) {
+			throw Exceptions.contextualize(e, "Error while creating model essentials for service domain: " + k.val0());
+		}
 	}
 
 	/** Cannot return null! */

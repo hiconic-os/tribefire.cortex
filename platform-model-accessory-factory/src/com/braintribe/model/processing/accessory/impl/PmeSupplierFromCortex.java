@@ -488,6 +488,9 @@ public class PmeSupplierFromCortex extends PmeSupplierBase implements ServicePro
 	}
 
 	private void logNewPme(PmeKey key) {
+		if (!log.isTraceEnabled())
+			return;
+
 		StringBuilder sb = new StringBuilder();
 		sb.append("[TMP] Creating new PME, cache size so far: " + pmeCache.size());
 		sb.append(". New and cached keys:\n\t");
