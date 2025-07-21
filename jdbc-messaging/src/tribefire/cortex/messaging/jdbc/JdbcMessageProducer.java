@@ -111,8 +111,8 @@ public class JdbcMessageProducer extends JdbcAbstractMessageHandler implements M
 		envelope.expiration = expiration != null ? expiration : System.currentTimeMillis() + timeToLive;
 
 		Map<String, Object> props = message.getProperties();
-		envelope.addresseeNodeId = (String) props.get(MessageProperties.addreseeAppId.getName());
-		envelope.addresseeAppId = (String) props.get(MessageProperties.addreseeNodeId.getName());
+		envelope.addresseeNodeId = (String) props.get(MessageProperties.addreseeNodeId.getName());
+		envelope.addresseeAppId = (String) props.get(MessageProperties.addreseeAppId.getName());
 
 		return envelope;
 	}
