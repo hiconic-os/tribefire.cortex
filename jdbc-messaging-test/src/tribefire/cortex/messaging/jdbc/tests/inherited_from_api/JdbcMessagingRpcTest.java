@@ -55,7 +55,7 @@ public class JdbcMessagingRpcTest extends GmMessagingRpcTest {
 
 	@Override
 	protected MessagingContext getMessagingContext() {
-		return msgInstance.messagingContex;
+		return msgInstance.messagingContext;
 	}
 
 }

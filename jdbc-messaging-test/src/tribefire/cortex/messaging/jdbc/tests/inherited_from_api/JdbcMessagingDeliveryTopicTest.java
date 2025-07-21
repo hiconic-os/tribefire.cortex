@@ -36,7 +36,7 @@ import tribefire.cortex.messaging.jdbc.tests.JdbcMessagingInstance;
 @Category(SpecialEnvironment.class)
 public class JdbcMessagingDeliveryTopicTest extends GmMessagingDeliveryTopicTest {
 
-	private static JdbcMessagingInstance msgInstance = new JdbcMessagingInstance();
+	private static JdbcMessagingInstance msgInstance;
 
 	@BeforeClass
 	public static void setup() {
@@ -55,7 +55,7 @@ public class JdbcMessagingDeliveryTopicTest extends GmMessagingDeliveryTopicTest
 
 	@Override
 	protected MessagingContext getMessagingContext() {
-		return msgInstance.messagingContex;
+		return msgInstance.messagingContext;
 	}
 
 }

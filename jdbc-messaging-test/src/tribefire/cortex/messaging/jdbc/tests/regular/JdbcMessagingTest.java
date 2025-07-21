@@ -4,6 +4,8 @@ import static com.braintribe.testing.junit.assertions.assertj.core.api.Assertion
 import static com.braintribe.testing.junit.assertions.gm.assertj.core.api.GmAssertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Map;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -16,6 +18,7 @@ import com.braintribe.model.messaging.Topic;
 import com.braintribe.testing.category.SpecialEnvironment;
 import com.braintribe.transport.messaging.api.MessageConsumer;
 import com.braintribe.transport.messaging.api.MessageProducer;
+import com.braintribe.transport.messaging.api.MessageProperties;
 
 import tribefire.cortex.messaging.jdbc.model.MessagePayload;
 import tribefire.cortex.messaging.jdbc.tests.JdbcMessagingInstance;
@@ -33,8 +36,8 @@ public class JdbcMessagingTest {
 
 	@BeforeClass
 	public static void setup() {
-		msgInstanceA = new JdbcMessagingInstance();
-		msgInstanceB = new JdbcMessagingInstance();
+		msgInstanceA = new JdbcMessagingInstance("node-a");
+		msgInstanceB = new JdbcMessagingInstance("node-b");
 	}
 
 	@AfterClass
@@ -49,7 +52,7 @@ public class JdbcMessagingTest {
 	// assert all Topic consumers received message
 	// assert just a single Queue consumer received message
 
-	@Test
+	@Test(timeout = 5000L)
 	public void testBasicFunctionality() throws Exception {
 		Topic topic = Topic.create("T1");
 		Queue queue = Queue.create("Q1");
@@ -88,13 +91,37 @@ public class JdbcMessagingTest {
 		qConsumerA1.close();
 	}
 
+	@Test(timeout = 5000L)
+	public void testAdressedMessage() throws Exception {
+		Topic topic = Topic.create("T1");
+
+		MessageConsumer tConsumerA = msgInstanceA.session.createMessageConsumer(topic);
+		MessageConsumer tConsumerB = msgInstanceB.session.createMessageConsumer(topic);
+
+		MessageProducer msgProducer = msgInstanceA.session.createMessageProducer();
+
+		String appId = JdbcMessagingInstance.APPLICATION_ID;
+		String nodeId = msgInstanceB.messagingContext.getNodeId();
+
+		msgProducer.sendMessage(createMessageTo("TOPIC", appId, nodeId), topic);
+		msgProducer.close();
+
+		assertReceive(tConsumerB, "TOPIC");
+
+		assertNoMoreMessage(tConsumerA);
+		assertNoMoreMessage(tConsumerB);
+
+		tConsumerA.close();
+		tConsumerB.close();
+	}
+
 	/**
 	 * IMPORTANT!!!
 	 * 
 	 * This might in theory fail, if previous tests left some messages over, which expire during the run of this test. To be sure, run as a stand
 	 * alone test.
 	 */
-	@Test
+	@Test(timeout = 5000L)
 	public void testDeletesExpiredMessages() throws Exception {
 		Topic topic = Topic.create("T1");
 
@@ -183,6 +210,16 @@ public class JdbcMessagingTest {
 
 	private int deleteExpiredMessages() {
 		return msgInstanceA.connectionProvider.deleteExpiredMessages();
+	}
+
+	private Message createMessageTo(String text, String appId, String nodeId) {
+		Message msg = createMessage(text);
+
+		Map<String, Object> props = msg.getProperties();
+		props.put(MessageProperties.addreseeAppId.getName(), appId);
+		props.put(MessageProperties.addreseeNodeId.getName(), nodeId);
+
+		return msg;
 	}
 
 	private Message createMessage(String text) {

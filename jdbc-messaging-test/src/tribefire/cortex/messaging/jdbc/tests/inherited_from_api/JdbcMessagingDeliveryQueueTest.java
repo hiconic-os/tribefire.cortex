@@ -55,7 +55,7 @@ public class JdbcMessagingDeliveryQueueTest extends GmMessagingDeliveryQueueTest
 
 	@Override
 	protected MessagingContext getMessagingContext() {
-		return msgInstance.messagingContex;
+		return msgInstance.messagingContext;
 	}
 
 	
