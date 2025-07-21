@@ -166,7 +166,7 @@ public abstract class QueryInterceptor<Q extends Query, R extends QueryResult> i
 
 		if (!contextBuilder.is(Visible.T)) {
 			logQueryNotAllowed(contextBuilder.meta(Visible.T), "entity is not visible");
-			throw new AuthorizationException("Query not allowed. EEntity not visible: " + sourceType.getTypeSignature());
+			throw new AuthorizationException("Query not allowed. Entity not visible: " + sourceType.getTypeSignature());
 		}
 
 		if (!contextBuilder.is(Queryable.T)) {

@@ -63,7 +63,7 @@ public abstract class DtStep {
 
 				if (maybeTransformed.get() != instance)
 					throw new IllegalStateException("Enricher " + currentEnricher.name() + " has switched the processed instance.\n    Original: "
-							+ instance + "\n    Newe: " + maybeTransformed.get());
+							+ instance + "\n    New: " + maybeTransformed.get());
 				
 				markEnrichersReady();
 			}
