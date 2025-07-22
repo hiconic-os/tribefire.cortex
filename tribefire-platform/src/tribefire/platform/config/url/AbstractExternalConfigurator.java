@@ -134,14 +134,15 @@ public abstract class AbstractExternalConfigurator implements Configurator, Cont
 	protected List<RegistryEntry> readConfigurationFromInputStream(Reader reader) {
 		return readConfigurationFromInputStream(reader, null);
 	}
-	
+
 	/**
 	 * Helper method to load entries from a {@link Reader}. This method will not throw any exception but will only log errors/warnings to the logging
 	 * framework.
 	 * 
 	 * @param reader
 	 *            The input stream that provides entries in JSON format (or any other format if an alternative marshaller is set).
-	 * @param filename the filename used as a hint to select a marshaller (*.json, *.yaml) or null which implies json
+	 * @param filename
+	 *            the filename used as a hint to select a marshaller (*.json, *.yaml) or null which implies json
 	 * @return A list of entries or null, if no were found or an error occurred.
 	 */
 	protected List<RegistryEntry> readConfigurationFromInputStream(Reader reader, String filename) {
@@ -150,11 +151,9 @@ public abstract class AbstractExternalConfigurator implements Configurator, Cont
 
 			TeeReader teeReader = new TeeReader(reader, Numbers.MILLION);
 
-			boolean placeholderSupport = Boolean.TRUE.toString().equals(
-					TribefireRuntime.getProperty("CX_EXTERNAL_CONFIG_PLACEHOLDER_SUPPORT"));
-			
-				GmDeserializationContextBuilder optionsBuilder = GmDeserializationOptions.deriveDefaults()
-					.set(EntityFactory.class, EntityType::create)
+			boolean placeholderSupport = Boolean.TRUE.toString().equals(TribefireRuntime.getProperty("CX_EXTERNAL_CONFIG_PLACEHOLDER_SUPPORT"));
+
+			GmDeserializationContextBuilder optionsBuilder = GmDeserializationOptions.deriveDefaults().set(EntityFactory.class, EntityType::create)
 					.set(PlaceholderSupport.class, placeholderSupport);
 
 			CharacterMarshaller effectiveMarshaller = selectMarshallerAndOptions(filename, optionsBuilder);
@@ -162,9 +161,12 @@ public abstract class AbstractExternalConfigurator implements Configurator, Cont
 			GmDeserializationOptions options = optionsBuilder.build();
 			Object result = effectiveMarshaller.unmarshall(teeReader, options);
 
-			if (placeholderSupport)
-				result = new ConfigVariableResolver().resolvePlaceholders(result).get();
-			
+			if (placeholderSupport) {
+				ConfigVariableResolver configVariableResolver = new ConfigVariableResolver();
+				configVariableResolver.setVariableResolver(TribefireRuntime::getProperty);
+				result = configVariableResolver.resolvePlaceholders(result).get();
+			}
+
 			if (result instanceof RegistryEntry) {
 				entries.add((RegistryEntry) result);
 			} else if (result instanceof List<?>) {
@@ -196,8 +198,8 @@ public abstract class AbstractExternalConfigurator implements Configurator, Cont
 	}
 
 	private CharacterMarshaller selectMarshallerAndOptions(String filename, GmDeserializationContextBuilder optionsBuilder) {
-		String extension = filename != null? FileTools.getExtension(filename).toLowerCase(): "json";
-		
+		String extension = filename != null ? FileTools.getExtension(filename).toLowerCase() : "json";
+
 		switch (extension) {
 			case "yml":
 			case "yaml":
