@@ -22,12 +22,14 @@ import com.braintribe.model.processing.securityservice.basic.MetaDataDispatching
 import com.braintribe.model.processing.securityservice.basic.SecurityServiceProcessor;
 import com.braintribe.model.processing.securityservice.basic.verification.SameOriginUserSessionVerification;
 import com.braintribe.model.processing.service.api.ServiceProcessor;
+import com.braintribe.model.security.service.config.OpenUserSessionConfiguration;
 import com.braintribe.model.securityservice.SecurityRequest;
 import com.braintribe.web.servlet.auth.WebLogoutInterceptor;
 import com.braintribe.wire.api.annotation.Import;
 import com.braintribe.wire.api.annotation.Managed;
 import com.braintribe.wire.api.space.WireSpace;
 
+import tribefire.module.wire.contract.TribefireWebPlatformContract;
 import tribefire.platform.wire.space.bindings.BindingsSpace;
 import tribefire.platform.wire.space.common.EnvironmentSpace;
 import tribefire.platform.wire.space.common.HttpSpace;
@@ -35,6 +37,8 @@ import tribefire.platform.wire.space.common.MarshallingSpace;
 import tribefire.platform.wire.space.common.ResourceProcessingSpace;
 import tribefire.platform.wire.space.cortex.GmSessionsSpace;
 import tribefire.platform.wire.space.cortex.accesses.CortexAccessSpace;
+import tribefire.platform.wire.space.module.TribefireWebPlatformSpace;
+import tribefire.platform.wire.space.module.WebPlatformReflectionSpace;
 import tribefire.platform.wire.space.rpc.RpcSpace;
 import tribefire.platform.wire.space.security.AuthContextSpace;
 import tribefire.platform.wire.space.security.AuthenticatorsSpace;
@@ -84,6 +88,9 @@ public class SecurityServiceSpace implements WireSpace {
 
 	@Import
 	private AuthAccessSpace authAccess;
+	
+	@Import
+	private WebPlatformReflectionSpace webPlatformReflection;
 
 	public String serviceId() {
 		return serviceId;
@@ -114,6 +121,7 @@ public class SecurityServiceSpace implements WireSpace {
 		// user statistics
 		bean.setEnableUserStatistics(statisticsEnabled());
 		bean.setUserStatisticsGmSessionProvider(userStatisticsAccess::lowLevelSession);
+		bean.setOpenUserSessionConfiguration(webPlatformReflection.readConfig(OpenUserSessionConfiguration.T).get());
 		return bean;
 	}
 

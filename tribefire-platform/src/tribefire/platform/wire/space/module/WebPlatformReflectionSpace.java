@@ -17,6 +17,10 @@ package tribefire.platform.wire.space.module;
 
 import java.util.List;
 
+import com.braintribe.gm.config.yaml.ModeledYamlConfiguration;
+import com.braintribe.gm.model.reason.Maybe;
+import com.braintribe.model.generic.GenericEntity;
+import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.processing.bootstrapping.TribefireRuntime;
 import com.braintribe.model.service.api.InstanceId;
 import com.braintribe.wire.api.annotation.Import;
@@ -25,6 +29,7 @@ import com.braintribe.wire.api.annotation.Managed;
 import tribefire.module.api.EnvironmentDenotations;
 import tribefire.module.wire.contract.ModuleReflectionContract;
 import tribefire.module.wire.contract.WebPlatformReflectionContract;
+import tribefire.platform.wire.space.MasterResourcesSpace;
 import tribefire.platform.wire.space.common.CartridgeInformationSpace;
 import tribefire.platform.wire.space.common.EnvironmentSpace;
 
@@ -42,6 +47,9 @@ public class WebPlatformReflectionSpace implements WebPlatformReflectionContract
 
 	@Import
 	private ModuleInitializationSpace moduleInitialization;
+	
+	@Import
+	private MasterResourcesSpace masterResources;
 
 	@Override
 	public InstanceId instanceId() {
@@ -73,5 +81,16 @@ public class WebPlatformReflectionSpace implements WebPlatformReflectionContract
 	public List<ModuleReflectionContract> modules() {
 		return moduleInitialization.moduleLoader().moduleReflectionContracts();
 	}
-
+	
+	@Override
+	public <C extends GenericEntity> Maybe<C> readConfig(EntityType<C> configType) {
+		return modeledConfiguration().configReasoned(configType);
+	}
+	
+	@Managed
+	private ModeledYamlConfiguration modeledConfiguration() {
+		ModeledYamlConfiguration bean = new ModeledYamlConfiguration();
+		bean.setConfigFolder(masterResources.confPath().toFile());
+		return bean;
+	}
 }

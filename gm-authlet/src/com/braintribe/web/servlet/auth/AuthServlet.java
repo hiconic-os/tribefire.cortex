@@ -31,12 +31,15 @@ import com.braintribe.codec.marshaller.api.GmDeserializationOptions;
 import com.braintribe.codec.marshaller.api.Marshaller;
 import com.braintribe.codec.marshaller.api.MarshallerRegistry;
 import com.braintribe.common.attribute.AttributeContext;
+import com.braintribe.common.attribute.common.Waypoint;
 import com.braintribe.exception.HttpException;
 import com.braintribe.gm.model.reason.Maybe;
 import com.braintribe.gm.model.reason.Reason;
 import com.braintribe.gm.model.reason.Reasons;
 import com.braintribe.gm.model.reason.essential.InternalError;
 import com.braintribe.gm.model.reason.essential.InvalidArgument;
+import com.braintribe.gm.model.security.reason.AuthenticationFailure;
+import com.braintribe.gm.model.security.reason.Forbidden;
 import com.braintribe.gm.model.security.reason.SecurityReason;
 import com.braintribe.logging.Logger;
 import com.braintribe.model.generic.eval.EvalContext;
@@ -88,7 +91,7 @@ public class AuthServlet extends HttpServlet {
 		}
 		return remoteAddressResolver;
 	}
-
+	
 	@Override
 	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
@@ -118,7 +121,8 @@ public class AuthServlet extends HttpServlet {
 
 				Marshaller marshaller = marshallerRegistry.getMarshaller("application/json");
 				resp.setContentType("application/json");
-				resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+				
+				resp.setStatus(getStatus(whyUnsatisfied));
 				marshaller.marshall(resp.getOutputStream(), whyUnsatisfied);
 				return;
 			}
@@ -132,6 +136,18 @@ public class AuthServlet extends HttpServlet {
 		} finally {
 			AttributeContexts.pop();
 		}
+	}
+
+	private int getStatus(Reason whyUnsatisfied) {
+		if (whyUnsatisfied instanceof AuthenticationFailure)
+			return HttpServletResponse.SC_UNAUTHORIZED;
+		else if (whyUnsatisfied instanceof Forbidden)
+			return HttpServletResponse.SC_FORBIDDEN;
+		else if (whyUnsatisfied instanceof InvalidArgument) {
+			return HttpServletResponse.SC_BAD_REQUEST;
+		}
+		else
+			return HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 	}
 
 	private void consumeResponseInAspect(Maybe<UserSession> sessionMaybe, AttributeContext attributeContext, HttpServletResponse resp) {
@@ -263,6 +279,7 @@ public class AuthServlet extends HttpServlet {
 				.set(RequestorAddressAspect.class, getClientRemoteInternetAddress(httpRequest))
 				.set(AuthHttpRequestSupplierAspect.class, httpRequestSupplier)
 				.set(AuthHttpResponseConfigurerAspect.class, httpResponseConfigurer)
+				.set(Waypoint.class, "platform-login")
 				.build();
 		//@formatter:on
 	}

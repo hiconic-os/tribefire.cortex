@@ -15,18 +15,24 @@
 // ============================================================================
 package com.braintribe.model.processing.securityservice.basic;
 
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 
 import com.braintribe.cfg.Configurable;
 import com.braintribe.cfg.Required;
+import com.braintribe.common.attribute.common.Waypoint;
 import com.braintribe.gm.model.reason.Maybe;
 import com.braintribe.gm.model.reason.Reason;
 import com.braintribe.gm.model.reason.Reasons;
 import com.braintribe.gm.model.reason.essential.InternalError;
 import com.braintribe.gm.model.reason.essential.InvalidArgument;
+import com.braintribe.gm.model.security.reason.Forbidden;
 import com.braintribe.gm.model.security.reason.InvalidCredentials;
 import com.braintribe.gm.model.security.reason.InvalidSession;
 import com.braintribe.gm.model.security.reason.SessionExpired;
@@ -39,12 +45,15 @@ import com.braintribe.model.processing.securityservice.api.exceptions.SecuritySe
 import com.braintribe.model.processing.securityservice.basic.user.UserInternalService;
 import com.braintribe.model.processing.securityservice.basic.user.UserInternalServiceImpl;
 import com.braintribe.model.processing.securityservice.basic.verification.UserSessionAccessVerificationExpert;
+import com.braintribe.model.processing.securityservice.impl.Roles;
 import com.braintribe.model.processing.service.api.ServiceRequestContext;
 import com.braintribe.model.processing.service.common.context.UserSessionAspect;
 import com.braintribe.model.processing.service.impl.AbstractDispatchingServiceProcessor;
 import com.braintribe.model.processing.service.impl.DispatchConfiguration;
 import com.braintribe.model.processing.session.api.persistence.PersistenceGmSession;
 import com.braintribe.model.processing.session.api.transaction.Transaction;
+import com.braintribe.model.security.service.config.OpenUserSessionConfiguration;
+import com.braintribe.model.security.service.config.OpenUserSessionEntryPoint;
 import com.braintribe.model.securityservice.AuthenticateCredentials;
 import com.braintribe.model.securityservice.AuthenticateCredentialsResponse;
 import com.braintribe.model.securityservice.AuthenticatedUser;
@@ -84,6 +93,8 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 	private TimeSpan sessionMaxAge;
 	private final CredentialsHasher credentialsHasher = new CredentialsHasher();
 	private Supplier<PersistenceGmSession> authGmSessionProvider;
+	private OpenUserSessionConfiguration openUserSessionConfiguration = OpenUserSessionConfiguration.T.create();
+	private LazyInitialized<Map<String, OpenUserSessionEntryPoint>> entryPointsByWaypoint = new LazyInitialized<Map<String,OpenUserSessionEntryPoint>>(this::indexEntryPointsByWaypoint);
 
 	/**
 	 * <p>
@@ -108,6 +119,11 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 	@Configurable
 	public void setUserSessionService(UserSessionService userSessionService) {
 		this.userSessionService = userSessionService;
+	}
+	
+	@Configurable
+	public void setOpenUserSessionConfiguration(OpenUserSessionConfiguration openUserSessionConfiguration) {
+		this.openUserSessionConfiguration = openUserSessionConfiguration;
 	}
 
 	@Configurable
@@ -153,6 +169,18 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 		dispatching.register(Logout.T, this::logout);
 		dispatching.register(LogoutSession.T, this::logoutSession);
 	}
+	
+	private Map<String, OpenUserSessionEntryPoint> indexEntryPointsByWaypoint() {
+		Map<String, OpenUserSessionEntryPoint> index = new HashMap<>();
+		
+		for (OpenUserSessionEntryPoint entryPoint: openUserSessionConfiguration.getEntryPoints()) {
+			for (String waypoint: entryPoint.getActivationWaypoints()) {
+				index.put(waypoint, entryPoint);
+			}
+		}
+		
+		return index;
+	}
 
 	public UserInternalService getUserInternalService() {
 		return new UserInternalServiceImpl(authGmSessionProvider.get());
@@ -180,11 +208,6 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 	}
 
 	private Maybe<OpenUserSessionResponse> openUserSession(ServiceRequestContext requestContext, OpenUserSession openUserSession) {
-		Maybe<UserSession> maybe = openOrAquireUserSession(requestContext, openUserSession);
-		return maybe.map(this::createResponseFrom);
-	}
-
-	private Maybe<UserSession> openOrAquireUserSession(ServiceRequestContext requestContext, OpenUserSession openUserSession) {
 		Credentials credentials = openUserSession.getCredentials();
 
 		if (credentials == null)
@@ -201,7 +224,7 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 			Maybe<UserSession> acquiredUserSessionMaybe = acquireUserSession(requestContext, acquirationKey);
 
 			if (acquiredUserSessionMaybe.isSatisfied()) {
-				return acquiredUserSessionMaybe;
+				return acquiredUserSessionMaybe.map(us -> createResponseFrom(us, true));
 			}
 
 			// TODO: rethink the responsibility for UserSession transcription and therefore the responsibility of acquiration
@@ -222,8 +245,89 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 
 		if (maybe.isUnsatisfied())
 			return Maybe.empty(maybe.whyUnsatisfied());
+		
+		AuthenticateCredentialsResponse authenticatedCredentialsResponse = maybe.get();
+		
+		if (authenticatedCredentialsResponse instanceof AuthenticatedUserSession authenticatedUserSession) {
+			return Maybe.complete(createResponseFrom(authenticatedUserSession.getUserSession(), true));
+		}
+		
+		Reason authorizationFailure = checkAuthorization(requestContext, authenticatedCredentialsResponse);
+		
+		if (authorizationFailure != null)
+			return authorizationFailure.asMaybe();
 
-		return buildUserSession(requestContext, openUserSession, maybe.get(), acquirationKey);
+		return buildUserSession(requestContext, openUserSession, authenticatedCredentialsResponse, acquirationKey) //
+				.map(us -> createResponseFrom(us, false));
+	}
+
+	private Reason checkAuthorization(ServiceRequestContext requestContext, AuthenticateCredentialsResponse authenticatedCredentialsResponse) {
+		Set<String> effectiveRoles = getEffectiveRoles(authenticatedCredentialsResponse);
+		
+		if (hasRequiredRoles(requestContext, effectiveRoles))
+			return null;
+		
+		
+		return Reasons.build(Forbidden.T).text("Insufficient rights to to open a UserSession this way").toReason();
+	}
+
+	private boolean hasRequiredRoles(ServiceRequestContext requestContext, Set<String> effectiveRoles) {
+		String waypoint = requestContext.findOrNull(Waypoint.class);
+		
+		if (waypoint == null)
+			return true;
+		
+		OpenUserSessionEntryPoint entryPoint = entryPointsByWaypoint.get().get(waypoint);
+		
+		if (entryPoint == null)
+			return true;
+		
+		return checkAuthorization(effectiveRoles, entryPoint.getAllowedRoles(), entryPoint.getForbiddenRoles());
+	}
+	
+	/**
+     * Checks whether a user with the given roles is authorized,
+     * based on an optional whitelist (includedRoles) and blacklist (excludedRoles).
+     *
+     * @param effectiveRoles The roles currently assigned to the user
+     * @param allowedRoles The roles from which at least one must be present (if not empty)
+     * @param forbiddenRoles The roles from which none must be present (if not empty)
+     * @return true if authorized; false if access should be denied
+     */
+    public static boolean checkAuthorization(Set<String> effectiveRoles, Set<String> allowedRoles, Set<String> forbiddenRoles) {
+        // Check blacklist (if present)
+        if (!forbiddenRoles.isEmpty()) {
+            for (String role : effectiveRoles) {
+                if (forbiddenRoles.contains(role)) {
+                    return false; // Access denied
+                }
+            }
+        }
+
+        // Check whitelist (if present)
+        if (!allowedRoles.isEmpty()) {
+            for (String role : effectiveRoles) {
+                if (allowedRoles.contains(role)) {
+                    return true; // Access granted
+                }
+            }
+            return false; // No matching allowed role found
+        }
+
+        // No exclusions matched, no inclusion rules defined → access granted
+        return true;
+    }
+
+	private Set<String> getEffectiveRoles(AuthenticateCredentialsResponse authenticatedCredentialsResponse) {
+		if (authenticatedCredentialsResponse instanceof AuthenticatedUser) {
+			AuthenticatedUser authenticatedUser = (AuthenticatedUser) authenticatedCredentialsResponse;
+			return Roles.userEffectiveRoles(authenticatedUser.getUser());
+		} else if (authenticatedCredentialsResponse instanceof AuthenticatedUserSession) {
+			AuthenticatedUserSession authenticatedUserSession = (AuthenticatedUserSession) authenticatedCredentialsResponse;
+			return authenticatedUserSession.getUserSession().getEffectiveRoles();
+		} else {
+			return Collections.emptySet();
+		}
 	}
 
 	private Maybe<UserSession> acquireUserSession(ServiceRequestContext requestContext, String acquirationKey) {
@@ -232,9 +336,10 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 				.ifSatisfied(this::touchUserSession);
 	}
 
-	private OpenUserSessionResponse createResponseFrom(UserSession userSession) {
+	private OpenUserSessionResponse createResponseFrom(UserSession userSession, boolean reused) {
 		OpenUserSessionResponse response = OpenUserSessionResponse.T.create();
 		response.setUserSession(userSession);
+		response.setReused(reused);
 		return response;
 	}
 
@@ -281,9 +386,6 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 
 			return userSessionMaybe;
 
-		} else if (authenticatedCredentialsResponse instanceof AuthenticatedUserSession) {
-			AuthenticatedUserSession authenticatedUserSession = (AuthenticatedUserSession) authenticatedCredentialsResponse;
-			return Maybe.complete(authenticatedUserSession.getUserSession());
 		} else {
 			return Reasons.build(InternalError.T)
 					.text("Unsupported AuthenticateCredentialsResponse type: " + authenticatedCredentialsResponse.entityType().getTypeSignature())
