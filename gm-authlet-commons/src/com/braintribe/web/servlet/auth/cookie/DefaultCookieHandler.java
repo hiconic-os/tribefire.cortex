@@ -79,16 +79,59 @@ public class DefaultCookieHandler implements CookieHandler {
 			sessionCookie.setDomain(this.cookieDomain);
 		}
 
-		String scheme = req != null ? req.getScheme() : "https";
+		String scheme = req != null ? getProto(req) : "https";
 		if (scheme != null && scheme.equalsIgnoreCase("https")) {
 			sessionCookie.setSecure(true);
 		}
 
 		sessionCookie.setHttpOnly(httpOnlyCookie());
-
-		resp.addCookie(sessionCookie);
+		
+		//resp.addCookie(sessionCookie);
+		
+		addCookieWithSameSite(resp, sessionCookie, "None");
 
 		return sessionCookie;
+	}
+	
+    public static void addCookieWithSameSite(HttpServletResponse response, Cookie cookie, String sameSite) {
+        StringBuilder header = new StringBuilder();
+
+        header.append(cookie.getName()).append("=").append(cookie.getValue() != null ? cookie.getValue() : "");
+
+        if (cookie.getPath() != null) {
+            header.append("; Path=").append(cookie.getPath());
+        }
+
+        if (cookie.getDomain() != null) {
+            header.append("; Domain=").append(cookie.getDomain());
+        }
+
+        if (cookie.getMaxAge() >= 0) {
+            header.append("; Max-Age=").append(cookie.getMaxAge());
+        }
+
+        if (cookie.getSecure()) {
+            header.append("; Secure");
+        }
+
+        if (cookie.isHttpOnly()) {
+            header.append("; HttpOnly");
+        }
+
+        if (sameSite != null && !sameSite.isEmpty()) {
+            header.append("; SameSite=").append(sameSite);
+        }
+
+        response.addHeader("Set-Cookie", header.toString());
+    }
+
+
+	private String getProto(HttpServletRequest req) {
+		String proxyProto = req.getHeader("X-Forwarded-Proto");
+		if (proxyProto != null)
+			return proxyProto;
+		
+		return req.getScheme();
 	}
 
 	@Override
