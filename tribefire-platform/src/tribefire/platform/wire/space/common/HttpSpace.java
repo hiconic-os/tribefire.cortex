@@ -46,10 +46,9 @@ public class HttpSpace implements HttpContract {
 
 	@Managed
 	public SslSocketFactoryProvider sslSocketFactoryProvider() {
-		SslSocketFactoryProvider bean = TribefireRuntime.getAcceptSslCertificates()?
-				new EasySslSocketFactoryProvider():
-				new StrictSslSocketFactoryProvider();
-				
+		SslSocketFactoryProvider bean = TribefireRuntime.getAcceptSslCertificates() ? new EasySslSocketFactoryProvider()
+				: new StrictSslSocketFactoryProvider();
+
 		return bean;
 	}
 
@@ -59,7 +58,8 @@ public class HttpSpace implements HttpContract {
 		DefaultCookieHandler bean = new DefaultCookieHandler();
 		bean.setCookieDomain(TribefireRuntime.getCookieDomain());
 		bean.setCookiePath(TribefireRuntime.getCookiePath());
-		bean.setCookieHttpOnly(TribefireRuntime.getCookieHttpOnly()); // DEVCX-208: The Control Center cannot access the cookie anymore if this is true
+		// DEVCX-208: The Control Center cannot access the cookie anymore if the cookie is not reachable via JavaScript.
+		bean.setCookieHttpOnlyPerWaypoint(TribefireRuntime.getCookieHttpOnlyPerWaypoint());
 		bean.setAddCookie(TribefireRuntime.getCookieEnabled());
 		return bean;
 	}

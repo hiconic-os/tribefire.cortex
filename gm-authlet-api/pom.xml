@@ -44,5 +44,10 @@ limitations under the License.
             <artifactId>security-service-api-model</artifactId>
             <version>${V.com.braintribe.gm}</version>
         </dependency>
+		<dependency>
+			<groupId>com.braintribe.common</groupId>
+			<artifactId>collection-api</artifactId>
+			<version>${V.com.braintribe.common}</version>
+		</dependency>
     </dependencies>
 </project>

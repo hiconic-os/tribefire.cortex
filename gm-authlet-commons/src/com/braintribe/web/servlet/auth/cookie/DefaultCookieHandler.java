@@ -15,6 +15,7 @@
 // ============================================================================
 package com.braintribe.web.servlet.auth.cookie;
 
+import java.util.Map;
 import java.util.function.Function;
 
 import javax.servlet.http.Cookie;
@@ -22,9 +23,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.braintribe.cfg.Configurable;
+import com.braintribe.common.attribute.common.Waypoint;
 import com.braintribe.logging.Logger;
 import com.braintribe.model.processing.bootstrapping.TribefireRuntime;
 import com.braintribe.model.securityservice.OpenUserSessionWithUserAndPassword;
+import com.braintribe.utils.collection.impl.AttributeContexts;
 import com.braintribe.web.servlet.auth.Constants;
 import com.braintribe.web.servlet.auth.CookieHandler;
 import com.braintribe.web.servlet.auth.providers.CookieProvider;
@@ -36,9 +39,9 @@ public class DefaultCookieHandler implements CookieHandler {
 	private int cookieExpiry = 24 * 60 * 60; // 24h
 	private String cookiePath = null;
 	private String cookieDomain = null;
-	private Boolean cookieHttpOnly = Boolean.FALSE; // DEVCX-208: The Control Center cannot access the cookie anymore if this is true
 	private Function<HttpServletRequest, Cookie> sessionCookieProvider = new CookieProvider(Constants.COOKIE_SESSIONID);
 	private boolean addSessionCookie = true;
+	private Map<String, Boolean> cookieHttpOnlyPerWaypoint = Map.of("default", Boolean.FALSE);
 
 	@Override
 	public Cookie ensureCookie(HttpServletRequest req, HttpServletResponse resp, String sessionId) {
@@ -48,6 +51,15 @@ public class DefaultCookieHandler implements CookieHandler {
 	@Override
 	public Cookie ensureCookie(HttpServletRequest req, HttpServletResponse resp, String sessionId,
 			OpenUserSessionWithUserAndPassword openUserSessionRequest) {
+		boolean staySignedInRequested = false;
+		if (openUserSessionRequest != null) {
+			staySignedInRequested = openUserSessionRequest.getStaySignedIn();
+		}
+		return ensureCookie(req, resp, sessionId, staySignedInRequested);
+	}
+
+	@Override
+	public Cookie ensureCookie(HttpServletRequest req, HttpServletResponse resp, String sessionId, boolean staySignedIn) {
 
 		if (!addSessionCookie) {
 			log.trace(() -> "Session cookies are disabled.");
@@ -55,7 +67,7 @@ public class DefaultCookieHandler implements CookieHandler {
 		}
 
 		Cookie sessionCookie = acquireCookie(req, sessionId);
-		sessionCookie.setMaxAge(getMaxAge(req, openUserSessionRequest));
+		sessionCookie.setMaxAge(getMaxAge(req, staySignedIn));
 
 		String cookiePath = this.cookiePath;
 		if (cookiePath == null) {
@@ -72,9 +84,7 @@ public class DefaultCookieHandler implements CookieHandler {
 			sessionCookie.setSecure(true);
 		}
 
-		if (cookieHttpOnly != null && cookieHttpOnly.booleanValue()) {
-			sessionCookie.setHttpOnly(true);
-		}
+		sessionCookie.setHttpOnly(httpOnlyCookie());
 
 		resp.addCookie(sessionCookie);
 
@@ -105,12 +115,22 @@ public class DefaultCookieHandler implements CookieHandler {
 				sessionCookie.setSecure(true);
 			}
 
-			if (cookieHttpOnly != null && cookieHttpOnly.booleanValue()) {
-				sessionCookie.setHttpOnly(true);
-			}
+			sessionCookie.setHttpOnly(true);
 
 			resp.addCookie(sessionCookie);
 		}
+	}
+
+	private boolean httpOnlyCookie() {
+		String waypoint = AttributeContexts.peek().findOrDefault(Waypoint.class, "default");
+		Boolean httpOnlyForWaypoint = cookieHttpOnlyPerWaypoint.get(waypoint);
+		if (httpOnlyForWaypoint == null && !waypoint.equals("default")) {
+			httpOnlyForWaypoint = cookieHttpOnlyPerWaypoint.get("default");
+		}
+		if (httpOnlyForWaypoint != null) {
+			return httpOnlyForWaypoint;
+		}
+		return false;
 	}
 
 	private Cookie acquireCookie(HttpServletRequest req, String sessionId) throws RuntimeException {
@@ -123,7 +143,7 @@ public class DefaultCookieHandler implements CookieHandler {
 		return sessionCookie;
 	}
 
-	private int getMaxAge(HttpServletRequest req, OpenUserSessionWithUserAndPassword openUserSessionRequest) {
+	private int getMaxAge(HttpServletRequest req, boolean staySignedInRequested) {
 
 		if (!offerStaySigned()) {
 			if (log.isTraceEnabled())
@@ -132,14 +152,10 @@ public class DefaultCookieHandler implements CookieHandler {
 			return -1;
 		}
 
-		if (req == null && openUserSessionRequest == null) {
+		if (!staySignedInRequested) {
 			return -1;
 		}
 
-		boolean staySignedInRequested = false;
-		if (openUserSessionRequest != null) {
-			staySignedInRequested = openUserSessionRequest.getStaySignedIn();
-		}
 		String staySigned = req.getParameter(Constants.REQUEST_PARAM_STAYSIGNED);
 		if (staySigned != null && staySigned.equals(Boolean.TRUE.toString())) {
 			staySignedInRequested = true;
@@ -174,15 +190,17 @@ public class DefaultCookieHandler implements CookieHandler {
 		this.cookieDomain = cookieDomain;
 	}
 	@Configurable
-	public void setCookieHttpOnly(Boolean cookieHttpOnly) {
-		this.cookieHttpOnly = cookieHttpOnly;
-	}
-	@Configurable
 	public void setSessionCookieProvider(Function<HttpServletRequest, Cookie> sessionCookieProvider) {
 		this.sessionCookieProvider = sessionCookieProvider;
 	}
 	@Configurable
 	public void setAddCookie(boolean addCookie) {
 		this.addSessionCookie = addCookie;
+	}
+	@Configurable
+	public void setCookieHttpOnlyPerWaypoint(Map<String, Boolean> cookieHttpOnlyMap) {
+		if (cookieHttpOnlyMap != null) {
+			this.cookieHttpOnlyPerWaypoint = cookieHttpOnlyMap;
+		}
 	}
 }

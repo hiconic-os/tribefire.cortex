@@ -25,8 +25,11 @@ public interface CookieHandler {
 
 	Cookie ensureCookie(HttpServletRequest req, HttpServletResponse resp, String sessionId);
 
+	Cookie ensureCookie(HttpServletRequest req, HttpServletResponse resp, String sessionId, boolean staySignedIn);
+
 	Cookie ensureCookie(HttpServletRequest req, HttpServletResponse resp, String sessionId,
 			OpenUserSessionWithUserAndPassword openUserSessionRequest);
 
 	void invalidateCookie(HttpServletRequest req, HttpServletResponse resp, String sessionId);
+
 }
