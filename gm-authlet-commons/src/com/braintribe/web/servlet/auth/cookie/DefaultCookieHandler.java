@@ -78,17 +78,20 @@ public class DefaultCookieHandler implements CookieHandler {
 		if (this.cookieDomain != null) {
 			sessionCookie.setDomain(this.cookieDomain);
 		}
-
+		
 		String scheme = req != null ? getProto(req) : "https";
-		if (scheme != null && scheme.equalsIgnoreCase("https")) {
+		
+		boolean isHttps = scheme != null && scheme.equalsIgnoreCase("https"); 
+		
+		if (isHttps) {
+			// only in case of HTTPS it is possible to support cross domain cookies 
+			// but this requires a Secure and a SameSite=None attribution
 			sessionCookie.setSecure(true);
+			addCookieWithSameSite(resp, sessionCookie, "None");
 		}
-
-		sessionCookie.setHttpOnly(httpOnlyCookie());
-		
-		//resp.addCookie(sessionCookie);
-		
-		addCookieWithSameSite(resp, sessionCookie, "None");
+		else {
+			resp.addCookie(sessionCookie);
+		}
 
 		return sessionCookie;
 	}
@@ -153,7 +156,7 @@ public class DefaultCookieHandler implements CookieHandler {
 				sessionCookie.setDomain(this.cookieDomain);
 			}
 
-			String scheme = req.getScheme();
+			String scheme = req != null ? getProto(req) : "https";
 			if (scheme != null && scheme.equalsIgnoreCase("https")) {
 				sessionCookie.setSecure(true);
 			}
