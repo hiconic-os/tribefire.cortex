@@ -131,8 +131,10 @@ public class DefaultCookieHandler implements CookieHandler {
 
 	private String getProto(HttpServletRequest req) {
 		String proxyProto = req.getHeader("X-Forwarded-Proto");
-		if (proxyProto != null)
+		if (proxyProto != null) {
+			log.debug("X-Forwarded-Proto header from proxies: " + proxyProto);
 			return proxyProto;
+		}
 		
 		return req.getScheme();
 	}
