@@ -2,9 +2,9 @@
 
 The core of `Tribefire`.
 
-## Notable artifacts
+## The Platform
 
-`tribefire-platform-base`
+* [tribefire-platform](tribefire-platform/doc/readme.md)
 
 ## Modules
 
