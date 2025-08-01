@@ -21,7 +21,6 @@ import static com.braintribe.utils.lcd.CollectionTools2.asSet;
 import static com.braintribe.utils.lcd.CollectionTools2.first;
 import static com.braintribe.utils.lcd.CollectionTools2.firstOrNull;
 import static com.braintribe.utils.lcd.CollectionTools2.newMap;
-import static com.braintribe.utils.lcd.CollectionTools2.newSet;
 import static com.braintribe.utils.lcd.NullSafe.nonNull;
 
 import java.util.ArrayList;
@@ -43,6 +42,9 @@ import com.braintribe.common.lcd.Constants;
 import com.braintribe.common.lcd.Numbers;
 import com.braintribe.common.lcd.annotations.NonNull;
 import com.braintribe.exception.Exceptions;
+import com.braintribe.gm.model.reason.Reasons;
+import com.braintribe.gm.model.reason.UnsatisfiedMaybeTunneling;
+import com.braintribe.gm.model.security.reason.Forbidden;
 import com.braintribe.logging.Logger;
 import com.braintribe.logging.Logger.LogLevel;
 import com.braintribe.model.access.AccessIdentificationLookup;
@@ -68,7 +70,6 @@ import com.braintribe.model.generic.reflection.Property;
 import com.braintribe.model.generic.reflection.PropertyTransferCompetence;
 import com.braintribe.model.generic.reflection.StandardCloningContext;
 import com.braintribe.model.meta.GmMetaModel;
-import com.braintribe.model.meta.data.MetaData;
 import com.braintribe.model.meta.data.prompt.Visible;
 import com.braintribe.model.processing.access.service.api.registry.AccessRegistrationInfo;
 import com.braintribe.model.processing.access.service.api.registry.RegistryBasedAccessService;
@@ -531,7 +532,7 @@ public class AccessServiceImpl implements RegistryBasedAccessService, AccessIden
 			ModelAccessory modelAccessory = userMaFactory.getForAccess(accessId);
 			if (!modelAccessory.getMetaData().is(Visible.T)) {
 				log.info("Model: " + model.getName() + " is not visible for this request.");
-				return truncateModel(model);
+				throw new UnsatisfiedMaybeTunneling(Reasons.build(Forbidden.T).text("Model is not visible for access: " + accessId).toMaybe());
 			}
 
 		} catch (Exception e) {
@@ -583,19 +584,6 @@ public class AccessServiceImpl implements RegistryBasedAccessService, AccessIden
 			log.error("Could not get current user roles to evaluate trusted roles.", e);
 			return false;
 		}
-	}
-
-	private static GmMetaModel truncateModel(GmMetaModel metaModel) {
-		GmMetaModel truncatedModel = GmMetaModel.T.create();
-		truncatedModel.setName(metaModel.getName());
-		truncatedModel.setTypes(newSet());
-		truncatedModel.setMetaData(newSet());
-
-		for (MetaData mmd : NullSafe.collection(metaModel.getMetaData()))
-			if (mmd instanceof Visible)
-				truncatedModel.getMetaData().add(mmd);
-
-		return truncatedModel;
 	}
 
 	@Override
