@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.function.Function;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -48,8 +49,10 @@ import com.braintribe.model.processing.bootstrapping.TribefireRuntime;
 import com.braintribe.model.processing.securityservice.api.exceptions.AuthenticationException;
 import com.braintribe.model.processing.service.api.aspect.RequestedEndpointAspect;
 import com.braintribe.model.processing.service.api.aspect.RequestorAddressAspect;
+import com.braintribe.model.securityservice.OpenUserSession;
 import com.braintribe.model.securityservice.OpenUserSessionResponse;
 import com.braintribe.model.securityservice.OpenUserSessionWithUserAndPassword;
+import com.braintribe.model.securityservice.credentials.UserPasswordCredentials;
 import com.braintribe.model.service.api.ServiceRequest;
 import com.braintribe.model.usersession.UserSession;
 import com.braintribe.util.servlet.remote.DefaultRemoteClientAddressResolver;
@@ -75,7 +78,13 @@ public class AuthServlet extends HttpServlet {
 	private MarshallerRegistry marshallerRegistry;
 	private CookieHandler cookieHandler;
 	private Evaluator<ServiceRequest> requestEvaluator;
+	private Function<HttpServletRequest, String> entryPointProvider = r -> null;
 
+	@Configurable
+	public void setEntryPointProvider(Function<HttpServletRequest, String> entryPointProvider) {
+		this.entryPointProvider = entryPointProvider;
+	}
+	
 	@Configurable
 	public void setMarshallerRegistry(MarshallerRegistry marshallerRegistry) {
 		this.marshallerRegistry = marshallerRegistry;
@@ -97,14 +106,16 @@ public class AuthServlet extends HttpServlet {
 
 		// Create authentication request.
 
-		OpenUserSessionWithUserAndPassword authRequest = createOpenUserSessionRequest(req);
+		OpenUserSessionWithUserAndPassword authRequest = unmarshallRequest(req);
 
 		AttributeContext attributeContext = buildAttributeContext(req, authRequest);
+		
+		OpenUserSession openUserSession = createOpenUserSession(req, authRequest);
 
 		AttributeContexts.push(attributeContext);
 		try {
 
-			Maybe<UserSession> sessionMaybe = authenticate(resp, authRequest);
+			Maybe<UserSession> sessionMaybe = authenticate(resp, openUserSession);
 
 			consumeResponseInAspect(sessionMaybe, attributeContext, resp);
 
@@ -131,11 +142,23 @@ public class AuthServlet extends HttpServlet {
 			String sessionId = session.getSessionId();
 			log.debug("Successfully authenticated user: " + authRequest.getUser() + " with session: " + sessionId);
 
-			cookieHandler.ensureCookie(req, resp, sessionId, authRequest);
+			cookieHandler.ensureCookie(req, resp, sessionId, authRequest.getStaySignedIn());
 
 		} finally {
 			AttributeContexts.pop();
 		}
+	}
+
+	private OpenUserSession createOpenUserSession(HttpServletRequest req, OpenUserSessionWithUserAndPassword authRequest) {
+		String entryPoint = entryPointProvider.apply(req);
+		
+		UserPasswordCredentials credentials = UserPasswordCredentials.forUserName(authRequest.getUser(), authRequest.getPassword());
+		
+		OpenUserSession openUserSession = OpenUserSession.T.create();
+		openUserSession.setCredentials(credentials);
+		openUserSession.setLocale(authRequest.getLocale());
+		openUserSession.setEntryPoint(entryPoint);
+		return openUserSession;
 	}
 
 	private int getStatus(Reason whyUnsatisfied) {
@@ -197,10 +220,10 @@ public class AuthServlet extends HttpServlet {
 		}
 	}
 
-	private Maybe<UserSession> authenticate(@SuppressWarnings("unused") HttpServletResponse resp, OpenUserSessionWithUserAndPassword authRequest)
+	private Maybe<UserSession> authenticate(@SuppressWarnings("unused") HttpServletResponse resp, OpenUserSession request)
 			throws AuthenticationException {
 
-		EvalContext<? extends OpenUserSessionResponse> responseContext = authRequest.eval(requestEvaluator);
+		EvalContext<? extends OpenUserSessionResponse> responseContext = request.eval(requestEvaluator);
 		Maybe<? extends OpenUserSessionResponse> reasonedResponse = responseContext.getReasoned();
 
 		if (!reasonedResponse.isSatisfied()) {
@@ -212,45 +235,49 @@ public class AuthServlet extends HttpServlet {
 		return Maybe.complete(response.getUserSession());
 	}
 
-	protected OpenUserSessionWithUserAndPassword createOpenUserSessionRequest(HttpServletRequest request) {
-
+	protected OpenUserSessionWithUserAndPassword unmarshallRequest(HttpServletRequest request) {
+		
 		try (InputStream in = request.getInputStream()) {
 			// 3. Unmarshall the request from the body
 			Marshaller marshaller = getMarshaller(request);
 			OpenUserSessionWithUserAndPassword authRequest = (OpenUserSessionWithUserAndPassword) marshaller.unmarshall(in,
 					GmDeserializationOptions.deriveDefaults().setInferredRootType(OpenUserSessionWithUserAndPassword.T).build());
-
+			
 			if (authRequest == null) {
 				throw new HttpException(HttpServletResponse.SC_BAD_REQUEST, "Could not decode credentials from request");
 			}
-
+			
 			Locale locale = request.getLocale();
 			if (locale != null) {
 				authRequest.setLocale(locale.getLanguage());
 			}
 
-			String user = authRequest.getUser();
-			RemoteClientAddressResolver resolver = getRemoteAddressResolver();
-			try {
-				RemoteAddressInformation remoteAddressInformation = resolver.getRemoteAddressInformation(request);
-				String remoteAddress = remoteAddressInformation.getRemoteIp();
-				log.info("Received an authentication request for user '" + user + "' from [" + remoteAddress + "]. Remote Address Information: "
-						+ remoteAddressInformation.toString());
-			} catch (Exception e) {
-				String message = "Could not use the client address resolver to get the client's IP address. User: '" + user + "'";
-				log.info(message);
-				if (log.isDebugEnabled())
-					log.debug(message, e);
-			}
-
+			logAuthRequest(request, authRequest);
+			
 			return authRequest;
-
+			
 		} catch (IOException ioe) {
 			throw new HttpException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Could not ready request body", ioe);
 		}
-
+		
 	}
-
+	
+	protected void logAuthRequest(HttpServletRequest request, OpenUserSessionWithUserAndPassword authRequest) {
+		String user = authRequest.getUser();
+		RemoteClientAddressResolver resolver = getRemoteAddressResolver();
+		try {
+			RemoteAddressInformation remoteAddressInformation = resolver.getRemoteAddressInformation(request);
+			String remoteAddress = remoteAddressInformation.getRemoteIp();
+			log.info("Received an authentication request for user '" + user + "' from [" + remoteAddress + "]. Remote Address Information: "
+					+ remoteAddressInformation.toString());
+		} catch (Exception e) {
+			String message = "Could not use the client address resolver to get the client's IP address. User: '" + user + "'";
+			log.info(message);
+			if (log.isDebugEnabled())
+				log.debug(message, e);
+		}
+	}
+	
 	/**
 	 * <p>
 	 * Retrieves the client's remote Internet protocol address.

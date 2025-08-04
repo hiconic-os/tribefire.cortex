@@ -89,6 +89,7 @@ import com.braintribe.model.securityservice.AuthenticateCredentials;
 import com.braintribe.model.securityservice.Logout;
 import com.braintribe.model.securityservice.SecurityRequest;
 import com.braintribe.model.securityservice.SimplifiedOpenUserSession;
+import com.braintribe.model.securityservice.web.WebAuthorizationRequest;
 import com.braintribe.model.service.api.AsynchronousRequest;
 import com.braintribe.model.service.api.CompositeRequest;
 import com.braintribe.model.service.api.ExecuteAuthorized;
@@ -311,6 +312,7 @@ public class RpcSpace implements WireSpace {
 		bean.bindServiceRequest(CleanupUserSessions.T, sessionService.cleanupService());
 		bean.bindServiceRequest(UserSessionRequest.T, sessionService.wbService());
 		bean.bindServiceRequest(SimplifiedOpenUserSession.T, simpleSecurityService.service());
+		bean.bindServiceRequest(WebAuthorizationRequest.T, simpleSecurityService.webAuthorizationServiceProcessor());
 		bean.bindServiceRequest(UnicastRequest.T, unicastProcessor());
 		bean.bindServiceRequest(ExecuteAuthorized.T, ExecuteAuthorizedServiceProcessor.INSTANCE);
 		bean.bindServiceRequest(MulticastRequest.T, multicast.processor());

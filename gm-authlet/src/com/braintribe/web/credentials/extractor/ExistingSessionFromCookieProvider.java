@@ -15,35 +15,41 @@
 // ============================================================================
 package com.braintribe.web.credentials.extractor;
 
-import java.util.stream.Stream;
+import java.util.Optional;
+import java.util.function.Function;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
+import com.braintribe.cfg.Configurable;
 import com.braintribe.gm.model.reason.Maybe;
 import com.braintribe.gm.model.reason.Reasons;
 import com.braintribe.gm.model.reason.essential.NotFound;
+import com.braintribe.logging.Logger;
 import com.braintribe.web.servlet.auth.Constants;
+import com.braintribe.web.servlet.auth.cookie.Cookies;
 
 public class ExistingSessionFromCookieProvider implements ExistingSessionWebCredentialProvider {
+	private static final Logger logger = Logger.getLogger(ExistingSessionFromCookieProvider.class);
+	
+	private Function<HttpServletRequest, String> sessionCookieNameProvider = r -> Constants.COOKIE_SESSIONID;
 
-	private static final Maybe<String> NOT_FOUND = Reasons.build(NotFound.T).text("HTTP cookie " + Constants.COOKIE_SESSIONID + " not present")
-			.toMaybe();
-
+	@Configurable
+	public void setSessionCookieNameProvider(Function<HttpServletRequest, String> sessionCookieNameProvider) {
+		this.sessionCookieNameProvider = sessionCookieNameProvider;
+	}
+	
 	@Override
 	public Maybe<String> findSessionId(HttpServletRequest request) {
-		Cookie[] cookies = request.getCookies();
-
-		if (cookies == null || cookies.length == 0)
-			return NOT_FOUND;
-
-		String sessionId = Stream.of(cookies) //
-				.filter(c -> c.getName().equals(Constants.COOKIE_SESSIONID)) //
-				.findFirst() //
-				.map(Cookie::getValue).orElse(null);
-
+		String cookieName = sessionCookieNameProvider.apply(request);
+		
+		String sessionId  = Optional.ofNullable(Cookies.findCookie(request, cookieName)).map(Cookie::getValue).orElse(null);
+		
 		if (sessionId == null || sessionId.isEmpty())
-			return NOT_FOUND;
+			return Reasons.build(NotFound.T).text("HTTP cookie " + cookieName + " not present")
+					.toMaybe();
+		
+		logger.debug(() -> "Found session cookie with name [" + cookieName + "]");
 
 		return Maybe.complete(sessionId);
 	}

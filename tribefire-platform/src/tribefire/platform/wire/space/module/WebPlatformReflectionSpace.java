@@ -91,6 +91,7 @@ public class WebPlatformReflectionSpace implements WebPlatformReflectionContract
 	private ModeledYamlConfiguration modeledConfiguration() {
 		ModeledYamlConfiguration bean = new ModeledYamlConfiguration();
 		bean.setConfigFolder(masterResources.confPath().toFile());
+		bean.setExternalPropertyLookup(TribefireRuntime::getProperty);
 		return bean;
 	}
 }

@@ -1,4 +1,4 @@
-<!--
+<?xml version="1.0" encoding="UTF-8"?><!--
 Copyright BRAINTRIBE TECHNOLOGY GMBH, Austria, 2002-2022
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -44,10 +44,16 @@ limitations under the License.
             <artifactId>security-service-api-model</artifactId>
             <version>${V.com.braintribe.gm}</version>
         </dependency>
-		<dependency>
-			<groupId>com.braintribe.common</groupId>
-			<artifactId>collection-api</artifactId>
-			<version>${V.com.braintribe.common}</version>
-		</dependency>
+        <dependency>
+            <groupId>com.braintribe.common</groupId>
+            <artifactId>collection-api</artifactId>
+            <version>${V.com.braintribe.common}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.braintribe.gm</groupId>
+            <artifactId>security-service-configuration-model</artifactId>
+            <version>${V.com.braintribe.gm}</version>
+            <?tag asset ?>
+        </dependency>
     </dependencies>
 </project>

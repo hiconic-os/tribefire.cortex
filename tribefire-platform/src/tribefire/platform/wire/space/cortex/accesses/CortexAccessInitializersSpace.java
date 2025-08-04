@@ -44,6 +44,12 @@ import com.braintribe.gm._ResourceModel_;
 import com.braintribe.gm._ServiceApiModel_;
 import com.braintribe.gm._TransientResourceModel_;
 import com.braintribe.gm._UserModel_;
+import com.braintribe.gm.model.reason.Reason;
+import com.braintribe.gm.model.reason.essential.AlreadyExists;
+import com.braintribe.gm.model.reason.essential.InvalidArgument;
+import com.braintribe.gm.model.reason.essential.NotFound;
+import com.braintribe.gm.model.reason.essential.ParseError;
+import com.braintribe.gm.model.reason.essential.UnsupportedOperation;
 import com.braintribe.gm.model.reason.meta.HttpStatusCode;
 import com.braintribe.gm.model.security.reason.AuthenticationFailure;
 import com.braintribe.gm.model.security.reason.Forbidden;
@@ -155,6 +161,7 @@ import com.braintribe.model.service.api.ServiceRequest;
 import com.braintribe.model.service.domain.ServiceDomain;
 import com.braintribe.model.stateprocessing.api.AbstractStateChangeProcessingRequest;
 import com.braintribe.model.user.User;
+import com.braintribe.utils.StringTools;
 import com.braintribe.utils.i18n.I18nTools;
 import com.braintribe.wire.api.annotation.Import;
 import com.braintribe.wire.api.annotation.Managed;
@@ -231,7 +238,7 @@ public class CortexAccessInitializersSpace implements WireSpace {
 
 	@Import
 	private AuthenticatorsSpace authenticators;
-
+	
 	@Managed
 	public List<PersistenceInitializer> initializers() {
 		// @formatter:off
@@ -384,7 +391,10 @@ public class CortexAccessInitializersSpace implements WireSpace {
 					extendAccessModel_Set_Default_ResourceEnrichers(session) //
 			);
 
-			mdEditor.onEntityType(ServiceDomain.T).addMetaData(extendServiceModelWith_SecurityReasonModel(session));
+			mdEditor.onEntityType(ServiceDomain.T).addMetaData( //
+					extendServiceModelWith_SecurityReasonModel(session), //
+					extendServiceModelWith_EssentialReasonModel(session) //
+			);
 
 			mdEditor.onEntityType(CollaborativeAccess.T).addMetaData( //
 					extendDataModelWith_EveryIdIsString(session), //
@@ -450,24 +460,57 @@ public class CortexAccessInitializersSpace implements WireSpace {
 		GmMetaModel mdModel = session.create(GmMetaModel.T, modelGlobalId(securityReasonConfigurationModel));
 		mdModel.setName(securityReasonConfigurationModel);
 		mdModel.getDependencies().add(securityReasonModel);
-
-		HttpStatusCode authFailureCode = httpStatusCode(session, "auth-failure", HttpServletResponse.SC_UNAUTHORIZED);
-		HttpStatusCode forbiddenCode = httpStatusCode(session, "forbidden", HttpServletResponse.SC_FORBIDDEN);
-
+		
 		ModelMetaDataEditor mdEditor = BasicModelMetaDataEditor.create(mdModel).withSession(session).done();
-		mdEditor.onEntityType(AuthenticationFailure.T).addMetaData(authFailureCode);
-		mdEditor.onEntityType(Forbidden.T).addMetaData(forbiddenCode);
+		StatusCodeMapper mapper = new StatusCodeMapper(mdEditor, session);
+		
+		mapper.assign(AuthenticationFailure.T, HttpServletResponse.SC_UNAUTHORIZED);
+		mapper.assign(Forbidden.T, HttpServletResponse.SC_FORBIDDEN);
 
-		ServiceModelExtension result = session.create(ServiceModelExtension.T, "md:service-model-extension:" + ServiceDomain.T.getShortName());
+		ServiceModelExtension result = session.create(ServiceModelExtension.T, "md:service-model-security-reasons-extension:" + ServiceDomain.T.getShortName());
 		result.getModels().add(mdModel);
 
 		return result;
 	}
+	
+	private ServiceModelExtension extendServiceModelWith_EssentialReasonModel(ManagedGmSession session) {
+		GmMetaModel essentialReasonModel = session.getEntityByGlobalId(InvalidArgument.T.getModel().globalId());
+		
+		String essentialReasonConfigurationModel = "synthetic:essential-reason-configuration-model";
+		GmMetaModel mdModel = session.create(GmMetaModel.T, modelGlobalId(essentialReasonConfigurationModel));
+		mdModel.setName(essentialReasonConfigurationModel);
+		mdModel.getDependencies().add(essentialReasonModel);
+		
+		ModelMetaDataEditor mdEditor = BasicModelMetaDataEditor.create(mdModel).withSession(session).done();
+		StatusCodeMapper mapper = new StatusCodeMapper(mdEditor, session);
+		
+		mapper.assign(InvalidArgument.T, HttpServletResponse.SC_BAD_REQUEST);
+		mapper.assign(ParseError.T, HttpServletResponse.SC_BAD_REQUEST);
+		mapper.assign(UnsupportedOperation.T, HttpServletResponse.SC_BAD_REQUEST);
+		mapper.assign(NotFound.T, HttpServletResponse.SC_NOT_FOUND);
+		mapper.assign(AlreadyExists.T, HttpServletResponse.SC_CONFLICT);
+		mapper.assign(com.braintribe.gm.model.reason.essential.InternalError.T, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 
-	private HttpStatusCode httpStatusCode(ManagedGmSession session, String gidSuffix, int code) {
-		HttpStatusCode unauthenticated = session.create(HttpStatusCode.T, "md:http-status-code/" + gidSuffix);
-		unauthenticated.setCode(code);
-		return unauthenticated;
+		ServiceModelExtension result = session.create(ServiceModelExtension.T, "md:service-model-essential-reasons-extension:" + ServiceDomain.T.getShortName());
+		result.getModels().add(mdModel);
+		
+		return result;
+	}
+	
+	private static class StatusCodeMapper {
+		private final ModelMetaDataEditor editor;
+		private final ManagedGmSession session;
+		
+		public StatusCodeMapper(ModelMetaDataEditor editor, ManagedGmSession session) {
+			this.editor = editor;
+			this.session = session;
+		}
+		
+		public void assign(EntityType<? extends Reason> reasonType, int code) {
+			HttpStatusCode md = session.create(HttpStatusCode.T, "md:http-status-code/" + StringTools.camelCaseToSocialDistancingCase(reasonType.getShortName()));
+			md.setCode(code);
+			editor.onEntityType(reasonType).addMetaData(md);
+		}
 	}
 
 	/**

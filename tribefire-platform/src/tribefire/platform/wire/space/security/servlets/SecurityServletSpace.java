@@ -58,6 +58,7 @@ import tribefire.platform.wire.space.common.MarshallingSpace;
 import tribefire.platform.wire.space.common.MessagingSpace;
 import tribefire.platform.wire.space.common.RuntimeSpace;
 import tribefire.platform.wire.space.cortex.accesses.CortexAccessSpace;
+import tribefire.platform.wire.space.module.WebPlatformReflectionSpace;
 import tribefire.platform.wire.space.rpc.RpcSpace;
 import tribefire.platform.wire.space.security.AuthContextSpace;
 import tribefire.platform.wire.space.security.accesses.AuthAccessSpace;
@@ -81,6 +82,7 @@ public class SecurityServletSpace implements WireSpace {
 	@Import	private ServletsSpace servlets;
 	@Import	private UserSessionsAccessSpace userSessionsAccess;
 	@Import	protected MessagingSpace messaging;
+	@Import private WebPlatformReflectionSpace webPlatformReflection;
 	// @formatter:on
 
 	@Managed
@@ -134,7 +136,9 @@ public class SecurityServletSpace implements WireSpace {
 		bean.setCookieHandler(http.cookieHandler());
 		bean.setRemoteAddressResolver(servlets.remoteAddressResolver());
 		bean.setMarshallerRegistry(marshalling.registry());
-		bean.setRequestEvaluator(rpc.serviceRequestEvaluator());
+		bean.setRequestEvaluator(rpc.systemServiceRequestEvaluator());
+		bean.setEntryPointProvider(http.openUserSessionConfigurationProvider()::findEntryPointName);
+
 		return bean;
 	}
 
@@ -152,12 +156,12 @@ public class SecurityServletSpace implements WireSpace {
 	}
 
 	protected void configureAuthFilter(AuthFilter authFilter) {
-		authFilter.setRequestEvaluator(rpc.serviceRequestEvaluator());
-		authFilter.setCookieHandler(http.cookieHandler());
+		authFilter.setRequestEvaluator(rpc.systemServiceRequestEvaluator());
 		if (logger.isDebugEnabled()) {
 			authFilter.setThreadRenamer(runtime.threadRenamer());
 		}
 		authFilter.setThrowExceptionOnAuthFailure(true);
+		authFilter.setEntryPointProvider(http.openUserSessionConfigurationProvider()::findEntryPoint);
 
 		authFilter.addWebCredentialProvider("cookie", existingSessionFromCookieProvider());
 		authFilter.addWebCredentialProvider("request-parameter", existingSessionFromRequestParameterProvider());
@@ -173,7 +177,9 @@ public class SecurityServletSpace implements WireSpace {
 
 	@Managed
 	private ExistingSessionFromCookieProvider existingSessionFromCookieProvider() {
-		return new ExistingSessionFromCookieProvider();
+		ExistingSessionFromCookieProvider bean = new ExistingSessionFromCookieProvider();
+		bean.setSessionCookieNameProvider(http.sessionCookieNameSupplier());
+		return bean;
 	}
 
 	@Managed

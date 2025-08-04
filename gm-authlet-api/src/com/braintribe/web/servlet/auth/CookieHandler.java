@@ -19,16 +19,11 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.braintribe.model.securityservice.OpenUserSessionWithUserAndPassword;
-
 public interface CookieHandler {
 
 	Cookie ensureCookie(HttpServletRequest req, HttpServletResponse resp, String sessionId);
 
 	Cookie ensureCookie(HttpServletRequest req, HttpServletResponse resp, String sessionId, boolean staySignedIn);
-
-	Cookie ensureCookie(HttpServletRequest req, HttpServletResponse resp, String sessionId,
-			OpenUserSessionWithUserAndPassword openUserSessionRequest);
 
 	void invalidateCookie(HttpServletRequest req, HttpServletResponse resp, String sessionId);
 

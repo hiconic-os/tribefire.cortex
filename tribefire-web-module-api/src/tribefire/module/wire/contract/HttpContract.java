@@ -15,10 +15,17 @@
 // ============================================================================
 package tribefire.module.wire.contract;
 
+import java.util.function.Function;
+
+import javax.servlet.http.HttpServletRequest;
+
 import com.braintribe.web.servlet.auth.CookieHandler;
+import com.braintribe.web.servlet.auth.OpenUserSessionConfigurationProvider;
 import com.braintribe.wire.api.space.WireSpace;
 
 public interface HttpContract extends WireSpace {
 
 	CookieHandler cookieHandler();
+	Function<HttpServletRequest, String> sessionCookieNameSupplier();
+	OpenUserSessionConfigurationProvider openUserSessionConfigurationProvider();
 }

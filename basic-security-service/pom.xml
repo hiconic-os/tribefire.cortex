@@ -1,4 +1,4 @@
-<!--
+<?xml version="1.0" encoding="UTF-8"?><!--
 Copyright BRAINTRIBE TECHNOLOGY GMBH, Austria, 2002-2022
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -153,6 +153,22 @@ limitations under the License.
             <artifactId>security-service-configuration-model</artifactId>
             <version>${V.com.braintribe.gm}</version>
             <?tag asset ?>
+        </dependency>
+        <dependency>
+            <groupId>com.braintribe.servlet</groupId>
+            <artifactId>servlet-tools-api</artifactId>
+            <version>${V.com.braintribe.servlet}</version>
+        </dependency>
+        <dependency>
+            <groupId>tribefire.cortex</groupId>
+            <artifactId>gm-authlet-api</artifactId>
+            <version>${V.tribefire.cortex}</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <scope>provided</scope>
+            <version>${V.javax.servlet}</version>
         </dependency>
     </dependencies>
 </project>

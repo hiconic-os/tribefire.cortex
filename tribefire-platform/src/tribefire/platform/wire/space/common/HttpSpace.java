@@ -15,19 +15,30 @@
 // ============================================================================
 package tribefire.platform.wire.space.common;
 
+import java.util.function.Function;
+
+import javax.servlet.http.HttpServletRequest;
+
 import com.braintribe.model.processing.bootstrapping.TribefireRuntime;
+import com.braintribe.model.security.service.config.OpenUserSessionConfiguration;
 import com.braintribe.transport.http.DefaultHttpClientProvider;
 import com.braintribe.transport.http.HttpClientProvider;
 import com.braintribe.transport.ssl.SslSocketFactoryProvider;
 import com.braintribe.transport.ssl.impl.EasySslSocketFactoryProvider;
 import com.braintribe.transport.ssl.impl.StrictSslSocketFactoryProvider;
 import com.braintribe.web.servlet.auth.cookie.DefaultCookieHandler;
+import com.braintribe.web.servlet.auth.providers.OpenUserSessionConfigurationProviderImpl;
+import com.braintribe.wire.api.annotation.Import;
 import com.braintribe.wire.api.annotation.Managed;
 
 import tribefire.module.wire.contract.HttpContract;
+import tribefire.platform.wire.space.module.WebPlatformReflectionSpace;
 
 @Managed
 public class HttpSpace implements HttpContract {
+	
+	@Import
+	private WebPlatformReflectionSpace webPlatformReflection;
 
 	@Managed
 	public HttpClientProvider clientProvider() {
@@ -51,7 +62,7 @@ public class HttpSpace implements HttpContract {
 
 		return bean;
 	}
-
+	
 	@Override
 	@Managed
 	public DefaultCookieHandler cookieHandler() {
@@ -59,8 +70,21 @@ public class HttpSpace implements HttpContract {
 		bean.setCookieDomain(TribefireRuntime.getCookieDomain());
 		bean.setCookiePath(TribefireRuntime.getCookiePath());
 		// DEVCX-208: The Control Center cannot access the cookie anymore if the cookie is not reachable via JavaScript.
-		bean.setCookieHttpOnlyPerWaypoint(TribefireRuntime.getCookieHttpOnlyPerWaypoint());
 		bean.setAddCookie(TribefireRuntime.getCookieEnabled());
+		bean.setEntryPointProvider(openUserSessionConfigurationProvider()::findEntryPoint);
 		return bean;
+	}
+	
+	@Managed
+	@Override
+	public OpenUserSessionConfigurationProviderImpl openUserSessionConfigurationProvider() {
+		OpenUserSessionConfigurationProviderImpl bean = new OpenUserSessionConfigurationProviderImpl();
+		bean.setOpenUserSessionConfiguration(webPlatformReflection.readConfig(OpenUserSessionConfiguration.T).get());
+		return bean;
+	}
+	
+	@Override
+	public Function<HttpServletRequest, String> sessionCookieNameSupplier() {
+		return openUserSessionConfigurationProvider()::getCookieName;
 	}
 }

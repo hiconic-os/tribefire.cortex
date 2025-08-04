@@ -26,12 +26,12 @@ import java.util.function.Supplier;
 
 import com.braintribe.cfg.Configurable;
 import com.braintribe.cfg.Required;
-import com.braintribe.common.attribute.common.Waypoint;
 import com.braintribe.gm.model.reason.Maybe;
 import com.braintribe.gm.model.reason.Reason;
 import com.braintribe.gm.model.reason.Reasons;
 import com.braintribe.gm.model.reason.essential.InternalError;
 import com.braintribe.gm.model.reason.essential.InvalidArgument;
+import com.braintribe.gm.model.reason.essential.NotFound;
 import com.braintribe.gm.model.security.reason.Forbidden;
 import com.braintribe.gm.model.security.reason.InvalidCredentials;
 import com.braintribe.gm.model.security.reason.InvalidSession;
@@ -41,6 +41,7 @@ import com.braintribe.logging.Logger;
 import com.braintribe.model.generic.eval.Evaluator;
 import com.braintribe.model.processing.securityservice.api.DeletedSessionInfo;
 import com.braintribe.model.processing.securityservice.api.UserSessionService;
+import com.braintribe.model.processing.securityservice.api.attributes.OpenUserSessionEntryPointAttribute;
 import com.braintribe.model.processing.securityservice.api.exceptions.SecurityServiceError;
 import com.braintribe.model.processing.securityservice.basic.user.UserInternalService;
 import com.braintribe.model.processing.securityservice.basic.user.UserInternalServiceImpl;
@@ -94,7 +95,7 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 	private final CredentialsHasher credentialsHasher = new CredentialsHasher();
 	private Supplier<PersistenceGmSession> authGmSessionProvider;
 	private OpenUserSessionConfiguration openUserSessionConfiguration = OpenUserSessionConfiguration.T.create();
-	private LazyInitialized<Map<String, OpenUserSessionEntryPoint>> entryPointsByWaypoint = new LazyInitialized<Map<String,OpenUserSessionEntryPoint>>(this::indexEntryPointsByWaypoint);
+	private LazyInitialized<Map<String, OpenUserSessionEntryPoint>> entryPointsByName = new LazyInitialized<Map<String,OpenUserSessionEntryPoint>>(this::indexEntryPointsByName);
 
 	/**
 	 * <p>
@@ -170,13 +171,11 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 		dispatching.register(LogoutSession.T, this::logoutSession);
 	}
 	
-	private Map<String, OpenUserSessionEntryPoint> indexEntryPointsByWaypoint() {
+	private Map<String, OpenUserSessionEntryPoint> indexEntryPointsByName() {
 		Map<String, OpenUserSessionEntryPoint> index = new HashMap<>();
 		
 		for (OpenUserSessionEntryPoint entryPoint: openUserSessionConfiguration.getEntryPoints()) {
-			for (String waypoint: entryPoint.getActivationWaypoints()) {
-				index.put(waypoint, entryPoint);
-			}
+			index.put(entryPoint.getName(), entryPoint);
 		}
 		
 		return index;
@@ -208,11 +207,14 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 	}
 
 	private Maybe<OpenUserSessionResponse> openUserSession(ServiceRequestContext requestContext, OpenUserSession openUserSession) {
+		Maybe<ValidationResult> validationResultMaybe = validate(requestContext, openUserSession);
+		
+		if (validationResultMaybe.isUnsatisfied())
+			return validationResultMaybe.propagateReason();
+		
+		ValidationResult validationResult = validationResultMaybe.get();
+		
 		Credentials credentials = openUserSession.getCredentials();
-
-		if (credentials == null)
-			return Reasons.build(InvalidArgument.T).text("OpenUserSession.credentials must not be null").toMaybe();
-
 		String acquirationKey = null;
 
 		if (credentials.acquirationSupportive()) {
@@ -224,7 +226,14 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 			Maybe<UserSession> acquiredUserSessionMaybe = acquireUserSession(requestContext, acquirationKey);
 
 			if (acquiredUserSessionMaybe.isSatisfied()) {
-				return acquiredUserSessionMaybe.map(us -> createResponseFrom(us, true));
+				UserSession userSession = acquiredUserSessionMaybe.get();
+
+				Reason authorizationFailure = checkAuthorization(requestContext, validationResult.entryPoint(), userSession.getEffectiveRoles());
+				
+				if (authorizationFailure != null)
+					return authorizationFailure.asMaybe();
+				
+				return Maybe.complete(createResponseFrom(userSession, true));
 			}
 
 			// TODO: rethink the responsibility for UserSession transcription and therefore the responsibility of acquiration
@@ -252,7 +261,7 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 			return Maybe.complete(createResponseFrom(authenticatedUserSession.getUserSession(), true));
 		}
 		
-		Reason authorizationFailure = checkAuthorization(requestContext, authenticatedCredentialsResponse);
+		Reason authorizationFailure = checkAuthorization(requestContext, validationResult.entryPoint(), authenticatedCredentialsResponse);
 		
 		if (authorizationFailure != null)
 			return authorizationFailure.asMaybe();
@@ -260,24 +269,76 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 		return buildUserSession(requestContext, openUserSession, authenticatedCredentialsResponse, acquirationKey) //
 				.map(us -> createResponseFrom(us, false));
 	}
+	
+	record ValidationResult(OpenUserSessionEntryPoint entryPoint) {}
+	
+	private static class RequestValidationContext {
+		final LazyInitialized<UserSession> lazyUserSession; 
 
-	private Reason checkAuthorization(ServiceRequestContext requestContext, AuthenticateCredentialsResponse authenticatedCredentialsResponse) {
+		public RequestValidationContext(ServiceRequestContext requestContext) {
+			super();
+			lazyUserSession = new LazyInitialized<UserSession>(() -> requestContext.findOrNull(UserSessionAspect.class));
+		}
+		
+		public boolean isInteralRequest() {
+			UserSession userSession = lazyUserSession.get();
+			return userSession != null && userSession.getEffectiveRoles().contains("tf-internal");
+		}
+	}
+	
+	private Maybe<ValidationResult> validate(ServiceRequestContext requestContext, OpenUserSession openUserSession) {
+		Credentials credentials = openUserSession.getCredentials();
+		
+		if (credentials == null)
+			return Reasons.build(InvalidArgument.T).text("OpenUserSession.credentials must not be null").toMaybe();
+		
+		RequestValidationContext validationContext = new RequestValidationContext(requestContext);
+		
+		if (openUserSession.getSkipAuthorization() && !validationContext.isInteralRequest()) {
+			Forbidden cause = Reasons.build(Forbidden.T).text("Insufficient rights to skip authorization").toReason();
+			return Reasons.build(InvalidArgument.T).text("Invalid property value for skipAuthorization").cause(cause).toMaybe();
+		}
+		
+		String entryPointName = openUserSession.getEntryPoint();
+		
+		final OpenUserSessionEntryPoint entryPoint;
+		
+		if (entryPointName != null) {
+			if (!validationContext.isInteralRequest()) {
+				Forbidden cause = Reasons.build(Forbidden.T).text("Insufficient rights to specify an entry point").toReason();
+				return Reasons.build(InvalidArgument.T).text("Invalid property value for entryPoint").cause(cause).toMaybe();
+			}
+			
+			entryPoint = entryPointsByName.get().get(entryPointName);
+			
+			if (entryPoint == null) {
+				NotFound cause = Reasons.build(NotFound.T).text("Unknown entry point [" + entryPointName + "]").toReason();
+				return Reasons.build(InvalidArgument.T).text("Invalid property value for entryPoint").cause(cause).toMaybe();
+			}
+		}
+		else {
+			entryPoint = null;
+		}
+		
+		return Maybe.complete(new ValidationResult(entryPoint));
+	}
+
+	private Reason checkAuthorization(ServiceRequestContext requestContext, OpenUserSessionEntryPoint entryPoint, AuthenticateCredentialsResponse authenticatedCredentialsResponse) {
 		Set<String> effectiveRoles = getEffectiveRoles(authenticatedCredentialsResponse);
 		
-		if (hasRequiredRoles(requestContext, effectiveRoles))
+		return checkAuthorization(requestContext, entryPoint, effectiveRoles);
+	}
+	
+	private Reason checkAuthorization(ServiceRequestContext requestContext, OpenUserSessionEntryPoint entryPoint, Set<String> effectiveRoles) {
+		if (hasRequiredRoles(requestContext, entryPoint, effectiveRoles))
 			return null;
-		
 		
 		return Reasons.build(Forbidden.T).text("Insufficient rights to to open a UserSession this way").toReason();
 	}
 
-	private boolean hasRequiredRoles(ServiceRequestContext requestContext, Set<String> effectiveRoles) {
-		String waypoint = requestContext.findOrNull(Waypoint.class);
-		
-		if (waypoint == null)
-			return true;
-		
-		OpenUserSessionEntryPoint entryPoint = entryPointsByWaypoint.get().get(waypoint);
+	private boolean hasRequiredRoles(ServiceRequestContext requestContext, OpenUserSessionEntryPoint entryPoint, Set<String> effectiveRoles) {
+		if (entryPoint == null)
+			entryPoint = requestContext.findOrNull(OpenUserSessionEntryPointAttribute.class);
 		
 		if (entryPoint == null)
 			return true;

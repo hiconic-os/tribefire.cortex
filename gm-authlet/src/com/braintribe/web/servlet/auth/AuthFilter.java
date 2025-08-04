@@ -57,10 +57,12 @@ import com.braintribe.model.generic.eval.EvalContext;
 import com.braintribe.model.generic.eval.Evaluator;
 import com.braintribe.model.processing.bootstrapping.TribefireRuntime;
 import com.braintribe.model.processing.securityservice.api.attributes.LenientAuthenticationFailure;
+import com.braintribe.model.processing.securityservice.api.attributes.OpenUserSessionEntryPointAttribute;
 import com.braintribe.model.processing.service.api.aspect.IsAuthorizedAspect;
 import com.braintribe.model.processing.service.api.aspect.RequestorSessionIdAspect;
 import com.braintribe.model.processing.service.api.aspect.RequestorUserNameAspect;
 import com.braintribe.model.processing.service.common.context.UserSessionAspect;
+import com.braintribe.model.security.service.config.OpenUserSessionEntryPoint;
 import com.braintribe.model.securityservice.OpenUserSession;
 import com.braintribe.model.securityservice.OpenUserSessionResponse;
 import com.braintribe.model.securityservice.credentials.Credentials;
@@ -72,8 +74,6 @@ import com.braintribe.util.servlet.util.ServletTools;
 import com.braintribe.utils.CollectionTools;
 import com.braintribe.utils.collection.impl.AttributeContexts;
 import com.braintribe.utils.lcd.LazyInitialized;
-import com.braintribe.web.servlet.auth.providers.CookieProvider;
-import com.braintribe.web.servlet.auth.providers.CookieValueProvider;
 
 /**
  * AuthFilter handles authentication of the request if needed. It:
@@ -113,12 +113,17 @@ public class AuthFilter implements HttpFilter, InitializationAware {
 	private boolean strict = true;
 	private Set<String> grantedRoles = Collections.emptySet();
 	private Evaluator<ServiceRequest> requestEvaluator;
-	private CookieHandler cookieHandler;
 	private ThreadRenamer threadRenamer = ThreadRenamer.NO_OP;
 	private final Map<String, WebCredentialsProvider> webCredentialProviders = new LinkedHashMap<>();
 
-	private Function<HttpServletRequest, String> sessionCookieProvider = new CookieValueProvider(new CookieProvider(Constants.COOKIE_SESSIONID));
 	private boolean throwExceptionOnAuthFailure = false;
+	
+	private Function<HttpServletRequest, OpenUserSessionEntryPoint> entryPointProvider = r -> null;
+
+	@Configurable
+	public void setEntryPointProvider(Function<HttpServletRequest, OpenUserSessionEntryPoint> entryPointProvider) {
+		this.entryPointProvider = entryPointProvider;
+	}
 
 	@Configurable
 	public void addWebCredentialProvider(String key, WebCredentialsProvider webSessionProvider) {
@@ -171,7 +176,8 @@ public class AuthFilter implements HttpFilter, InitializationAware {
 		private final HttpServletRequest request;
 		private final HttpServletResponse response;
 		private final FilterChain chain;
-		private final AttributeContextBuilder contextBuilder = AttributeContexts.peek().derive();
+		
+		private AuthenticationFailure lenientAuthenticationFailure;
 
 		public StatefulAuthFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) {
 			super();
@@ -185,10 +191,12 @@ public class AuthFilter implements HttpFilter, InitializationAware {
 		 *            the {@link UserSession} that was authenticated and authorized or null if there was none
 		 */
 		private void proceed(UserSession userSession) throws IOException, ServletException {
+			final AttributeContextBuilder contextBuilder = AttributeContexts.peek().derive();
+			
+			if (lenientAuthenticationFailure != null)
+				contextBuilder.set(LenientAuthenticationFailure.class, lenientAuthenticationFailure);
 
 			if (userSession != null) {
-				setCookieIfNeccessary(userSession);
-
 				if (log.isTraceEnabled())
 					log.trace("Found valid session: " + userSession);
 
@@ -211,6 +219,22 @@ public class AuthFilter implements HttpFilter, InitializationAware {
 		}
 
 		public void doFilter() throws IOException, ServletException {
+			OpenUserSessionEntryPoint entryPoint = entryPointProvider.apply(request);
+			
+			if (entryPoint != null) {
+				AttributeContexts.push(AttributeContexts.derivePeek().set(OpenUserSessionEntryPointAttribute.class, entryPoint).build());
+				try {
+					doFilter_();
+				}
+				finally {
+					AttributeContexts.pop();
+				}
+			}
+			else
+				doFilter_();
+		}
+
+		private void doFilter_() throws IOException, ServletException {
 			Maybe<UserSession> sessionMaybe = authorize();
 
 			if (sessionMaybe.isUnsatisfied()) {
@@ -318,8 +342,8 @@ public class AuthFilter implements HttpFilter, InitializationAware {
 					log.info("Lenient authentication failure: " + whyUnsatisfied.stringify());
 				}
 
-				contextBuilder.set(LenientAuthenticationFailure.class, wrapWithAuthenticationFailureIfNecessary(whyUnsatisfied));
-
+				lenientAuthenticationFailure = wrapWithAuthenticationFailureIfNecessary(whyUnsatisfied);
+				
 				return Maybe.complete(null);
 			}
 
@@ -412,12 +436,8 @@ public class AuthFilter implements HttpFilter, InitializationAware {
 				EvalContext<? extends OpenUserSessionResponse> vusResponseContext = vus.eval(requestEvaluator);
 				Maybe<? extends OpenUserSessionResponse> openUserSessionMaybe = vusResponseContext.getReasoned();
 
-				if (openUserSessionMaybe.isUnsatisfiedBy(AuthenticationFailure.T)) {
-					onSessionNotFound();
-				}
-
 				if (openUserSessionMaybe.isUnsatisfied()) {
-					return Maybe.empty(openUserSessionMaybe.whyUnsatisfied());
+					return openUserSessionMaybe.propagateReason();
 				}
 
 				return Maybe.complete(openUserSessionMaybe.get().getUserSession());
@@ -429,22 +449,6 @@ public class AuthFilter implements HttpFilter, InitializationAware {
 				return InternalError.from(e, msg).asMaybe();
 			}
 		}
-
-		private void onSessionNotFound() {
-			cookieHandler.invalidateCookie(request, response, null);
-		}
-
-		private void setCookieIfNeccessary(UserSession userSession) {
-			String sessionCookie = sessionCookieProvider.apply(request);
-			if (sessionCookie != null) {
-				log.trace(() -> "Session cookie already set. No need to set it at this point again.");
-				return;
-			}
-			log.trace(() -> "Allowing to set the session cookie.");
-
-			cookieHandler.ensureCookie(request, response, userSession.getSessionId());
-		}
-
 	}
 
 	@Override
@@ -481,15 +485,7 @@ public class AuthFilter implements HttpFilter, InitializationAware {
 	public void setRequestEvaluator(Evaluator<ServiceRequest> requestEvaluator) {
 		this.requestEvaluator = requestEvaluator;
 	}
-	@Configurable
-	@Required
-	public void setCookieHandler(CookieHandler cookieHandler) {
-		this.cookieHandler = cookieHandler;
-	}
-	@Configurable
-	public void setSessionCookieProvider(Function<HttpServletRequest, String> sessionCookieProvider) {
-		this.sessionCookieProvider = sessionCookieProvider;
-	}
+
 	@Configurable
 	public void setThreadRenamer(ThreadRenamer threadRenamer) {
 		Objects.requireNonNull(threadRenamer, "threadRenamer cannot be set to null");

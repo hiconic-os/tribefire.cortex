@@ -16,15 +16,28 @@
 package tribefire.platform.wire.space.security.services;
 
 import com.braintribe.model.processing.securityservice.basic.SimpleSecurityServiceProcessor;
+import com.braintribe.model.processing.securityservice.basic.WebAuthorizationServiceProcessor;
+import com.braintribe.wire.api.annotation.Import;
 import com.braintribe.wire.api.annotation.Managed;
 import com.braintribe.wire.api.space.WireSpace;
 
+import tribefire.platform.wire.space.common.HttpSpace;
+
 @Managed
 public class SimpleSecurityServiceSpace implements WireSpace {
+	@Import
+	private HttpSpace http;
 
 	@Managed
 	public SimpleSecurityServiceProcessor service() {
 		SimpleSecurityServiceProcessor bean = new SimpleSecurityServiceProcessor();
+		return bean;
+	}
+	
+	@Managed
+	public WebAuthorizationServiceProcessor webAuthorizationServiceProcessor() {
+		WebAuthorizationServiceProcessor bean = new WebAuthorizationServiceProcessor();
+		bean.setCookieHandler(http.cookieHandler());
 		return bean;
 	}
 

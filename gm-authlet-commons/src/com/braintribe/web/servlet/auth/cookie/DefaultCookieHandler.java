@@ -15,7 +15,6 @@
 // ============================================================================
 package com.braintribe.web.servlet.auth.cookie;
 
-import java.util.Map;
 import java.util.function.Function;
 
 import javax.servlet.http.Cookie;
@@ -23,14 +22,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.braintribe.cfg.Configurable;
-import com.braintribe.common.attribute.common.Waypoint;
 import com.braintribe.logging.Logger;
 import com.braintribe.model.processing.bootstrapping.TribefireRuntime;
-import com.braintribe.model.securityservice.OpenUserSessionWithUserAndPassword;
-import com.braintribe.utils.collection.impl.AttributeContexts;
+import com.braintribe.model.security.service.config.OpenUserSessionEntryPoint;
 import com.braintribe.web.servlet.auth.Constants;
 import com.braintribe.web.servlet.auth.CookieHandler;
-import com.braintribe.web.servlet.auth.providers.CookieProvider;
 
 public class DefaultCookieHandler implements CookieHandler {
 
@@ -39,47 +35,61 @@ public class DefaultCookieHandler implements CookieHandler {
 	private int cookieExpiry = 24 * 60 * 60; // 24h
 	private String cookiePath = null;
 	private String cookieDomain = null;
-	private Function<HttpServletRequest, Cookie> sessionCookieProvider = new CookieProvider(Constants.COOKIE_SESSIONID);
 	private boolean addSessionCookie = true;
-	private Map<String, Boolean> cookieHttpOnlyPerWaypoint = Map.of("default", Boolean.FALSE);
+	private Function<HttpServletRequest, OpenUserSessionEntryPoint> entryPointProvider = r -> null;
 
 	@Override
 	public Cookie ensureCookie(HttpServletRequest req, HttpServletResponse resp, String sessionId) {
-		return this.ensureCookie(req, resp, sessionId, null);
-	}
-
-	@Override
-	public Cookie ensureCookie(HttpServletRequest req, HttpServletResponse resp, String sessionId,
-			OpenUserSessionWithUserAndPassword openUserSessionRequest) {
-		boolean staySignedInRequested = false;
-		if (openUserSessionRequest != null) {
-			staySignedInRequested = openUserSessionRequest.getStaySignedIn();
-		}
-		return ensureCookie(req, resp, sessionId, staySignedInRequested);
+		return this.ensureCookie(req, resp, sessionId, false);
 	}
 
 	@Override
 	public Cookie ensureCookie(HttpServletRequest req, HttpServletResponse resp, String sessionId, boolean staySignedIn) {
-
 		if (!addSessionCookie) {
 			log.trace(() -> "Session cookies are disabled.");
 			return null;
 		}
+		
+		OpenUserSessionEntryPoint entryPoint = entryPointProvider.apply(req);
 
-		Cookie sessionCookie = acquireCookie(req, sessionId);
+		Cookie sessionCookie = acquireCookie(req, entryPoint, sessionId);
+		
 		sessionCookie.setMaxAge(getMaxAge(req, staySignedIn));
+		
+		configureSessionCookieCommonsAndAdd(req, resp, entryPoint, sessionCookie);
 
+		return sessionCookie;
+	}
+	
+	@Override
+	public void invalidateCookie(HttpServletRequest req, HttpServletResponse resp, String sessionId) {
+		OpenUserSessionEntryPoint entryPoint = entryPointProvider.apply(req);
+		String sessionCookieName = entryPoint != null? entryPoint.sessionCookieName(): Constants.COOKIE_SESSIONID;
+		
+		Cookie sessionCookie = Cookies.findCookie(req, sessionCookieName);
+		
+		if (sessionCookie != null) {
+			sessionCookie.setMaxAge(0);
+			sessionCookie.setValue("");
+
+			configureSessionCookieCommonsAndAdd(req, resp, entryPoint, sessionCookie);
+		}
+	}
+
+	private void configureSessionCookieCommonsAndAdd(HttpServletRequest req, HttpServletResponse resp, OpenUserSessionEntryPoint entryPoint, Cookie sessionCookie) {
 		String cookiePath = this.cookiePath;
 		if (cookiePath == null) {
-			cookiePath = "/"; // if not explicitly configured we enable this cookie for all paths on the domain.
+			cookiePath = "/";
 		}
+
 		sessionCookie.setPath(cookiePath);
+		sessionCookie.setHttpOnly(entryPoint != null? entryPoint.getSessionCookieHttpOnly(): false);
 
 		if (this.cookieDomain != null) {
 			sessionCookie.setDomain(this.cookieDomain);
 		}
-		
-		String scheme = req != null ? getProto(req) : "https";
+
+		String scheme = req != null ? getScheme(req) : "https";
 		
 		boolean isHttps = scheme != null && scheme.equalsIgnoreCase("https"); 
 		
@@ -92,9 +102,9 @@ public class DefaultCookieHandler implements CookieHandler {
 		else {
 			resp.addCookie(sessionCookie);
 		}
-
-		return sessionCookie;
+		
 	}
+
 	
     public static void addCookieWithSameSite(HttpServletResponse response, Cookie cookie, String sameSite) {
         StringBuilder header = new StringBuilder();
@@ -129,7 +139,7 @@ public class DefaultCookieHandler implements CookieHandler {
     }
 
 
-	private String getProto(HttpServletRequest req) {
+	private String getScheme(HttpServletRequest req) {
 		String proxyProto = req.getHeader("X-Forwarded-Proto");
 		if (proxyProto != null) {
 			log.debug("X-Forwarded-Proto header from proxies: " + proxyProto);
@@ -139,52 +149,12 @@ public class DefaultCookieHandler implements CookieHandler {
 		return req.getScheme();
 	}
 
-	@Override
-	public void invalidateCookie(HttpServletRequest req, HttpServletResponse resp, String sessionId) {
+	private Cookie acquireCookie(HttpServletRequest req, OpenUserSessionEntryPoint entryPoint, String sessionId) throws RuntimeException {
+		String sessionCookieName = entryPoint != null? entryPoint.sessionCookieName(): Constants.COOKIE_SESSIONID;
 
-		Cookie sessionCookie = sessionCookieProvider.apply(req);
-		if (sessionCookie != null) {
-			sessionCookie.setMaxAge(0);
-			sessionCookie.setValue("");
-
-			String cookiePath = this.cookiePath;
-			if (cookiePath == null) {
-				cookiePath = "/";
-			}
-
-			sessionCookie.setPath(cookiePath);
-
-			if (this.cookieDomain != null) {
-				sessionCookie.setDomain(this.cookieDomain);
-			}
-
-			String scheme = req != null ? getProto(req) : "https";
-			if (scheme != null && scheme.equalsIgnoreCase("https")) {
-				sessionCookie.setSecure(true);
-			}
-
-			sessionCookie.setHttpOnly(true);
-
-			resp.addCookie(sessionCookie);
-		}
-	}
-
-	private boolean httpOnlyCookie() {
-		String waypoint = AttributeContexts.peek().findOrDefault(Waypoint.class, "default");
-		Boolean httpOnlyForWaypoint = cookieHttpOnlyPerWaypoint.get(waypoint);
-		if (httpOnlyForWaypoint == null && !waypoint.equals("default")) {
-			httpOnlyForWaypoint = cookieHttpOnlyPerWaypoint.get("default");
-		}
-		if (httpOnlyForWaypoint != null) {
-			return httpOnlyForWaypoint;
-		}
-		return false;
-	}
-
-	private Cookie acquireCookie(HttpServletRequest req, String sessionId) throws RuntimeException {
-		Cookie sessionCookie = req != null ? sessionCookieProvider.apply(req) : null;
+		Cookie sessionCookie = req != null ? Cookies.findCookie(req, sessionCookieName) : null;
 		if (sessionCookie == null) {
-			sessionCookie = new Cookie(Constants.COOKIE_SESSIONID, sessionId);
+			sessionCookie = new Cookie(sessionCookieName, sessionId);
 		} else {
 			sessionCookie.setValue(sessionId);
 		}
@@ -238,17 +208,11 @@ public class DefaultCookieHandler implements CookieHandler {
 		this.cookieDomain = cookieDomain;
 	}
 	@Configurable
-	public void setSessionCookieProvider(Function<HttpServletRequest, Cookie> sessionCookieProvider) {
-		this.sessionCookieProvider = sessionCookieProvider;
-	}
-	@Configurable
 	public void setAddCookie(boolean addCookie) {
 		this.addSessionCookie = addCookie;
 	}
 	@Configurable
-	public void setCookieHttpOnlyPerWaypoint(Map<String, Boolean> cookieHttpOnlyMap) {
-		if (cookieHttpOnlyMap != null) {
-			this.cookieHttpOnlyPerWaypoint = cookieHttpOnlyMap;
-		}
+	public void setEntryPointProvider(Function<HttpServletRequest, OpenUserSessionEntryPoint> entryPointProvider) {
+		this.entryPointProvider = entryPointProvider;
 	}
 }
