@@ -23,9 +23,9 @@ import com.braintribe.gm.model.reason.Reasons;
 import com.braintribe.gm.model.reason.essential.InternalError;
 import com.braintribe.gm.model.reason.essential.InvalidArgument;
 import com.braintribe.gm.model.reason.essential.UnsupportedOperation;
-import com.braintribe.gm.model.security.reason.AuthenticationFailure;
 import com.braintribe.gm.model.security.reason.Forbidden;
 import com.braintribe.gm.model.security.reason.MissingSession;
+import com.braintribe.gm.model.security.reason.SecurityReason;
 import com.braintribe.logging.Logger;
 import com.braintribe.model.generic.reflection.ConfigurableCloningContext;
 import com.braintribe.model.processing.service.api.ServiceRequestContext;
@@ -69,7 +69,7 @@ public class WebAuthorizationServiceProcessor extends AbstractDispatchingService
 	private Maybe<? extends WebAuthorization> userPassWebAuthenticate(ServiceRequestContext requestContext,
 			UserPassWebAuthenticate request) {
 		HttpServletArguments servletArguments = requestContext.findOrNull(HttpServletArgumentsAttribute.class);
-		
+
 		if (servletArguments == null)
 			return Reasons.build(UnsupportedOperation.T).text("Operation unsupported via non-HTTP endpoint.").toMaybe();
 
@@ -88,7 +88,7 @@ public class WebAuthorizationServiceProcessor extends AbstractDispatchingService
 		
 		if (responseMaybe.isUnsatisfied()) {
 			
-			if (responseMaybe.isUnsatisfiedAny(AuthenticationFailure.T, Forbidden.T))
+			if (responseMaybe.isUnsatisfiedBy(SecurityReason.T))
 				return responseMaybe.propagateReason();
 			
 			return InternalError.createTraceback(//
