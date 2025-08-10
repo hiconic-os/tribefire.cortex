@@ -16,7 +16,6 @@
 package com.braintribe.model.processing.securityservice.basic.test.wire.space.access;
 
 import com.braintribe.gm._UserModel_;
-import com.braintribe.model.access.IncrementalAccess;
 import com.braintribe.wire.api.annotation.Managed;
 
 @Managed
@@ -33,12 +32,6 @@ public class AuthAccessSpace extends SystemAccessSpaceBase {
 	@Override
 	public String modelName() {
 		return modelName;
-	}
-
-	@Managed
-	@Override
-	public IncrementalAccess rawAccess() {
-		return smood();
 	}
 
 }

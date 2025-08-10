@@ -15,7 +15,6 @@
 // ============================================================================
 package com.braintribe.model.processing.securityservice.basic.test.wire.space.access;
 
-import com.braintribe.model.access.IncrementalAccess;
 import com.braintribe.wire.api.annotation.Managed;
 
 import tribefire.cortex._DeploymentModel_;
@@ -34,13 +33,6 @@ public class ClientsAccessSpace extends SystemAccessSpaceBase {
 	@Override
 	public String modelName() {
 		return modelName;
-	}
-
-	@Managed
-	@Override
-	public IncrementalAccess rawAccess() {
-		IncrementalAccess bean = smood();
-		return bean;
 	}
 
 }

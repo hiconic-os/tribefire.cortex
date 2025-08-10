@@ -15,15 +15,14 @@
 // ============================================================================
 package com.braintribe.model.processing.securityservice.basic.test.wire.space.access;
 
-import com.braintribe.gm._UserSessionModel_;
-import com.braintribe.model.access.IncrementalAccess;
+import com.braintribe.gm._PersistenceUserSessionModel_;
 import com.braintribe.wire.api.annotation.Managed;
 
 @Managed
 public class UserSessionsAccessSpace extends SystemAccessSpaceBase {
 
 	private static final String id = "user-sessions";
-	private static final String modelName = _UserSessionModel_.reflection.name();
+	private static final String modelName = _PersistenceUserSessionModel_.reflection.name();
 
 	@Override
 	public String id() {
@@ -33,12 +32,6 @@ public class UserSessionsAccessSpace extends SystemAccessSpaceBase {
 	@Override
 	public String modelName() {
 		return modelName;
-	}
-
-	@Managed
-	@Override
-	public IncrementalAccess rawAccess() {
-		return smood();
 	}
 
 }

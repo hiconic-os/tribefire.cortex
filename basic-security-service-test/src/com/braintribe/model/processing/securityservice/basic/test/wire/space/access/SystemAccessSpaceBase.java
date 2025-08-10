@@ -15,15 +15,12 @@
 // ============================================================================
 package com.braintribe.model.processing.securityservice.basic.test.wire.space.access;
 
-import java.util.function.Supplier;
-
-import com.braintribe.common.MutuallyExclusiveReadWriteLock;
-import com.braintribe.model.access.IncrementalAccess;
+import com.braintribe.model.access.smood.basic.SmoodAccess;
 import com.braintribe.model.generic.GMF;
 import com.braintribe.model.meta.GmMetaModel;
 import com.braintribe.model.processing.session.api.persistence.PersistenceGmSession;
 import com.braintribe.model.processing.session.impl.persistence.BasicPersistenceGmSession;
-import com.braintribe.model.processing.smood.Smood;
+import com.braintribe.testing.tools.gm.GmTestTools;
 import com.braintribe.wire.api.annotation.Managed;
 import com.braintribe.wire.api.space.WireSpace;
 
@@ -34,28 +31,20 @@ public abstract class SystemAccessSpaceBase implements WireSpace {
 	
 	public abstract String modelName();
 
-	public String serviceModelName() {
-		return null;
-	}
-
-	public abstract IncrementalAccess rawAccess();
-
-	//@Managed(Scope.prototype)
 	public PersistenceGmSession lowLevelSession() {
 		BasicPersistenceGmSession bean = new BasicPersistenceGmSession();
 		bean.setIncrementalAccess(rawAccess());
 		return bean;
 	}
 
-	protected Smood smood() {
-		Smood bean = new Smood(new MutuallyExclusiveReadWriteLock());
-		bean.setAccessId(id());
+	@Managed
+	private SmoodAccess rawAccess() {
+		SmoodAccess bean = GmTestTools.newSmoodAccessMemoryOnly(id(), metaModel());
 		return bean;
 	}
 
-	@Managed
-	public Supplier<GmMetaModel> metaModelProvider() {
-		return () -> GMF.getTypeReflection().getModel(modelName()).getMetaModel();
+	private GmMetaModel metaModel() {
+		return GMF.getTypeReflection().getModel(modelName()).getMetaModel();
 	}
 
 }

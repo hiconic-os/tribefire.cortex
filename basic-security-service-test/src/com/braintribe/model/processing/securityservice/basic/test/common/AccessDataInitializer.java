@@ -15,8 +15,9 @@
 // ============================================================================
 package com.braintribe.model.processing.securityservice.basic.test.common;
 
-import java.util.HashMap;
-import java.util.HashSet;
+import static com.braintribe.utils.lcd.CollectionTools2.newMap;
+import static com.braintribe.utils.lcd.CollectionTools2.newSet;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,10 +38,10 @@ public class AccessDataInitializer implements LifecycleAware {
 	private PersistenceGmSession authGmSession;
 	private PersistenceGmSession clientsGmSession;
 
-	private Map<String, Group> groups = new HashMap<String, Group>();
-	private Map<String, Role> roles = new HashMap<String, Role>();
-	private Map<String, User> users = new HashMap<String, User>();
-	private Map<String, Set<String>> expectedEffectiveRoles = new HashMap<String, Set<String>>();
+	private final Map<String, Group> groups = newMap();
+	private final Map<String, Role> roles = newMap();
+	private final Map<String, User> users = newMap();
+	private final Map<String, Set<String>> expectedEffectiveRoles = newMap();
 
 	public AccessDataInitializer() {
 	}
@@ -86,25 +87,18 @@ public class AccessDataInitializer implements LifecycleAware {
 	 * Populates the {@link #expectedEffectiveRoles} Map with the expected effective roles for the given {@code user}
 	 */
 	private void collectEffectiveRoles(User user) {
+		Set<String> effectiveRoles = newSet();
 
-		Set<String> effectiveRoles = new HashSet<String>();
-
-		if (user.getRoles() != null) {
-			for (Role role : user.getRoles()) {
-				effectiveRoles.add(role.getName());
-			}
+		for (Role role : user.getRoles()) {
+			effectiveRoles.add(role.getName());
 		}
 
-		if (user.getGroups() != null) {
-			for (Group group : user.getGroups()) {
-				if (group.getRoles() != null) {
-					for (Role role : group.getRoles()) {
-						effectiveRoles.add(role.getName());
-					}
-				}
-				// add group as dynamic role
-				effectiveRoles.add("$group-" + group.getName());
+		for (Group group : user.getGroups()) {
+			for (Role role : group.getRoles()) {
+				effectiveRoles.add(role.getName());
 			}
+			// add group as dynamic role
+			effectiveRoles.add("$group-" + group.getName());
 		}
 
 		// add remaining dynamic roles
@@ -196,24 +190,15 @@ public class AccessDataInitializer implements LifecycleAware {
 	}
 
 	private static void addRoleToGroup(Role role, Group group) {
-		if (group == null)
-			return;
-		if (group.getRoles() == null)
-			group.setRoles(new HashSet<Role>());
-		group.getRoles().add(role);
+		if (group != null)
+			group.getRoles().add(role);
 	}
 
 	private static void addRoleToUser(Role role, User user) {
-		if (user.getRoles() == null)
-			user.setRoles(new HashSet<Role>());
 		user.getRoles().add(role);
 	}
 
 	private static void addGroupToUser(Group group, User user) {
-		if (user.getGroups() == null)
-			user.setGroups(new HashSet<Group>());
-		if (group.getUsers() == null)
-			group.setUsers(new HashSet<User>());
 		user.getGroups().add(group);
 		group.getUsers().add(user);
 	}
@@ -237,7 +222,6 @@ public class AccessDataInitializer implements LifecycleAware {
 		user.setLastName(lastName);
 		user.setPassword(password);
 		user.setEmail(name + "@braintribe.com");
-		user.setRoles(new HashSet<Role>());
 
 		for (String groupId : groupIds) {
 			addGroupToUser(groups.get(groupId), user);
