@@ -21,9 +21,9 @@
             <?tag asset ?>
         </dependency>
         <dependency>
-            <groupId>tribefire.cortex</groupId>
+            <groupId>com.braintribe.gm</groupId>
             <artifactId>jdbc-messaging</artifactId>
-            <version>${V.tribefire.cortex}</version>
+            <version>${V.com.braintribe.gm}</version>
         </dependency>
     </dependencies>
 </project>
