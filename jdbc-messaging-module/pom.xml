@@ -6,7 +6,7 @@
         <version>[3.0,3.1)</version>
     </parent>
     <artifactId>jdbc-messaging-module</artifactId>
-    <version>3.0.3</version>
+    <version>3.0.4</version>
     <properties/>
     <dependencies>
         <dependency>
