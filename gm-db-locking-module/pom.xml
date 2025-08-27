@@ -20,7 +20,7 @@ limitations under the License.
         <version>[3.0,3.1)</version>
     </parent>
     <artifactId>gm-db-locking-module</artifactId>
-    <version>3.0.20</version>
+    <version>3.0.21</version>
     <properties>
     </properties>
     <licenses>
