@@ -357,9 +357,9 @@ limitations under the License.
             <version>${V.com.braintribe.gm}</version>
         </dependency>
         <dependency>
-            <groupId>tribefire.cortex</groupId>
+            <groupId>com.braintribe.gm</groupId>
             <artifactId>gm-db-locking</artifactId>
-            <version>${V.tribefire.cortex}</version>
+            <version>${V.com.braintribe.gm}</version>
         </dependency>
         <dependency>
             <groupId>com.braintribe.gm</groupId>
@@ -367,9 +367,9 @@ limitations under the License.
             <version>${V.com.braintribe.gm}</version>
         </dependency>
         <dependency>
-            <groupId>tribefire.cortex</groupId>
+            <groupId>com.braintribe.gm</groupId>
             <artifactId>locking-based-leadership</artifactId>
-            <version>${V.tribefire.cortex}</version>
+            <version>${V.com.braintribe.gm}</version>
         </dependency>
         <!-- Messaging -->
         <dependency>

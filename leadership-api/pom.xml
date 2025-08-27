@@ -32,6 +32,10 @@ limitations under the License.
         </license>
     </licenses>
 	<dependencies>
-		<!-- no dependencies -->
+        <dependency>
+            <groupId>com.braintribe.gm</groupId>
+            <artifactId>leadership-api</artifactId>
+            <version>${V.com.braintribe.gm}</version>
+        </dependency>
 	</dependencies>
 </project>

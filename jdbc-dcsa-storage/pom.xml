@@ -1,4 +1,4 @@
-<!--
+<?xml version="1.0" encoding="UTF-8"?><!--
 Copyright BRAINTRIBE TECHNOLOGY GMBH, Austria, 2002-2022
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -44,11 +44,6 @@ limitations under the License.
             <version>${V.com.braintribe.gm}</version>
         </dependency>
         <dependency>
-            <groupId>tribefire.cortex</groupId>
-            <artifactId>gm-db-locking</artifactId>
-            <version>${V.tribefire.cortex}</version>
-        </dependency>
-        <dependency>
             <groupId>com.braintribe.gm</groupId>
             <artifactId>jdbc-support</artifactId>
             <version>${V.com.braintribe.gm}</version>
@@ -57,6 +52,16 @@ limitations under the License.
             <groupId>com.braintribe.execution</groupId>
             <artifactId>execution</artifactId>
             <version>${V.com.braintribe.execution}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.braintribe.gm</groupId>
+            <artifactId>gm-locking-api</artifactId>
+            <version>${V.com.braintribe.gm}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.braintribe.gm</groupId>
+            <artifactId>marshaller-api</artifactId>
+            <version>${V.com.braintribe.gm}</version>
         </dependency>
     </dependencies>
 </project>
