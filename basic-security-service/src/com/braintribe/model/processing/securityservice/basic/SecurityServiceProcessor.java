@@ -95,7 +95,8 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 	private final CredentialsHasher credentialsHasher = new CredentialsHasher();
 	private Supplier<PersistenceGmSession> authGmSessionProvider;
 	private OpenUserSessionConfiguration openUserSessionConfiguration = OpenUserSessionConfiguration.T.create();
-	private LazyInitialized<Map<String, OpenUserSessionEntryPoint>> entryPointsByName = new LazyInitialized<Map<String,OpenUserSessionEntryPoint>>(this::indexEntryPointsByName);
+	private LazyInitialized<Map<String, OpenUserSessionEntryPoint>> entryPointsByName = new LazyInitialized<Map<String, OpenUserSessionEntryPoint>>(
+			this::indexEntryPointsByName);
 
 	/**
 	 * <p>
@@ -121,7 +122,7 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 	public void setUserSessionService(UserSessionService userSessionService) {
 		this.userSessionService = userSessionService;
 	}
-	
+
 	@Configurable
 	public void setOpenUserSessionConfiguration(OpenUserSessionConfiguration openUserSessionConfiguration) {
 		this.openUserSessionConfiguration = openUserSessionConfiguration;
@@ -170,14 +171,14 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 		dispatching.register(Logout.T, this::logout);
 		dispatching.register(LogoutSession.T, this::logoutSession);
 	}
-	
+
 	private Map<String, OpenUserSessionEntryPoint> indexEntryPointsByName() {
 		Map<String, OpenUserSessionEntryPoint> index = new HashMap<>();
-		
-		for (OpenUserSessionEntryPoint entryPoint: openUserSessionConfiguration.getEntryPoints()) {
+
+		for (OpenUserSessionEntryPoint entryPoint : openUserSessionConfiguration.getEntryPoints()) {
 			index.put(entryPoint.getName(), entryPoint);
 		}
-		
+
 		return index;
 	}
 
@@ -208,12 +209,12 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 
 	private Maybe<OpenUserSessionResponse> openUserSession(ServiceRequestContext requestContext, OpenUserSession openUserSession) {
 		Maybe<ValidationResult> validationResultMaybe = validate(requestContext, openUserSession);
-		
+
 		if (validationResultMaybe.isUnsatisfied())
 			return validationResultMaybe.propagateReason();
-		
+
 		ValidationResult validationResult = validationResultMaybe.get();
-		
+
 		Credentials credentials = openUserSession.getCredentials();
 		String acquirationKey = null;
 
@@ -229,10 +230,10 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 				UserSession userSession = acquiredUserSessionMaybe.get();
 
 				Reason authorizationFailure = checkAuthorization(requestContext, validationResult.entryPoint(), userSession.getEffectiveRoles());
-				
+
 				if (authorizationFailure != null)
 					return authorizationFailure.asMaybe();
-				
+
 				return Maybe.complete(createResponseFrom(userSession, true));
 			}
 
@@ -254,130 +255,133 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 
 		if (maybe.isUnsatisfied())
 			return Maybe.empty(maybe.whyUnsatisfied());
-		
+
 		AuthenticateCredentialsResponse authenticatedCredentialsResponse = maybe.get();
-		
+
 		if (authenticatedCredentialsResponse instanceof AuthenticatedUserSession authenticatedUserSession) {
 			return Maybe.complete(createResponseFrom(authenticatedUserSession.getUserSession(), true));
 		}
-		
+
 		Reason authorizationFailure = checkAuthorization(requestContext, validationResult.entryPoint(), authenticatedCredentialsResponse);
-		
+
 		if (authorizationFailure != null)
 			return authorizationFailure.asMaybe();
 
 		return buildUserSession(requestContext, openUserSession, authenticatedCredentialsResponse, acquirationKey) //
 				.map(us -> createResponseFrom(us, false));
 	}
-	
-	record ValidationResult(OpenUserSessionEntryPoint entryPoint) {}
-	
+
+	record ValidationResult(OpenUserSessionEntryPoint entryPoint) {
+	}
+
 	private static class RequestValidationContext {
-		final LazyInitialized<UserSession> lazyUserSession; 
+		final LazyInitialized<UserSession> lazyUserSession;
 
 		public RequestValidationContext(ServiceRequestContext requestContext) {
 			super();
 			lazyUserSession = new LazyInitialized<UserSession>(() -> requestContext.findOrNull(UserSessionAspect.class));
 		}
-		
+
 		public boolean isInteralRequest() {
 			UserSession userSession = lazyUserSession.get();
 			return userSession != null && userSession.getEffectiveRoles().contains("tf-internal");
 		}
 	}
-	
+
 	private Maybe<ValidationResult> validate(ServiceRequestContext requestContext, OpenUserSession openUserSession) {
 		Credentials credentials = openUserSession.getCredentials();
-		
+
 		if (credentials == null)
 			return Reasons.build(InvalidArgument.T).text("OpenUserSession.credentials must not be null").toMaybe();
-		
+
 		RequestValidationContext validationContext = new RequestValidationContext(requestContext);
-		
+
 		if (openUserSession.getSkipAuthorization() && !validationContext.isInteralRequest()) {
 			Forbidden cause = Reasons.build(Forbidden.T).text("Insufficient rights to skip authorization").toReason();
 			return Reasons.build(InvalidArgument.T).text("Invalid property value for skipAuthorization").cause(cause).toMaybe();
 		}
-		
+
 		String entryPointName = openUserSession.getEntryPoint();
-		
+
 		final OpenUserSessionEntryPoint entryPoint;
-		
+
 		if (entryPointName != null) {
 			if (!validationContext.isInteralRequest()) {
 				Forbidden cause = Reasons.build(Forbidden.T).text("Insufficient rights to specify an entry point").toReason();
 				return Reasons.build(InvalidArgument.T).text("Invalid property value for entryPoint").cause(cause).toMaybe();
 			}
-			
+
 			entryPoint = entryPointsByName.get().get(entryPointName);
-			
+
 			if (entryPoint == null) {
 				NotFound cause = Reasons.build(NotFound.T).text("Unknown entry point [" + entryPointName + "]").toReason();
 				return Reasons.build(InvalidArgument.T).text("Invalid property value for entryPoint").cause(cause).toMaybe();
 			}
-		}
-		else {
+		} else {
 			entryPoint = null;
 		}
-		
+
 		return Maybe.complete(new ValidationResult(entryPoint));
 	}
 
-	private Reason checkAuthorization(ServiceRequestContext requestContext, OpenUserSessionEntryPoint entryPoint, AuthenticateCredentialsResponse authenticatedCredentialsResponse) {
+	private Reason checkAuthorization(ServiceRequestContext requestContext, OpenUserSessionEntryPoint entryPoint,
+			AuthenticateCredentialsResponse authenticatedCredentialsResponse) {
 		Set<String> effectiveRoles = getEffectiveRoles(authenticatedCredentialsResponse);
-		
+
 		return checkAuthorization(requestContext, entryPoint, effectiveRoles);
 	}
-	
+
 	private Reason checkAuthorization(ServiceRequestContext requestContext, OpenUserSessionEntryPoint entryPoint, Set<String> effectiveRoles) {
 		if (hasRequiredRoles(requestContext, entryPoint, effectiveRoles))
 			return null;
-		
+
 		return Reasons.build(Forbidden.T).text("Insufficient rights to to open a UserSession this way").toReason();
 	}
 
 	private boolean hasRequiredRoles(ServiceRequestContext requestContext, OpenUserSessionEntryPoint entryPoint, Set<String> effectiveRoles) {
 		if (entryPoint == null)
 			entryPoint = requestContext.findOrNull(OpenUserSessionEntryPointAttribute.class);
-		
+
 		if (entryPoint == null)
 			return true;
-		
+
 		return checkAuthorization(effectiveRoles, entryPoint.getAllowedRoles(), entryPoint.getForbiddenRoles());
 	}
-	
+
 	/**
-     * Checks whether a user with the given roles is authorized,
-     * based on an optional whitelist (includedRoles) and blacklist (excludedRoles).
-     *
-     * @param effectiveRoles The roles currently assigned to the user
-     * @param allowedRoles The roles from which at least one must be present (if not empty)
-     * @param forbiddenRoles The roles from which none must be present (if not empty)
-     * @return true if authorized; false if access should be denied
-     */
-    public static boolean checkAuthorization(Set<String> effectiveRoles, Set<String> allowedRoles, Set<String> forbiddenRoles) {
-        // Check blacklist (if present)
-        if (!forbiddenRoles.isEmpty()) {
-            for (String role : effectiveRoles) {
-                if (forbiddenRoles.contains(role)) {
-                    return false; // Access denied
-                }
-            }
-        }
+	 * Checks whether a user with the given roles is authorized, based on an optional whitelist (includedRoles) and blacklist (excludedRoles).
+	 *
+	 * @param effectiveRoles
+	 *            The roles currently assigned to the user
+	 * @param allowedRoles
+	 *            The roles from which at least one must be present (if not empty)
+	 * @param forbiddenRoles
+	 *            The roles from which none must be present (if not empty)
+	 * @return true if authorized; false if access should be denied
+	 */
+	public static boolean checkAuthorization(Set<String> effectiveRoles, Set<String> allowedRoles, Set<String> forbiddenRoles) {
+		// Check blacklist (if present)
+		if (!forbiddenRoles.isEmpty()) {
+			for (String role : effectiveRoles) {
+				if (forbiddenRoles.contains(role)) {
+					return false; // Access denied
+				}
+			}
+		}
 
-        // Check whitelist (if present)
-        if (!allowedRoles.isEmpty()) {
-            for (String role : effectiveRoles) {
-                if (allowedRoles.contains(role)) {
-                    return true; // Access granted
-                }
-            }
-            return false; // No matching allowed role found
-        }
+		// Check whitelist (if present)
+		if (!allowedRoles.isEmpty()) {
+			for (String role : effectiveRoles) {
+				if (allowedRoles.contains(role)) {
+					return true; // Access granted
+				}
+			}
+			return false; // No matching allowed role found
+		}
 
-        // No exclusions matched, no inclusion rules defined → access granted
-        return true;
-    }
+		// No exclusions matched, no inclusion rules defined → access granted
+		return true;
+	}
 
 	private Set<String> getEffectiveRoles(AuthenticateCredentialsResponse authenticatedCredentialsResponse) {
 		if (authenticatedCredentialsResponse instanceof AuthenticatedUser) {
@@ -550,14 +554,13 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 	private Maybe<UserSession> validateUserSession(ServiceRequestContext requestContext, UserSession userSession) {
 		log.trace(() -> "Validating user session: " + userSession);
 
-		Date expiryDate = userSession.getExpiryDate();
+		Date now = new Date();
 
-		if (expiryDate != null) {
-			Date now = new Date();
+		boolean hasExpired = userSession.getExpiryDate() != null && now.after(userSession.getExpiryDate());
+		boolean hasFixedExpired = userSession.getFixedExpiryDate() != null && now.after(userSession.getFixedExpiryDate());
 
-			if (now.after(expiryDate)) {
-				return Reasons.build(SessionExpired.T).text("User session '" + userSession.getId() + "' has expired.").toMaybe();
-			}
+		if (hasExpired || hasFixedExpired) {
+			return Reasons.build(SessionExpired.T).text("User session '" + userSession.getId() + "' has expired.").toMaybe();
 		}
 
 		LazyInitialized<Reason> verifyReason = new LazyInitialized<>(
