@@ -20,6 +20,7 @@ import static com.braintribe.wire.api.util.Lists.list;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.braintribe.model.cortex.aspect.CryptoAspect;
 import com.braintribe.model.cortex.aspect.FulltextAspect;
 import com.braintribe.model.cortex.aspect.IdGeneratorAspect;
 import com.braintribe.model.cortex.aspect.SecurityAspect;
@@ -37,7 +38,7 @@ import tribefire.cortex.initializer.support.wire.space.AbstractInitializerSpace;
 @Managed
 public class DefaultDeployablesSpace extends AbstractInitializerSpace implements DefaultDeployablesContract {
 
-	public static final String DEFAULTDEPLOYABLE_NAMESPACE = "default:deployable/"; 
+	public static final String DEFAULTDEPLOYABLE_NAMESPACE = "default:deployable/";
 
 	@Override
 	@Managed
@@ -51,21 +52,13 @@ public class DefaultDeployablesSpace extends AbstractInitializerSpace implements
 	@Override
 	@Managed
 	public List<AccessAspect> defaultAspects() {
-		return list(
-					stateProcessingAspect(),
-					fulltextAspect(),
-					securityAspect(),
-					idGeneratorAspect()
-				);
+		return list(stateProcessingAspect(), fulltextAspect(), securityAspect(), idGeneratorAspect());
 	}
 
 	@Override
 	@Managed
 	public List<StateChangeProcessorRule> defaultStateChangeProcessorRules() {
-		return list(
-					bidiPropertyProcessorRule(),
-					metaDataProcessorRule()
-				);
+		return list(bidiPropertyProcessorRule(), metaDataProcessorRule());
 	}
 
 	@Override
@@ -90,6 +83,12 @@ public class DefaultDeployablesSpace extends AbstractInitializerSpace implements
 	@Managed
 	public IdGeneratorAspect idGeneratorAspect() {
 		return lookup(DEFAULTDEPLOYABLE_NAMESPACE + "aspect.idGenerator.default");
+	}
+
+	@Override
+	@Managed
+	public CryptoAspect cryptoAspect() {
+		return lookup(DEFAULTDEPLOYABLE_NAMESPACE + "aspect.crypto.default");
 	}
 
 	@Override

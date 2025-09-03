@@ -17,6 +17,7 @@ package tribefire.cortex.deployables.initializer.support.wire.contract;
 
 import java.util.List;
 
+import com.braintribe.model.cortex.aspect.CryptoAspect;
 import com.braintribe.model.cortex.aspect.FulltextAspect;
 import com.braintribe.model.cortex.aspect.IdGeneratorAspect;
 import com.braintribe.model.cortex.aspect.SecurityAspect;
@@ -44,6 +45,8 @@ public interface DefaultDeployablesContract extends WireSpace {
 
 	IdGeneratorAspect idGeneratorAspect();
 
+	CryptoAspect cryptoAspect();
+	
 	BidiPropertyStateChangeProcessorRule bidiPropertyProcessorRule();
 
 	MetaDataStateChangeProcessorRule metaDataProcessorRule();
