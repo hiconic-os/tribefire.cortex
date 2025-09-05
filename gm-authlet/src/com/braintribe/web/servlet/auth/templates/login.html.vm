@@ -92,8 +92,6 @@ function login() {
 
   <div class="loginContent">
 	<a href="."><img src="webpages/logo-tf-orange.svg" alt="logo" width="240"></a>
-	<h2>Sign in to tribefire</h2>
-	
 	
 	<form id="signinForm" class="loginForm" accept-charset="UTF-8">
 			<div>				
@@ -130,7 +128,7 @@ function login() {
 				<input type="hidden" name="continue" value="$tools.escape($continue)" />
 			#end
 	</form>
-	<h3><a href="http://www.braintribe.com" target="_blank">www.braintribe.com</a></h3> 
+
   </div>
   
 
