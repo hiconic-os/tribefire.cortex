@@ -37,7 +37,9 @@ public class DefaultCookieHandler implements CookieHandler {
 	private String cookieDomain = null;
 	private boolean addSessionCookie = true;
 	private Function<HttpServletRequest, OpenUserSessionEntryPoint> entryPointProvider = r -> null;
-
+	private String exposedScheme = null;
+	private boolean cookieIsAlwaysSecure = false;
+	
 	@Override
 	public Cookie ensureCookie(HttpServletRequest req, HttpServletResponse resp, String sessionId) {
 		return this.ensureCookie(req, resp, sessionId, false);
@@ -93,7 +95,7 @@ public class DefaultCookieHandler implements CookieHandler {
 		
 		boolean isHttps = scheme != null && scheme.equalsIgnoreCase("https"); 
 		
-		if (isHttps) {
+		if (isHttps || cookieIsAlwaysSecure) {
 			// only in case of HTTPS it is possible to support cross domain cookies 
 			// but this requires a Secure and a SameSite=None attribution
 			sessionCookie.setSecure(true);
@@ -140,6 +142,9 @@ public class DefaultCookieHandler implements CookieHandler {
 
 
 	private String getScheme(HttpServletRequest req) {
+		if (exposedScheme != null)
+			return exposedScheme;
+		
 		String proxyProto = req.getHeader("X-Forwarded-Proto");
 		if (proxyProto != null) {
 			log.debug("X-Forwarded-Proto header from proxies: " + proxyProto);
@@ -214,5 +219,10 @@ public class DefaultCookieHandler implements CookieHandler {
 	@Configurable
 	public void setEntryPointProvider(Function<HttpServletRequest, OpenUserSessionEntryPoint> entryPointProvider) {
 		this.entryPointProvider = entryPointProvider;
+	}
+	
+	@Configurable
+	public void setCookieIsAlwaysSecure(boolean cookieIsAlwaysSecure) {
+		this.cookieIsAlwaysSecure = cookieIsAlwaysSecure;
 	}
 }

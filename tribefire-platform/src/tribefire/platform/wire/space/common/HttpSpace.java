@@ -72,6 +72,7 @@ public class HttpSpace implements HttpContract {
 		// DEVCX-208: The Control Center cannot access the cookie anymore if the cookie is not reachable via JavaScript.
 		bean.setAddCookie(TribefireRuntime.getCookieEnabled());
 		bean.setEntryPointProvider(openUserSessionConfigurationProvider()::findEntryPoint);
+		bean.setCookieIsAlwaysSecure(Boolean.TRUE.toString().equals(TribefireRuntime.getProperty("TRIBEFIRE_SESSION_COOKIE_ALWAYS_SECURE")));
 		return bean;
 	}
 	
