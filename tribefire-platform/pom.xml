@@ -20,7 +20,7 @@ limitations under the License.
         <version>[3.0,3.1)</version>
     </parent>
     <artifactId>tribefire-platform</artifactId>
-    <version>3.0.72</version>
+    <version>3.0.73</version>
     <properties/>
     <licenses>
         <license>
