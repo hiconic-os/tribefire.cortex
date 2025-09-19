@@ -402,8 +402,6 @@ public class HomeServlet extends BasicTemplateBasedServlet {
 		if (artifacts.isEmpty())
 			return null;
 
-		Collections.reverse(artifacts);
-
 		List<VersionedArtifactIdentification> versionedArtifacts = artifacts.stream() //
 				.limit(3) //
 				.map(VersionedArtifactIdentification::parse) //
@@ -423,7 +421,6 @@ public class HomeServlet extends BasicTemplateBasedServlet {
 
 			if (solution.getRepositoryView().getRelease() != null) {
 				disjunctReleaseSolutions.add(solution);
-				continue;
 			}
 
 			scanForDisjunctReleases(solution.getDependencies(), visited, disjunctReleaseSolutions);
