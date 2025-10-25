@@ -42,7 +42,7 @@ import com.braintribe.transport.messaging.api.MessagingException;
 import com.braintribe.transport.messaging.api.MessagingSession;
 import com.braintribe.transport.messaging.api.MessagingSessionProvider;
 import com.braintribe.utils.StringTools;
-import com.braintribe.utils.lcd.LazyInitialized;
+import com.braintribe.utils.lcd.Lazy;
 
 /**
  * Manages the acknowledgement and broadcasting of heartbeats.
@@ -77,7 +77,7 @@ public class HeartbeatManager implements MessageListener, Worker, DestructionAwa
 	private Supplier<Boolean> availabilityChecker = () -> Boolean.TRUE;
 
 	// lazy initialized
-	private final LazyInitialized<HearbeatManagerMsg> msg = new LazyInitialized<>(HearbeatManagerMsg::new) ;
+	private final Lazy<HearbeatManagerMsg> msg = new Lazy<>(HearbeatManagerMsg::new) ;
 
 	private class HearbeatManagerMsg implements AutoCloseable {
 		public final MessagingSession messagingSession;

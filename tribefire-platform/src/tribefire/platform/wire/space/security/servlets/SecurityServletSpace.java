@@ -210,7 +210,7 @@ public class SecurityServletSpace implements WireSpace {
 	}
 
 	@Managed
-	public StandardExceptionHandler standardExceptionHandler() {
+	private StandardExceptionHandler standardExceptionHandler() {
 		StandardExceptionHandler bean = new StandardExceptionHandler();
 		bean.setExceptionExposure(errorHandlingRuntimeProperties.TRIBEFIRE_ERROR_EXCEPTION_EXPOSURE());
 		bean.setTracebackIdExposure(errorHandlingRuntimeProperties.TRIBEFIRE_ERROR_TRACEBACKID_EXPOSURE());

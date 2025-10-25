@@ -39,6 +39,7 @@ import com.braintribe.model.processing.securityservice.api.exceptions.SecuritySe
 import com.braintribe.model.processing.worker.api.Worker;
 import com.braintribe.model.processing.worker.api.WorkerContext;
 import com.braintribe.model.processing.worker.api.WorkerException;
+import com.braintribe.model.processing.worker.api.WorkerExecutionContext;
 import com.braintribe.model.processing.worker.api.WorkerManager;
 import com.braintribe.model.processing.worker.api.WorkerManagerControl;
 import com.braintribe.model.usersession.UserSession;
@@ -57,7 +58,7 @@ public class BasicWorkerManager implements WorkerManager, WorkerManagerControl, 
 
 	private Supplier<LeadershipManager> leadershipManagerSupplier;
 	private LeadershipManager leadershipManager;
-	private ReentrantLock leadershipManagerLock = new ReentrantLock();
+	private final ReentrantLock leadershipManagerLock = new ReentrantLock();
 
 	private boolean started = false;
 	private final Set<Worker> deferredWorkers = new LinkedHashSet<Worker>();
@@ -314,10 +315,10 @@ public class BasicWorkerManager implements WorkerManager, WorkerManagerControl, 
 						wctx.push();
 						try {
 							T returnValue = task.call();
-							logger.debug(() -> String.format("task of worker %s finished: %s", this, task));
+							logger.debug(() -> String.format("task of worker %s finished: %s", WorkerContextImpl.this, task));
 							return returnValue;
 						} catch (Throwable e) {
-							logger.error(String.format("error in task of worker %s: %s", this, task), e);
+							logger.error(String.format("error in task of worker %s: %s", WorkerContextImpl.this, task), e);
 							if (e instanceof RuntimeException) {
 								throw (RuntimeException) e;
 							} else if (e instanceof Error) {

@@ -51,7 +51,9 @@ import com.braintribe.utils.collection.impl.AttributeContexts;
  * A {@link MessageListener} which evaluates {@link ServiceRequest} instances wrapped within {@link MulticastRequest}
  * instances received in the {@link Message} body.
  * 
+ * @deprecated seems unused (outside of tests)
  */
+@Deprecated
 public class MulticastConsumer implements MessageListener, LifecycleAware {
 
 	// constants

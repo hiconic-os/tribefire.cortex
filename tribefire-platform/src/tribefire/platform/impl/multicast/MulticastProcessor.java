@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
+import com.braintribe.cartridge.common.api.topology.LiveInstances;
 import com.braintribe.cfg.Configurable;
 import com.braintribe.cfg.DestructionAware;
 import com.braintribe.cfg.Required;
@@ -58,9 +59,7 @@ import com.braintribe.transport.messaging.api.MessageProperties;
 import com.braintribe.transport.messaging.api.MessagingException;
 import com.braintribe.transport.messaging.api.MessagingSession;
 import com.braintribe.transport.messaging.api.MessagingSessionProvider;
-import com.braintribe.utils.lcd.LazyInitialized;
-
-import tribefire.platform.impl.topology.CartridgeLiveInstances;
+import com.braintribe.utils.lcd.Lazy;
 
 /**
  * <p>
@@ -79,13 +78,13 @@ public class MulticastProcessor implements ServiceProcessor<MulticastRequest, Mu
 	private InstanceId senderId;
 	private long defaultResponseTimeout = parseLong(getProperty(ENVIRONMENT_MULTICAST_PROCESSING_TIMEOUT, "30000"));
 	private long warningResponseTimeout = parseLong(getProperty(ENVIRONMENT_MULTICAST_PROCESSING_WARNINGTHRESHOLD, "120000"));
-	private CartridgeLiveInstances liveInstances;
+	private LiveInstances liveInstances;
 	private Supplier<Map<String, Object>> metaDataProvider;
 	private final Map<String, BlockingQueue<Message>> responsesMap = new ConcurrentHashMap<>();
 	private boolean localCallOptimizationEnabled = true;
 
 	// lazy initialized
-	private final LazyInitialized<MulticastMsg> msg = new LazyInitialized<>(MulticastMsg::new);
+	private final Lazy<MulticastMsg> msg = new Lazy<>(MulticastMsg::new);
 
 	private class MulticastMsg implements AutoCloseable {
 		// post initialized
@@ -160,7 +159,7 @@ public class MulticastProcessor implements ServiceProcessor<MulticastRequest, Mu
 
 	@Required
 	@Configurable
-	public void setLiveInstances(CartridgeLiveInstances liveInstances) {
+	public void setLiveInstances(LiveInstances liveInstances) {
 		this.liveInstances = liveInstances;
 	}
 
