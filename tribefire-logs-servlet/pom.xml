@@ -90,5 +90,10 @@ limitations under the License.
             <artifactId>tribefire-topology-api</artifactId>
             <version>${V.tribefire.cortex}</version>
         </dependency>
+		<dependency>
+			<groupId>com.braintribe.common</groupId>
+			<artifactId>stream-pipes-api</artifactId>
+			<version>${V.com.braintribe.common}</version>
+		</dependency>
     </dependencies>
 </project>

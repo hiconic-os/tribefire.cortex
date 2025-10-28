@@ -67,6 +67,7 @@ import tribefire.platform.wire.space.MasterResourcesSpace;
 import tribefire.platform.wire.space.bindings.BindingsSpace;
 import tribefire.platform.wire.space.common.CartridgeInformationSpace;
 import tribefire.platform.wire.space.common.EnvironmentSpace;
+import tribefire.platform.wire.space.common.ResourceProcessingSpace;
 import tribefire.platform.wire.space.common.RuntimeSpace;
 import tribefire.platform.wire.space.cortex.GmSessionsSpace;
 import tribefire.platform.wire.space.cortex.accesses.CortexAccessSpace;
@@ -103,6 +104,7 @@ public class SystemServletsSpace implements WireSpace {
 	@Import	private SystemInformationSpace systemInformation;
 	@Import	private TopologySpace topology;
 	@Import	private WorkerSpace worker;
+	@Import private ResourceProcessingSpace resourceProcessing;
 	// @formatter:on
 
 	@Managed
@@ -298,6 +300,8 @@ public class SystemServletsSpace implements WireSpace {
 		bean.setRequestEvaluator(rpc.serviceRequestEvaluator());
 		bean.setLiveInstances(topology.liveInstances());
 		bean.setLocalInstanceId(cartridgeInformation.instanceId());
+		bean.setCurrentUserSessionIdProvider(currentUserAuthContext.userSessionIdProvider());
+		bean.setStreamPipeFactory(resourceProcessing.streamPipeFactory());
 		return bean;
 	}
 

@@ -33,10 +33,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Supplier;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -76,35 +79,36 @@ import com.braintribe.model.service.api.result.MulticastResponse;
 import com.braintribe.model.service.api.result.ResponseEnvelope;
 import com.braintribe.model.service.api.result.ServiceResult;
 import com.braintribe.utils.DateTools;
+import com.braintribe.utils.FileTools;
 import com.braintribe.utils.IOTools;
 import com.braintribe.utils.collection.api.MultiMap;
 import com.braintribe.utils.collection.impl.ComparatorBasedNavigableMultiMap;
+import com.braintribe.utils.stream.CountingOutputStream;
+import com.braintribe.utils.stream.api.StreamPipe;
+import com.braintribe.utils.stream.api.StreamPipeFactory;
 import com.braintribe.web.servlet.BasicTemplateBasedServlet;
 
 /**
- * This servlet provides a web page to access log files of the tribefire instance where this servlet is hosted. It
- * allows to: <br>
+ * This servlet provides a web page to access log files of the tribefire instance where this servlet is hosted. It allows to: <br>
  * <ul>
  * <li>Download log files</li>
  * <li>Set the log level of individual Cartridges and tribefire-services</li>
  * <li>Tail the contents of individual log files</li>
  * </ul>
  * <br>
- * The top section of the About page allows a user to download log files (so-called "Log Bundles"). The dropdown box
- * presents a list of all available log files, grouped by their filenames. Hence, is multiple log files exist that share
- * the same name (except for the timestamp in the name), they can be downloaded as a bundle (i.e., a ZIP file). <br>
+ * The top section of the About page allows a user to download log files (so-called "Log Bundles"). The dropdown box presents a list of all available
+ * log files, grouped by their filenames. Hence, is multiple log files exist that share the same name (except for the timestamp in the name), they can
+ * be downloaded as a bundle (i.e., a ZIP file). <br>
  * <br>
- * The following section allows a user to select one of the log files for live tailing at the bottom of the page. The
- * Log Viewer allows the user to specify how many lines of log should be in memory and how many of the should be
- * displayed on screen. Furthermore, the output could be halted or cleared. <br>
+ * The following section allows a user to select one of the log files for live tailing at the bottom of the page. The Log Viewer allows the user to
+ * specify how many lines of log should be in memory and how many of the should be displayed on screen. Furthermore, the output could be halted or
+ * cleared. <br>
  * <br>
- * The next section can be used to change the log level of an individual Cartridge or the tribefire-services (if
- * present). Please note that the log levels presented in this interface may differ from the actual level names
- * designated by the underlying log infrastructure. tribefire and its components use an abstraction layer for logging
- * and is therefore independent of the underlying log infrastructure. Hence, it is also possible to completely replace
- * the logging infrastructure without the need to change the code. This also allows to make use of any log
- * infrastructure a servlet container may provide. By default, the standard Java Util Logging framework is used, of
- * which the following log levels are employed: <br>
+ * The next section can be used to change the log level of an individual Cartridge or the tribefire-services (if present). Please note that the log
+ * levels presented in this interface may differ from the actual level names designated by the underlying log infrastructure. tribefire and its
+ * components use an abstraction layer for logging and is therefore independent of the underlying log infrastructure. Hence, it is also possible to
+ * completely replace the logging infrastructure without the need to change the code. This also allows to make use of any log infrastructure a servlet
+ * container may provide. By default, the standard Java Util Logging framework is used, of which the following log levels are employed: <br>
  * <br>
  * <ul>
  * <li>FINER (called TRACE in tribefire)</li>
@@ -114,9 +118,9 @@ import com.braintribe.web.servlet.BasicTemplateBasedServlet;
  * <li>SEVERE (called ERROR in tribefire)</li>
  * </ul>
  * <br>
- * The Log Servlet does not support operation within a cluster. When a load balancer is used to access one of many
- * tribefire-services instances, the user may have no control which instance actually serves the content of the Logs
- * page. It can only be used by accessing a server directly. This will be supported in future versions.
+ * The Log Servlet does not support operation within a cluster. When a load balancer is used to access one of many tribefire-services instances, the
+ * user may have no control which instance actually serves the content of the Logs page. It can only be used by accessing a server directly. This will
+ * be supported in future versions.
  */
 public class LogsServlet extends BasicTemplateBasedServlet implements InitializationAware {
 
@@ -137,6 +141,9 @@ public class LogsServlet extends BasicTemplateBasedServlet implements Initializa
 
 	protected LiveInstances liveInstances;
 	protected InstanceId localInstanceId;
+
+	private Supplier<String> userSessionIdProvider;
+	private StreamPipeFactory streamPipeFactory;
 
 	@Override
 	public void postConstruct() {
@@ -615,26 +622,92 @@ public class LogsServlet extends BasicTemplateBasedServlet implements Initializa
 		getLogs.setToDate(to);
 		getLogs.setTop(top);
 
-		Logs logs = null;
-		try {
-			logs = getLogs.eval(requestEvaluator).get();
-		} catch (Exception e) {
-			throw new Exception("Error while trying to get logs files: " + getLogs, e);
+		String userSessionId = this.userSessionIdProvider.get();
+
+		MulticastRequest mcR = MulticastRequest.T.create();
+		mcR.setServiceRequest(getLogs);
+		mcR.setTimeout((long) Numbers.MILLISECONDS_PER_MINUTE);
+		mcR.setSessionId(userSessionId);
+		EvalContext<? extends MulticastResponse> eval = mcR.eval(requestEvaluator);
+		MulticastResponse multicastResponse = eval.get();
+
+		Map<String, Logs> collectedLogs = new HashMap<>();
+
+		for (Map.Entry<InstanceId, ServiceResult> entry : multicastResponse.getResponses().entrySet()) {
+
+			InstanceId instanceId = entry.getKey();
+
+			logger.debug(() -> "Received a log response from instance: " + instanceId);
+
+			String nodeId = instanceId.getNodeId();
+
+			ServiceResult result = entry.getValue();
+			if (result instanceof Failure) {
+				Throwable throwable = FailureCodec.INSTANCE.decode(result.asFailure());
+				logger.error("Received failure from " + instanceId, throwable);
+			} else if (result instanceof ResponseEnvelope) {
+
+				ResponseEnvelope envelope = (ResponseEnvelope) result;
+				Logs logs = (Logs) envelope.getResult();
+
+				collectedLogs.put(nodeId, logs);
+
+			} else {
+				logger.error("Unsupported response type: " + result);
+			}
+
 		}
 
-		Resource log = logs.getLog();
+		try (StreamPipe pipe = streamPipeFactory.newPipe("logs")) {
+			Resource resultResource = null;
+			if (collectedLogs.size() > 1) {
+				try (CountingOutputStream out = new CountingOutputStream(pipe.acquireOutputStream());
+						ZipOutputStream zos = new ZipOutputStream(out)) {
 
-		resp.setContentType(log.getMimeType());
-		Long fileSize = log.getFileSize();
-		if (fileSize != null) {
-			resp.setContentLength(fileSize.intValue());
+					String rawName = "logs-" + DateTools.encode(new Date(), DateTools.TERSE_DATETIME_FORMAT_2);
+					int index = 0;
+					for (Map.Entry<String, Logs> entry : collectedLogs.entrySet()) {
+
+						String nodeId = entry.getKey();
+						Logs logs = entry.getValue();
+						String sanitizedPath = FileTools.normalizeFilename(nodeId, '_');
+
+						try (InputStream in = logs.getLog().openStream()) {
+							ZipEntry zipEntry = new ZipEntry(rawName + java.io.File.separator + index + "-" + sanitizedPath + ".zip");
+							zos.putNextEntry(zipEntry);
+							IOTools.pump(in, zos, 0xffff);
+							zos.closeEntry();
+						}
+
+					}
+
+					zos.close();
+					out.close();
+
+					resultResource = Resource.createTransient(() -> pipe.openInputStream());
+					resultResource.setName(rawName + ".zip");
+					resultResource.setMimeType("application/zip");
+					resultResource.setFileSize(out.getCount());
+				}
+			} else if (collectedLogs.size() == 1) {
+				resultResource = collectedLogs.values().iterator().next().getLog();
+			}
+
+			if (resultResource != null) {
+				resp.setContentType(resultResource.getMimeType());
+				Long fileSize = resultResource.getFileSize();
+				if (fileSize != null) {
+					resp.setContentLength(fileSize.intValue());
+				}
+				resp.setHeader("Content-Disposition", String.format("attachment; filename=\"%s\"", resultResource.getName()));
+
+				try (InputStream in = resultResource.openStream()) {
+					IOTools.pump(in, resp.getOutputStream(), 0xffff);
+				}
+			} else {
+				resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Could not produce log files.");
+			}
 		}
-		resp.setHeader("Content-Disposition", String.format("attachment; filename=\"%s\"", log.getName()));
-
-		try (InputStream in = log.openStream()) {
-			IOTools.pump(in, resp.getOutputStream(), 0xffff);
-		}
-
 	}
 
 	private Map<String, Map<String, InstanceId>> getClusterLogFiles() {
@@ -878,5 +951,14 @@ public class LogsServlet extends BasicTemplateBasedServlet implements Initializa
 	public void setLocalInstanceId(InstanceId localInstanceId) {
 		this.localInstanceId = localInstanceId;
 	}
-
+	@Configurable
+	@Required
+	public void setCurrentUserSessionIdProvider(Supplier<String> userSessionIdProvider) {
+		this.userSessionIdProvider = userSessionIdProvider;
+	}
+	@Configurable
+	@Required
+	public void setStreamPipeFactory(StreamPipeFactory streamPipeFactory) {
+		this.streamPipeFactory = streamPipeFactory;
+	}
 }
