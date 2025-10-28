@@ -15,17 +15,25 @@
 // ============================================================================
 package com.braintribe.model.logs.request;
 
-
 import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.generic.reflection.EntityTypes;
 import com.braintribe.model.resource.Resource;
 
-
 public interface Logs extends LogsResponse {
 
 	EntityType<Logs> T = EntityTypes.T(Logs.class);
-	
+
 	void setLog(Resource log);
 	Resource getLog();
-	
+
+	// The following properties are used when the caller requested a base64 encoded response rather than a resource
+
+	String getFilename();
+	void setFilename(String filename);
+
+	String getMimeType();
+	void setMimeType(String mimeType);
+
+	String getBase64EncodedResource();
+	void setBase64EncodedResource(String base64EncodedResource);
 }

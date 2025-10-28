@@ -15,11 +15,13 @@
 // ============================================================================
 package com.braintribe.web.servlet.logs;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -78,6 +80,7 @@ import com.braintribe.model.service.api.result.Failure;
 import com.braintribe.model.service.api.result.MulticastResponse;
 import com.braintribe.model.service.api.result.ResponseEnvelope;
 import com.braintribe.model.service.api.result.ServiceResult;
+import com.braintribe.utils.Base64;
 import com.braintribe.utils.DateTools;
 import com.braintribe.utils.FileTools;
 import com.braintribe.utils.IOTools;
@@ -621,6 +624,7 @@ public class LogsServlet extends BasicTemplateBasedServlet implements Initializa
 		getLogs.setFromDate(from);
 		getLogs.setToDate(to);
 		getLogs.setTop(top);
+		getLogs.setBase64EncodedResponse(true);
 
 		String userSessionId = this.userSessionIdProvider.get();
 
@@ -672,7 +676,8 @@ public class LogsServlet extends BasicTemplateBasedServlet implements Initializa
 						Logs logs = entry.getValue();
 						String sanitizedPath = FileTools.normalizeFilename(nodeId, '_');
 
-						try (InputStream in = logs.getLog().openStream()) {
+						try (InputStream in = new Base64.InputStream(
+								new ByteArrayInputStream(logs.getBase64EncodedResource().getBytes(StandardCharsets.UTF_8)))) {
 							ZipEntry zipEntry = new ZipEntry(rawName + java.io.File.separator + index + "-" + sanitizedPath + ".zip");
 							zos.putNextEntry(zipEntry);
 							IOTools.pump(in, zos, 0xffff);
@@ -690,7 +695,20 @@ public class LogsServlet extends BasicTemplateBasedServlet implements Initializa
 					resultResource.setFileSize(out.getCount());
 				}
 			} else if (collectedLogs.size() == 1) {
-				resultResource = collectedLogs.values().iterator().next().getLog();
+				Logs logs = collectedLogs.values().iterator().next();
+				try (InputStream in = new Base64.InputStream(
+						new ByteArrayInputStream(logs.getBase64EncodedResource().getBytes(StandardCharsets.UTF_8)));
+						CountingOutputStream out = new CountingOutputStream(pipe.acquireOutputStream())) {
+					IOTools.transferBytes(in, out);
+
+					out.close();
+
+					resultResource = Resource.createTransient(() -> pipe.openInputStream());
+					resultResource.setName(logs.getFilename());
+					resultResource.setMimeType(logs.getMimeType());
+					resultResource.setFileSize(out.getCount());
+				}
+
 			}
 
 			if (resultResource != null) {

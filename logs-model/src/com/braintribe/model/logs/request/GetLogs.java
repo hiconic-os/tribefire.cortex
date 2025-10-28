@@ -17,13 +17,11 @@ package com.braintribe.model.logs.request;
 
 import java.util.Date;
 
-
 import com.braintribe.model.generic.eval.EvalContext;
 import com.braintribe.model.generic.eval.Evaluator;
 import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.generic.reflection.EntityTypes;
 import com.braintribe.model.service.api.ServiceRequest;
-
 
 public interface GetLogs extends LogsRequest {
 
@@ -31,16 +29,19 @@ public interface GetLogs extends LogsRequest {
 
 	void setFilename(String filename);
 	String getFilename();
-	
+
 	void setFromDate(Date fromDate);
 	Date getFromDate();
-	
+
 	void setToDate(Date toDate);
 	Date getToDate();
-	
+
 	void setTop(int top);
 	int getTop();
-	
+
+	boolean getBase64EncodedResponse();
+	void setBase64EncodedResponse(boolean base64EncodedResponse);
+
 	@Override
 	EvalContext<? extends Logs> eval(Evaluator<ServiceRequest> evaluator);
 }

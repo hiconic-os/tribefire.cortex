@@ -17,14 +17,17 @@ package com.braintribe.model.processing.logs.processor;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.lang.management.ManagementFactory;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
@@ -81,8 +84,10 @@ import com.braintribe.model.processing.service.api.ServiceRequestContext;
 import com.braintribe.model.processing.service.weaving.impl.dispatch.DispatchingServiceProcessor;
 import com.braintribe.model.resource.Resource;
 import com.braintribe.model.service.api.InstanceId;
+import com.braintribe.utils.Base64;
 import com.braintribe.utils.DateTools;
 import com.braintribe.utils.FileTools;
+import com.braintribe.utils.IOTools;
 import com.braintribe.utils.StringTools;
 import com.braintribe.utils.collection.api.MultiMap;
 import com.braintribe.utils.collection.impl.ComparatorBasedNavigableMultiMap;
@@ -272,7 +277,7 @@ public class LogsProcessor extends DispatchingServiceProcessor<LogsRequest, Logs
 			} else {
 				File file = knownLogFilesRef.get(fileName);
 				if (file != null && file.exists()) {
-					this.setFile(logs, file, "text/plain");
+					this.setFile(logs, file, "text/plain", request.getBase64EncodedResponse());
 				} else {
 					throw new FileNotFoundException("Could not find file " + fileName);
 				}
@@ -302,7 +307,7 @@ public class LogsProcessor extends DispatchingServiceProcessor<LogsRequest, Logs
 
 			String name = String.format("%s-logs-%s.zip", downloadFilenamePrefix, dateStr);
 
-			this.setZippedFile(logs, name, logFiles, logFilesCount);
+			this.setZippedFile(logs, name, logFiles, logFilesCount, request.getBase64EncodedResponse());
 		}
 
 		return logs;
@@ -348,63 +353,101 @@ public class LogsProcessor extends DispatchingServiceProcessor<LogsRequest, Logs
 		return result;
 	}
 
-	private void setFile(Logs logs, File file, String mimeType) {
+	private void setFile(Logs logs, File file, String mimeType, boolean base64EncodedResponse) {
 
-		Resource callResource = Resource.createTransient(() -> new FileInputStream(file));
+		if (base64EncodedResponse) {
+			try (InputStream fis = new BufferedInputStream(new FileInputStream(file));
+					ByteArrayOutputStream baos = new ByteArrayOutputStream();
+					Base64.OutputStream out = new Base64.OutputStream(baos)) {
+				IOTools.transferBytes(fis, out);
+				out.close();
+				baos.close();
 
-		callResource.setName(file.getName());
-		callResource.setMimeType(mimeType);
-		callResource.setFileSize(file.length());
+				logs.setFilename(file.getName());
+				logs.setMimeType(mimeType);
+				logs.setBase64EncodedResource(baos.toString(StandardCharsets.UTF_8));
+			} catch (IOException ioe) {
+				throw new UncheckedIOException("Could not package log file: " + ioe.getMessage(), ioe);
+			}
+		} else {
 
-		try {
-			BasicFileAttributes attrs = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
-			if (attrs != null) {
-				FileTime creationTime = attrs.creationTime();
-				if (creationTime != null) {
-					GregorianCalendar atime = new GregorianCalendar();
-					atime.setTimeInMillis(creationTime.toMillis());
-					callResource.setCreated(atime.getTime());
+			Resource callResource = Resource.createTransient(() -> new FileInputStream(file));
+
+			callResource.setName(file.getName());
+			callResource.setMimeType(mimeType);
+			callResource.setFileSize(file.length());
+
+			try {
+				BasicFileAttributes attrs = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
+				if (attrs != null) {
+					FileTime creationTime = attrs.creationTime();
+					if (creationTime != null) {
+						GregorianCalendar atime = new GregorianCalendar();
+						atime.setTimeInMillis(creationTime.toMillis());
+						callResource.setCreated(atime.getTime());
+					}
+				}
+			} catch (IOException e) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Could not get the creation time of file " + file.getAbsolutePath(), e);
 				}
 			}
-		} catch (IOException e) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Could not get the creation time of file " + file.getAbsolutePath(), e);
-			}
-		}
 
-		try {
-			PosixFileAttributes attrs = Files.readAttributes(file.toPath(), PosixFileAttributes.class);
-			if (attrs != null) {
-				UserPrincipal owner = attrs.owner();
-				if (owner != null) {
-					callResource.setCreator(owner.getName());
+			try {
+				PosixFileAttributes attrs = Files.readAttributes(file.toPath(), PosixFileAttributes.class);
+				if (attrs != null) {
+					UserPrincipal owner = attrs.owner();
+					if (owner != null) {
+						callResource.setCreator(owner.getName());
+					}
+				}
+			} catch (Exception e) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Could not get the owner of file " + file.getAbsolutePath(), e);
 				}
 			}
-		} catch (Exception e) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Could not get the owner of file " + file.getAbsolutePath(), e);
-			}
-		}
 
-		logs.setLog(callResource);
+			logs.setLog(callResource);
+
+		}
 	}
 
-	private void setZippedFile(Logs logs, String name, Collection<File> logFiles, int logFilesCount) {
+	private void setZippedFile(Logs logs, String name, Collection<File> logFiles, int logFilesCount, boolean base64EncodedResponse) {
 
-		Resource callResource = Resource.createTransient(new ZippingInputStreamProvider(name, logFiles, logFilesCount));
+		if (base64EncodedResponse) {
 
-		callResource.setName(name);
-		callResource.setMimeType("application/zip");
-		callResource.setCreated(new Date());
-		try {
-			callResource.setCreator(this.userNameProvider.get());
-		} catch (RuntimeException e) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Could not get the current user name.", e);
+			try (InputStream fis = new ZippingInputStreamProvider(name, logFiles, logFilesCount).openInputStream();
+					ByteArrayOutputStream baos = new ByteArrayOutputStream();
+					Base64.OutputStream out = new Base64.OutputStream(baos)) {
+				IOTools.transferBytes(fis, out);
+				out.close();
+				baos.close();
+
+				logs.setFilename(name);
+				logs.setMimeType("application/zip");
+				logs.setBase64EncodedResource(baos.toString(StandardCharsets.UTF_8));
+			} catch (IOException ioe) {
+				throw new UncheckedIOException("Could not package log file: " + ioe.getMessage(), ioe);
 			}
-		}
 
-		logs.setLog(callResource);
+		} else {
+
+			Resource callResource = Resource.createTransient(new ZippingInputStreamProvider(name, logFiles, logFilesCount));
+
+			callResource.setName(name);
+			callResource.setMimeType("application/zip");
+			callResource.setCreated(new Date());
+			try {
+				callResource.setCreator(this.userNameProvider.get());
+			} catch (RuntimeException e) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Could not get the current user name.", e);
+				}
+			}
+
+			logs.setLog(callResource);
+
+		}
 	}
 
 	@SuppressWarnings("unused")
