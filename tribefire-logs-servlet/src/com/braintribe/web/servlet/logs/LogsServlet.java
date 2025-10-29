@@ -669,7 +669,7 @@ public class LogsServlet extends BasicTemplateBasedServlet implements Initializa
 
 		try (StreamPipe pipe = streamPipeFactory.newPipe("logs")) {
 			Resource resultResource = null;
-			if (collectedLogs.size() > 1) {
+			if (collectedLogs.size() >= 1) {
 
 				List<LogStreamPipe> individualStreamPipes = new ArrayList<>();
 
@@ -699,17 +699,17 @@ public class LogsServlet extends BasicTemplateBasedServlet implements Initializa
 						index++;
 					}
 
-					StreamPipe mergedLogs = mergeLogs(individualStreamPipes);
-					if (mergedLogs != null) {
-						individualStreamPipes.add(new LogStreamPipe(index, null, "combined.zip", mergedLogs));
-
-						try (InputStream in = mergedLogs.openInputStream()) {
-							ZipEntry zipEntry = new ZipEntry(packageName + java.io.File.separator + "combined.zip");
-							zos.putNextEntry(zipEntry);
-							IOTools.pump(in, zos, 0xffff);
-							zos.closeEntry();
-						}
-					}
+					// StreamPipe mergedLogs = mergeLogs(individualStreamPipes);
+					// if (mergedLogs != null) {
+					// individualStreamPipes.add(new LogStreamPipe(index, null, "combined.zip", mergedLogs));
+					//
+					// try (InputStream in = mergedLogs.openInputStream()) {
+					// ZipEntry zipEntry = new ZipEntry(packageName + java.io.File.separator + "combined.zip");
+					// zos.putNextEntry(zipEntry);
+					// IOTools.pump(in, zos, 0xffff);
+					// zos.closeEntry();
+					// }
+					// }
 
 					zos.close();
 					out.close();
