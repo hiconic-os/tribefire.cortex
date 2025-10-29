@@ -785,7 +785,7 @@ public class LogsServlet extends BasicTemplateBasedServlet implements Initializa
 							try (OutputStream out = filePipe.acquireOutputStream()) {
 								IOTools.transferBytes(zis, out);
 							}
-							streamPipesPerFilename.computeIfAbsent(filename, _ -> new ArrayList<>()).add(filePipe);
+							streamPipesPerFilename.computeIfAbsent(filename, __ -> new ArrayList<>()).add(filePipe);
 						}
 					} catch (IOException e) {
 						throw new UncheckedIOException(e);
