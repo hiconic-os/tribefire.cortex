@@ -19,7 +19,9 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
@@ -40,13 +42,16 @@ import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.io.output.TeeOutputStream;
 import org.apache.commons.lang.StringUtils;
 import org.apache.velocity.VelocityContext;
 import org.json.simple.JSONObject;
@@ -665,34 +670,57 @@ public class LogsServlet extends BasicTemplateBasedServlet implements Initializa
 		try (StreamPipe pipe = streamPipeFactory.newPipe("logs")) {
 			Resource resultResource = null;
 			if (collectedLogs.size() > 1) {
+
+				List<LogStreamPipe> individualStreamPipes = new ArrayList<>();
+
 				try (CountingOutputStream out = new CountingOutputStream(pipe.acquireOutputStream());
 						ZipOutputStream zos = new ZipOutputStream(out)) {
 
-					String rawName = "logs-" + DateTools.encode(new Date(), DateTools.TERSE_DATETIME_FORMAT_2);
+					String packageName = "logs-" + DateTools.encode(new Date(), DateTools.TERSE_DATETIME_FORMAT_2);
 					int index = 0;
 					for (Map.Entry<String, Logs> entry : collectedLogs.entrySet()) {
 
 						String nodeId = entry.getKey();
 						Logs logs = entry.getValue();
-						String sanitizedPath = FileTools.normalizeFilename(nodeId, '_');
+						String nodeEnrichedFilename = FileTools.normalizeFilename(nodeId, '_') + "-" + logs.getFilename();
+
+						StreamPipe individualStreamPipe = streamPipeFactory.newPipe("logs-" + packageName);
+						individualStreamPipes.add(new LogStreamPipe(index, "text/plain", logs.getFilename(), individualStreamPipe));
 
 						try (InputStream in = new Base64.InputStream(
-								new ByteArrayInputStream(logs.getBase64EncodedResource().getBytes(StandardCharsets.UTF_8)))) {
-							ZipEntry zipEntry = new ZipEntry(rawName + java.io.File.separator + index + "-" + sanitizedPath + ".zip");
+								new ByteArrayInputStream(logs.getBase64EncodedResource().getBytes(StandardCharsets.UTF_8)));
+								OutputStream pipeOut = individualStreamPipe.acquireOutputStream();
+								TeeOutputStream teeOut = new TeeOutputStream(zos, pipeOut)) {
+							ZipEntry zipEntry = new ZipEntry(packageName + java.io.File.separator + index + "-" + nodeEnrichedFilename);
+							zos.putNextEntry(zipEntry);
+							IOTools.pump(in, teeOut, 0xffff);
+							zos.closeEntry();
+						}
+						index++;
+					}
+
+					StreamPipe mergedLogs = mergeLogs(individualStreamPipes);
+					if (mergedLogs != null) {
+						individualStreamPipes.add(new LogStreamPipe(index, null, "combined.zip", mergedLogs));
+
+						try (InputStream in = mergedLogs.openInputStream()) {
+							ZipEntry zipEntry = new ZipEntry(packageName + java.io.File.separator + "combined.zip");
 							zos.putNextEntry(zipEntry);
 							IOTools.pump(in, zos, 0xffff);
 							zos.closeEntry();
 						}
-						index++;
 					}
 
 					zos.close();
 					out.close();
 
 					resultResource = Resource.createTransient(() -> pipe.openInputStream());
-					resultResource.setName(rawName + ".zip");
+					resultResource.setName(packageName + ".zip");
 					resultResource.setMimeType("application/zip");
 					resultResource.setFileSize(out.getCount());
+
+				} finally {
+					individualStreamPipes.forEach(i -> i.streamPipe().close());
 				}
 			} else if (collectedLogs.size() == 1) {
 				Logs logs = collectedLogs.values().iterator().next();
@@ -726,6 +754,116 @@ public class LogsServlet extends BasicTemplateBasedServlet implements Initializa
 				resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Could not produce log files.");
 			}
 		}
+	}
+
+	protected StreamPipe mergeLogs(List<LogStreamPipe> logPipes) {
+		Set<String> setOfMimeTypes = logPipes.stream().map(LogStreamPipe::mimeType).collect(Collectors.toSet());
+		if (setOfMimeTypes.size() != 1) {
+			// Mix of mimetypes. We do not support that (and, honestly, did not expect it)
+			return null;
+		}
+		String mimeType = setOfMimeTypes.iterator().next();
+		if (mimeType == null) {
+			return null;
+		}
+
+		List<StreamPipe> localStreamPipes = new ArrayList<>();
+		try {
+			Map<String, List<StreamPipe>> streamPipesPerFilename = new HashMap<>();
+			if (mimeType.equals("text/plain")) {
+				logPipes.forEach(logPipe -> {
+					streamPipesPerFilename.computeIfAbsent(logPipe.filename(), _ -> new ArrayList<>()).add(logPipe.streamPipe());
+				});
+			} else if (mimeType.equals("application/zip")) {
+				logPipes.forEach(logPipe -> {
+					try (ZipInputStream zis = new ZipInputStream(logPipe.streamPipe().openInputStream())) {
+						ZipEntry entry;
+						while ((entry = zis.getNextEntry()) != null) {
+							String filename = FileTools.getName(entry.getName());
+							StreamPipe filePipe = streamPipeFactory.newPipe(filename);
+							localStreamPipes.add(filePipe);
+							try (OutputStream out = filePipe.acquireOutputStream()) {
+								IOTools.transferBytes(zis, out);
+							}
+							streamPipesPerFilename.computeIfAbsent(filename, _ -> new ArrayList<>()).add(filePipe);
+						}
+					} catch (IOException e) {
+						throw new UncheckedIOException(e);
+					}
+				});
+
+			} else {
+				logger.debug(() -> "Unsupported log mimeType: " + mimeType);
+				return null;
+			}
+
+			Map<String, StreamPipe> combinedLogStreamPipes = new HashMap<>();
+
+			streamPipesPerFilename.entrySet().forEach(entry -> {
+				String filename = entry.getKey();
+				List<StreamPipe> streamPipes = entry.getValue();
+				List<InputStream> inStreams = new ArrayList<>(streamPipes.size());
+				streamPipes.forEach(sp -> {
+					try {
+						inStreams.add(sp.openInputStream());
+					} catch (IOException e) {
+						throw new UncheckedIOException(e);
+					}
+				});
+
+				try {
+
+					LogCombiner combiner = new LogCombiner(inStreams);
+					if (combiner.hasNext()) {
+						StreamPipe outputPipe = streamPipeFactory.newPipe("output-" + filename);
+						localStreamPipes.add(outputPipe);
+
+						try (OutputStream out = outputPipe.acquireOutputStream()) {
+							while (combiner.hasNext()) {
+								out.write(combiner.next().getBytes(StandardCharsets.UTF_8));
+								out.write('\n');
+							}
+						} catch (IOException ioe) {
+							throw new UncheckedIOException(ioe);
+						}
+						combinedLogStreamPipes.put(filename, outputPipe);
+					}
+
+				} finally {
+					inStreams.forEach(IOTools::closeQuietly);
+				}
+			});
+
+			if (!combinedLogStreamPipes.isEmpty()) {
+
+				StreamPipe outPipe = streamPipeFactory.newPipe("combined");
+
+				try (ZipOutputStream zos = new ZipOutputStream(outPipe.acquireOutputStream())) {
+
+					for (Map.Entry<String, StreamPipe> entry : combinedLogStreamPipes.entrySet()) {
+						String filename = entry.getKey();
+						StreamPipe streamPipe = entry.getValue();
+
+						try (InputStream in = streamPipe.openInputStream()) {
+							ZipEntry zipEntry = new ZipEntry("combined" + java.io.File.separator + filename);
+							zos.putNextEntry(zipEntry);
+							IOTools.pump(in, zos, 0xffff);
+							zos.closeEntry();
+						}
+					}
+
+					zos.close();
+				} catch (IOException ioe) {
+					throw new UncheckedIOException(ioe);
+				}
+
+				return outPipe;
+			}
+
+		} finally {
+			localStreamPipes.forEach(StreamPipe::close);
+		}
+		return null;
 	}
 
 	private Map<String, Map<String, InstanceId>> getClusterLogFiles() {

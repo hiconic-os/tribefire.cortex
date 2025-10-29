@@ -35,5 +35,20 @@
 			<version>5.0.0</version>
 			<scope>provided</scope>
 		</dependency>
+		<dependency>
+			<groupId>tribefire.cortex</groupId>
+			<artifactId>tribefire-logs-servlet</artifactId>
+			<version>${V.tribefire.cortex}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.braintribe.common</groupId>
+			<artifactId>stream-pipes</artifactId>
+			<version>${V.com.braintribe.common}</version>
+		</dependency>		
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>${V.javax.servlet}</version>
+        </dependency>
 	</dependencies>
 </project>
