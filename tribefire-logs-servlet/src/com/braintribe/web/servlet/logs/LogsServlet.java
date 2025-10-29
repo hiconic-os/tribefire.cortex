@@ -772,7 +772,7 @@ public class LogsServlet extends BasicTemplateBasedServlet implements Initializa
 			Map<String, List<StreamPipe>> streamPipesPerFilename = new HashMap<>();
 			if (mimeType.equals("text/plain")) {
 				logPipes.forEach(logPipe -> {
-					streamPipesPerFilename.computeIfAbsent(logPipe.filename(), _ -> new ArrayList<>()).add(logPipe.streamPipe());
+					streamPipesPerFilename.computeIfAbsent(logPipe.filename(), __ -> new ArrayList<>()).add(logPipe.streamPipe());
 				});
 			} else if (mimeType.equals("application/zip")) {
 				logPipes.forEach(logPipe -> {
