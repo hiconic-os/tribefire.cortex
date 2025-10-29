@@ -15,9 +15,10 @@
 // ============================================================================
 package tribefire.platform.wire.space.cortex.deployment.deployables.access;
 
+import static com.braintribe.utils.lcd.CollectionTools2.newList;
+import static com.braintribe.utils.lcd.CollectionTools2.nullSafe;
 import static com.braintribe.wire.api.util.Lists.list;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -118,19 +119,18 @@ public class IncrementalAccessListenerSpace extends DeployableBaseSpace {
 	}
 
 	@Managed
-	private List<com.braintribe.model.processing.aop.api.aspect.AccessAspect> aopAspects(DeploymentContext<? extends IncrementalAccess, ? extends com.braintribe.model.access.IncrementalAccess> context) {
+	private List<com.braintribe.model.processing.aop.api.aspect.AccessAspect> aopAspects( //
+			DeploymentContext<? extends IncrementalAccess, ? extends com.braintribe.model.access.IncrementalAccess> context) {
 
 		IncrementalAccess deployable = context.getDeployable();
 
 		if (deployable.getAspectConfiguration() != null) {
+			List<com.braintribe.model.processing.aop.api.aspect.AccessAspect> bean = newList();
 
-			List<com.braintribe.model.processing.aop.api.aspect.AccessAspect> bean = new ArrayList<com.braintribe.model.processing.aop.api.aspect.AccessAspect>();
-
-			if (deployable.getAspectConfiguration().getAspects() != null) {
-				for (AccessAspect aspect : deployable.getAspectConfiguration().getAspects()) {
+			for (AccessAspect aspect : nullSafe(deployable.getAspectConfiguration().getAspects()))
+				if (aspect != null) // this actually happened
 					bean.add(context.resolve(aspect, AccessAspect.T));
-				}
-			}
+
 			return bean;
 
 		} else {
@@ -144,7 +144,6 @@ public class IncrementalAccessListenerSpace extends DeployableBaseSpace {
 			);
 			// @formatter:on
 		}
-
 	}
 
 }
