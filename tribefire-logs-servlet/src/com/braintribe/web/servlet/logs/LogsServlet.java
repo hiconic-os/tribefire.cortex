@@ -759,11 +759,13 @@ public class LogsServlet extends BasicTemplateBasedServlet implements Initializa
 	protected StreamPipe mergeLogs(List<LogStreamPipe> logPipes) {
 		Set<String> setOfMimeTypes = logPipes.stream().map(LogStreamPipe::mimeType).collect(Collectors.toSet());
 		if (setOfMimeTypes.size() != 1) {
+			logger.debug(() -> "Found mimeTypes " + setOfMimeTypes);
 			// Mix of mimetypes. We do not support that (and, honestly, did not expect it)
 			return null;
 		}
 		String mimeType = setOfMimeTypes.iterator().next();
 		if (mimeType == null) {
+			logger.debug(() -> "MimeType is null");
 			return null;
 		}
 
@@ -796,6 +798,9 @@ public class LogsServlet extends BasicTemplateBasedServlet implements Initializa
 				logger.debug(() -> "Unsupported log mimeType: " + mimeType);
 				return null;
 			}
+
+			logger.debug(() -> "Combining log files " + streamPipesPerFilename.entrySet().stream()
+					.map(es -> es.getKey() + ": " + es.getValue().size()).collect(Collectors.joining(", ")));
 
 			Map<String, StreamPipe> combinedLogStreamPipes = new HashMap<>();
 
@@ -834,6 +839,8 @@ public class LogsServlet extends BasicTemplateBasedServlet implements Initializa
 				}
 			});
 
+			logger.debug(() -> "combinedLogStreamPipes: " + combinedLogStreamPipes.size());
+
 			if (!combinedLogStreamPipes.isEmpty()) {
 
 				StreamPipe outPipe = streamPipeFactory.newPipe("combined");
@@ -857,6 +864,7 @@ public class LogsServlet extends BasicTemplateBasedServlet implements Initializa
 					throw new UncheckedIOException(ioe);
 				}
 
+				logger.debug(() -> "Successfully created combined ZIP");
 				return outPipe;
 			}
 
