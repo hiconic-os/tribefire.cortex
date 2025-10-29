@@ -683,7 +683,7 @@ public class LogsServlet extends BasicTemplateBasedServlet implements Initializa
 							IOTools.pump(in, zos, 0xffff);
 							zos.closeEntry();
 						}
-
+						index++;
 					}
 
 					zos.close();
