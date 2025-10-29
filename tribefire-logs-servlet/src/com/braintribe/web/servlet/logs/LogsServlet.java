@@ -669,7 +669,7 @@ public class LogsServlet extends BasicTemplateBasedServlet implements Initializa
 
 		try (StreamPipe pipe = streamPipeFactory.newPipe("logs")) {
 			Resource resultResource = null;
-			if (collectedLogs.size() >= 1) {
+			if (collectedLogs.size() > 1) {
 
 				List<LogStreamPipe> individualStreamPipes = new ArrayList<>();
 
