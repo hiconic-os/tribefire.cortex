@@ -761,6 +761,8 @@ public class LogsServlet extends BasicTemplateBasedServlet implements Initializa
 
 	protected StreamPipe mergeLogs(List<LogStreamPipe> logPipes) {
 		Set<String> setOfMimeTypes = logPipes.stream().map(LogStreamPipe::mimeType).collect(Collectors.toSet());
+		logger.debug(() -> "mergeLogs: found mime types: " + setOfMimeTypes + " in " + logPipes);
+
 		if (setOfMimeTypes.size() != 1) {
 			logger.debug(() -> "Found mimeTypes " + setOfMimeTypes);
 			// Mix of mimetypes. We do not support that (and, honestly, did not expect it)
@@ -780,6 +782,7 @@ public class LogsServlet extends BasicTemplateBasedServlet implements Initializa
 					streamPipesPerFilename.computeIfAbsent(logPipe.filename(), __ -> new ArrayList<>()).add(logPipe.streamPipe());
 				});
 			} else if (mimeType.equals("application/zip")) {
+				logger.debug(() -> "mergeLogs: unpacking ZIP files");
 				logPipes.forEach(logPipe -> {
 					try (ZipInputStream zis = new ZipInputStream(logPipe.streamPipe().openInputStream())) {
 						ZipEntry entry;
@@ -810,6 +813,7 @@ public class LogsServlet extends BasicTemplateBasedServlet implements Initializa
 			streamPipesPerFilename.entrySet().forEach(entry -> {
 				String filename = entry.getKey();
 				List<StreamPipe> streamPipes = entry.getValue();
+				logger.debug(() -> "mergeLogs: working on " + filename + " with " + streamPipes.size() + " stream pipes.");
 				List<InputStream> inStreams = new ArrayList<>(streamPipes.size());
 				streamPipes.forEach(sp -> {
 					try {
@@ -823,6 +827,8 @@ public class LogsServlet extends BasicTemplateBasedServlet implements Initializa
 
 					LogCombiner combiner = new LogCombiner(inStreams);
 					if (combiner.hasNext()) {
+						logger.debug(() -> "mergeLogs: combining streams of " + filename);
+
 						StreamPipe outputPipe = streamPipeFactory.newPipe("output-" + filename);
 						localStreamPipes.add(outputPipe);
 
@@ -835,6 +841,8 @@ public class LogsServlet extends BasicTemplateBasedServlet implements Initializa
 							throw new UncheckedIOException(ioe);
 						}
 						combinedLogStreamPipes.put(filename, outputPipe);
+					} else {
+						logger.debug(() -> "mergeLogs: did not get any combining log files of " + filename);
 					}
 
 				} finally {
