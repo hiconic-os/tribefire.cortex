@@ -1,10 +1,8 @@
 package com.braintribe.web.servlet.logs;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,19 +17,22 @@ import com.braintribe.utils.lcd.StringTools;
 
 public class LogCombiner implements Iterator<String> {
 
-	private BufferedReader[] readers;
+	private LogLineBuffer[] readers;
 	private NextLine[] nextLines;
-	private Pattern pattern;
+	private Pattern singleLinePattern;
+	private Pattern multiLinePattern;
 
 	public LogCombiner(List<InputStream> inputStreams) {
-		pattern = Pattern.compile("^([0-9]{4}\\-[0-9]{2}\\-[0-9]{2}T[0-9]{2}\\:[0-9]{2}\\:[0-9]{2}\\.[0-9]{3}\\+[0-9]{4}) (.*)");
+		singleLinePattern = Pattern.compile("^([0-9]{4}\\-[0-9]{2}\\-[0-9]{2}T[0-9]{2}\\:[0-9]{2}\\:[0-9]{2}\\.[0-9]{3}\\+[0-9]{4}) (.*)");
+		multiLinePattern = Pattern.compile("^([0-9]{4}\\-[0-9]{2}\\-[0-9]{2}T[0-9]{2}\\:[0-9]{2}\\:[0-9]{2}\\.[0-9]{3}\\+[0-9]{4}) (.*)",
+				Pattern.MULTILINE | Pattern.DOTALL);
 		// patterns.add(Pattern.compile("\\[[0-9]{2}\\/[a-zA-Z]{3}\\/[0-9]{4}\\:[0-9]{2}\\:[0-9]{2}\\:[0-9]{2} \\+[0-9]{4}]")); // Let's not use this
 		// regex for the moment as the value cannot be sorted as Strings
 
-		readers = new BufferedReader[inputStreams.size()];
+		readers = new LogLineBuffer[inputStreams.size()];
 		for (int i = 0; i < inputStreams.size(); ++i) {
 			BufferedReader reader = new BufferedReader(new InputStreamReader(inputStreams.get(i), StandardCharsets.UTF_8));
-			readers[i] = reader;
+			readers[i] = new LogLineBuffer(reader);
 		}
 		nextLines = new NextLine[inputStreams.size()];
 		fillNextLines();
@@ -49,25 +50,22 @@ public class LogCombiner implements Iterator<String> {
 				}
 				continue;
 			}
-			try {
-				if (nextLines[i] == null) {
-					String line = readers[i].readLine();
-					if (line == null) {
-						nextLines[i] = new NextLine(i, null, null);
+			if (nextLines[i] == null) {
+				String line = readers[i].getNextLinesUntilMatching(singleLinePattern);
+				if (line == null) {
+					readers[i] = null;
+					nextLines[i] = null;
+				} else {
+					Matcher matcher = multiLinePattern.matcher(line);
+					if (matcher.matches()) {
+						String key = matcher.group(1);
+						String remainder = matcher.group(2);
+						nextLines[i] = new NextLine(i, key, remainder);
 					} else {
-						Matcher matcher = pattern.matcher(line);
-						if (matcher.matches()) {
-							String key = matcher.group(1);
-							String remainder = matcher.group(2);
-							nextLines[i] = new NextLine(i, key, remainder);
-						} else {
-							readers[i] = null;
-							nextLines[i] = null;
-						}
+						readers[i] = null;
+						nextLines[i] = null;
 					}
 				}
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
 			}
 		}
 	}
