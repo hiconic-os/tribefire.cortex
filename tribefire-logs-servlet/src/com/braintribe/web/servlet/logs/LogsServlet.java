@@ -51,7 +51,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.io.output.TeeOutputStream;
 import org.apache.commons.lang.StringUtils;
 import org.apache.velocity.VelocityContext;
 import org.json.simple.JSONObject;
@@ -689,27 +688,31 @@ public class LogsServlet extends BasicTemplateBasedServlet implements Initializa
 
 						try (InputStream in = new Base64.InputStream(
 								new ByteArrayInputStream(logs.getBase64EncodedResource().getBytes(StandardCharsets.UTF_8)));
-								OutputStream pipeOut = individualStreamPipe.acquireOutputStream();
-								TeeOutputStream teeOut = new TeeOutputStream(zos, pipeOut)) {
-							ZipEntry zipEntry = new ZipEntry(packageName + java.io.File.separator + index + "-" + nodeEnrichedFilename);
-							zos.putNextEntry(zipEntry);
-							IOTools.pump(in, teeOut, 0xffff);
-							zos.closeEntry();
+								OutputStream pipeOut = individualStreamPipe.acquireOutputStream()) {
+							IOTools.pump(in, pipeOut, 0xffff);
 						}
+
+						ZipEntry zipEntry = new ZipEntry(packageName + java.io.File.separator + index + "-" + nodeEnrichedFilename);
+						zos.putNextEntry(zipEntry);
+						try (InputStream in = individualStreamPipe.openInputStream()) {
+							IOTools.pump(in, zos, 0xffff);
+						}
+						zos.closeEntry();
+
 						index++;
 					}
 
-					// StreamPipe mergedLogs = mergeLogs(individualStreamPipes);
-					// if (mergedLogs != null) {
-					// individualStreamPipes.add(new LogStreamPipe(index, null, "combined.zip", mergedLogs));
-					//
-					// try (InputStream in = mergedLogs.openInputStream()) {
-					// ZipEntry zipEntry = new ZipEntry(packageName + java.io.File.separator + "combined.zip");
-					// zos.putNextEntry(zipEntry);
-					// IOTools.pump(in, zos, 0xffff);
-					// zos.closeEntry();
-					// }
-					// }
+					StreamPipe mergedLogs = mergeLogs(individualStreamPipes);
+					if (mergedLogs != null) {
+						individualStreamPipes.add(new LogStreamPipe(index, null, "combined.zip", mergedLogs));
+
+						try (InputStream in = mergedLogs.openInputStream()) {
+							ZipEntry zipEntry = new ZipEntry(packageName + java.io.File.separator + "combined.zip");
+							zos.putNextEntry(zipEntry);
+							IOTools.pump(in, zos, 0xffff);
+							zos.closeEntry();
+						}
+					}
 
 					zos.close();
 					out.close();
