@@ -684,7 +684,7 @@ public class LogsServlet extends BasicTemplateBasedServlet implements Initializa
 						String nodeEnrichedFilename = FileTools.normalizeFilename(nodeId, '_') + "-" + logs.getFilename();
 
 						StreamPipe individualStreamPipe = streamPipeFactory.newPipe("logs-" + packageName);
-						individualStreamPipes.add(new LogStreamPipe(index, "text/plain", logs.getFilename(), individualStreamPipe));
+						individualStreamPipes.add(new LogStreamPipe(index, logs.getMimeType(), logs.getFilename(), individualStreamPipe));
 
 						try (InputStream in = new Base64.InputStream(
 								new ByteArrayInputStream(logs.getBase64EncodedResource().getBytes(StandardCharsets.UTF_8)));
