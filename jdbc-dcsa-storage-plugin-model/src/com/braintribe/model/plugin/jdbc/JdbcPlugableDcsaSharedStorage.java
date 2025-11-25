@@ -17,6 +17,7 @@ package com.braintribe.model.plugin.jdbc;
 
 import com.braintribe.model.csa.PlugableDcsaSharedStorage;
 import com.braintribe.model.deployment.database.pool.DatabaseConnectionPool;
+import com.braintribe.model.generic.annotation.meta.Confidential;
 import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.generic.reflection.EntityTypes;
 
@@ -36,6 +37,7 @@ public interface JdbcPlugableDcsaSharedStorage extends PlugableDcsaSharedStorage
 	void setUsername(String username);
 	String getUsername();
 
+	@Confidential
 	void setPassword(String password);
 	String getPassword();
 
