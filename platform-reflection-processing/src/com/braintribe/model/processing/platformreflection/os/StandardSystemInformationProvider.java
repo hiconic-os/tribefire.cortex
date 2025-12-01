@@ -530,6 +530,7 @@ public class StandardSystemInformationProvider implements SystemInformationProvi
 		String lcName = name.toLowerCase();
 
 		return TribefireRuntime.isPropertyPrivate(name) || //
+				lcName.endsWith("json") || //
 				lcName.endsWith("password") || //
 				lcName.endsWith("pwd") || //
 				lcName.endsWith("key") || //
