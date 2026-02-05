@@ -89,7 +89,7 @@ public class TransientMessagingAccessWithSqlBinaryProcessorEnricher extends Simp
 		return bp;
 	}
 
-	/* package */ static <BP extends BinaryRetrieval & BinaryPersistence> void configureStreamAndUploadWith( //
+	private static <BP extends BinaryRetrieval & BinaryPersistence> void configureStreamAndUploadWith( //
 			GmMetaModel model, BP binaryProcessor, String globalIdPrefix, boolean includeResourceSource) {
 
 		GmSession session = model.session();
