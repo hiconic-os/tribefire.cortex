@@ -27,7 +27,6 @@ import com.braintribe.codec.marshaller.common.BasicConfigurableMarshallerRegistr
 import com.braintribe.gm.service.wire.common.contract.CommonServiceProcessingContract;
 import com.braintribe.gm.service.wire.common.contract.ServiceProcessingConfigurationContract;
 import com.braintribe.model.generic.eval.Evaluator;
-import com.braintribe.model.messaging.dmb.GmDmbMqMessaging;
 import com.braintribe.model.processing.service.common.ConfigurableDispatchingServiceProcessor;
 import com.braintribe.model.service.api.InstanceId;
 import com.braintribe.model.service.api.MulticastRequest;
@@ -130,11 +129,6 @@ public class MulticastProcessorSpace implements MulticastProcessorContract {
 		bean.setApplicationId(instanceId.getApplicationId());
 		bean.setNodeId(instanceId.getNodeId());
 		return bean;
-	}
-
-	@Managed
-	private GmDmbMqMessaging messagingDenotation() {
-		return GmDmbMqMessaging.T.create();
 	}
 
 	@Managed

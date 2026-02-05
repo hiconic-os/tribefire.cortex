@@ -100,9 +100,9 @@ limitations under the License.
             <version>${V.com.braintribe.gm}</version>
         </dependency>
         <dependency>
-            <groupId>tribefire.cortex</groupId>
+            <groupId>com.braintribe.gm</groupId>
             <artifactId>gm-mq-rpc</artifactId>
-            <version>${V.tribefire.cortex}</version>
+            <version>${V.com.braintribe.gm}</version>
         </dependency>
         <dependency>
             <groupId>com.braintribe.gm</groupId>
@@ -373,14 +373,9 @@ limitations under the License.
         </dependency>
         <!-- Messaging -->
         <dependency>
-            <groupId>tribefire.cortex</groupId>
-            <artifactId>gm-dmb-messaging-model</artifactId>
-            <version>${V.tribefire.cortex}</version>
-        </dependency>
-        <dependency>
-            <groupId>tribefire.cortex</groupId>
+            <groupId>com.braintribe.gm</groupId>
             <artifactId>gm-dmb-messaging</artifactId>
-            <version>${V.tribefire.cortex}</version>
+            <version>${V.com.braintribe.gm}</version>
         </dependency>
         <!-- Logging -->
         <dependency>
