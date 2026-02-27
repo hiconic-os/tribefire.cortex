@@ -16,6 +16,7 @@
 package com.braintribe.model.processing.securityservice.usersession.service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -81,7 +82,7 @@ public abstract class AbstractUserSessionService implements UserSessionService, 
 
 	protected abstract Maybe<PersistenceUserSession> findPersistenceUserSessionByAcquirationKey(String acquirationKey);
 
-	protected abstract PersistenceUserSession createPersistenceUserSession(User user, UserSessionType type, TimeSpan maxIdleTime, TimeSpan maxAge,
+	protected abstract PersistenceUserSession createPersistenceUserSession(User user, Set<String> additionalRoles, UserSessionType type, TimeSpan maxIdleTime, TimeSpan maxAge,
 			Date fixedExpiryDate, String internetAddress, Map<String, String> properties, String acquirationKey,
 			boolean blocksAuthenticationAfterLogout);
 
@@ -145,14 +146,14 @@ public abstract class AbstractUserSessionService implements UserSessionService, 
 	}
 
 	@Override
-	public Maybe<UserSession> createUserSession(User user, UserSessionType type, TimeSpan maxIdleTime, TimeSpan maxAge, Date fixedExpiryDate,
+	public Maybe<UserSession> createUserSession(User user, Set<String> additionalRoles, UserSessionType type, TimeSpan maxIdleTime, TimeSpan maxAge, Date fixedExpiryDate,
 			String internetAddress, Map<String, String> properties, String acquirationKey, boolean blocksAuthenticationAfterLogout) {
 		if (user == null || user.getId() == null) {
 			return Reasons.build(InvalidArgument.T).text("User and user id cannot be null").toMaybe();
 		}
-
+		
 		log.debug(() -> "Creating a user session for user '" + user.getName() + "' connected from '" + internetAddress + "'");
-		PersistenceUserSession pUserSession = createPersistenceUserSession(user, type, maxIdleTime, maxAge, fixedExpiryDate, internetAddress,
+		PersistenceUserSession pUserSession = createPersistenceUserSession(user, additionalRoles, type, maxIdleTime, maxAge, fixedExpiryDate, internetAddress,
 				properties, acquirationKey, blocksAuthenticationAfterLogout);
 		return Maybe.complete(mapToUserSession(pUserSession));
 	}
@@ -249,7 +250,7 @@ public abstract class AbstractUserSessionService implements UserSessionService, 
 	private UserSession createInternalUserSession(Hub<UserSession> userSessionHolder) throws RuntimeException, GmSessionException {
 		UserSession userSession = userSessionHolder.get();
 
-		PersistenceUserSession pUserSession = createPersistenceUserSession(userSession.getUser(), UserSessionType.internal, null, null, null,
+		PersistenceUserSession pUserSession = createPersistenceUserSession(userSession.getUser(), Collections.emptySet(), UserSessionType.internal, null, null, null,
 				userSession.getCreationInternetAddress(), userSession.getProperties(), null, false);
 
 		return mapToUserSession(pUserSession);
@@ -407,7 +408,7 @@ public abstract class AbstractUserSessionService implements UserSessionService, 
 		return maxIdleTime;
 	}
 
-	protected PersistenceUserSession initPersistenceUserSession(PersistenceUserSession pUserSession, User user, TimeSpan maxIdleTime, TimeSpan maxAge,
+	protected PersistenceUserSession initPersistenceUserSession(PersistenceUserSession pUserSession, User user, Set<String> additionalRoles, TimeSpan maxIdleTime, TimeSpan maxAge,
 			Date fixedExpiryDate, String internetAddress, Map<String, String> properties, String acquirationKey,
 			boolean blocksAuthenticationAfterLogout, UserSessionType userSessionType, Date now) {
 		pUserSession.setId(generateSessionId(userSessionType));
@@ -415,7 +416,9 @@ public abstract class AbstractUserSessionService implements UserSessionService, 
 		pUserSession.setBlocksAuthenticationAfterLogout(blocksAuthenticationAfterLogout);
 		pUserSession.setCreationDate(now);
 		pUserSession.setFixedExpiryDate(fixedExpiryDate);
-		pUserSession.setEffectiveRoles(setToString(Roles.userEffectiveRoles(user)));
+		Set<String> effectiveRoles = Roles.userEffectiveRoles(user);
+		effectiveRoles.addAll(additionalRoles);
+		pUserSession.setEffectiveRoles(setToString(effectiveRoles));
 		pUserSession.setSessionType(userSessionType.toString());
 		pUserSession.setCreationInternetAddress(internetAddress);
 		pUserSession.setCreationNodeId(nodeId);

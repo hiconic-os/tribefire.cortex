@@ -78,6 +78,7 @@ import com.braintribe.model.time.TimeSpan;
 import com.braintribe.model.user.User;
 import com.braintribe.model.user.statistics.UserStatistics;
 import com.braintribe.model.usersession.UserSession;
+import com.braintribe.utils.lcd.Lazy;
 import com.braintribe.utils.lcd.LazyInitialized;
 
 public class SecurityServiceProcessor extends AbstractDispatchingServiceProcessor<SecurityRequest, Object> {
@@ -95,8 +96,7 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 	private final CredentialsHasher credentialsHasher = new CredentialsHasher();
 	private Supplier<PersistenceGmSession> authGmSessionProvider;
 	private OpenUserSessionConfiguration openUserSessionConfiguration = OpenUserSessionConfiguration.T.create();
-	private LazyInitialized<Map<String, OpenUserSessionEntryPoint>> entryPointsByName = new LazyInitialized<Map<String, OpenUserSessionEntryPoint>>(
-			this::indexEntryPointsByName);
+	private Lazy<Map<String, OpenUserSessionEntryPoint>> entryPointsByName = new Lazy<>(this::indexEntryPointsByName);
 
 	/**
 	 * <p>
@@ -267,7 +267,7 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 		if (authorizationFailure != null)
 			return authorizationFailure.asMaybe();
 
-		return buildUserSession(requestContext, openUserSession, authenticatedCredentialsResponse, acquirationKey) //
+		return buildUserSession(requestContext, openUserSession, validationResult.entryPoint(), authenticatedCredentialsResponse, acquirationKey) //
 				.map(us -> createResponseFrom(us, false));
 	}
 
@@ -275,11 +275,11 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 	}
 
 	private static class RequestValidationContext {
-		final LazyInitialized<UserSession> lazyUserSession;
+		final Lazy<UserSession> lazyUserSession;
 
 		public RequestValidationContext(ServiceRequestContext requestContext) {
 			super();
-			lazyUserSession = new LazyInitialized<UserSession>(() -> requestContext.findOrNull(UserSessionAspect.class));
+			lazyUserSession = new Lazy<>(() -> requestContext.findOrNull(UserSessionAspect.class));
 		}
 
 		public boolean isInteralRequest() {
@@ -408,7 +408,7 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 		return response;
 	}
 
-	private Maybe<UserSession> buildUserSession(ServiceRequestContext context, OpenUserSession openUserSession,
+	private Maybe<UserSession> buildUserSession(ServiceRequestContext context, OpenUserSession openUserSession, OpenUserSessionEntryPoint entryPoint,
 			AuthenticateCredentialsResponse authenticatedCredentialsResponse, String acquirationKey) {
 		if (authenticatedCredentialsResponse instanceof AuthenticatedUser) {
 			AuthenticatedUser authenticatedUser = (AuthenticatedUser) authenticatedCredentialsResponse;
@@ -430,7 +430,7 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 			// TODO: should the expiry date influenced from the outside via OpenUserSession.expiryDate or should this only be
 			// controlled by Credentials/Authentication
 			//@formatter:off
-			Maybe<UserSession> userSessionMaybe = new BasicUserSessionBuilder(userSessionService, sessionMaxIdleTime, sessionMaxAge)
+			Maybe<UserSession> userSessionMaybe = new BasicUserSessionBuilder(userSessionService, entryPoint, sessionMaxIdleTime, sessionMaxAge)
 				.requestContext(context)
 				.request(openUserSession)
 				.acquirationKey(acquirationKey)

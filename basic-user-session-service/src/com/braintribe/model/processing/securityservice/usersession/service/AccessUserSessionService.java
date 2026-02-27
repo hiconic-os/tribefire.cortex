@@ -17,6 +17,7 @@ package com.braintribe.model.processing.securityservice.usersession.service;
 
 import java.util.Date;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import com.braintribe.cfg.Configurable;
@@ -60,7 +61,7 @@ public class AccessUserSessionService extends AbstractUserSessionService {
 	}
 
 	@Override
-	protected PersistenceUserSession createPersistenceUserSession(User user, UserSessionType type, TimeSpan maxIdleTime, TimeSpan maxAge,
+	protected PersistenceUserSession createPersistenceUserSession(User user, Set<String> additionalRoles, UserSessionType type, TimeSpan maxIdleTime, TimeSpan maxAge,
 			Date fixedExpiryDate, String internetAddress, Map<String, String> properties, String acquirationKey,
 			boolean blocksAuthenticationAfterLogout) {
 
@@ -69,7 +70,7 @@ public class AccessUserSessionService extends AbstractUserSessionService {
 
 		PersistenceGmSession gmSession = openPersistenceUserSessionGmSession();
 
-		PersistenceUserSession pUserSession = initPersistenceUserSession(gmSession.create(PersistenceUserSession.T), user, maxIdleTime, maxAge,
+		PersistenceUserSession pUserSession = initPersistenceUserSession(gmSession.create(PersistenceUserSession.T), user, additionalRoles, maxIdleTime, maxAge,
 				fixedExpiryDate, internetAddress, properties, acquirationKey, blocksAuthenticationAfterLogout, userSessionType, now);
 
 		gmSession.commit();
