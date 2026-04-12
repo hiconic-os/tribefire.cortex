@@ -15,19 +15,19 @@
 // ============================================================================
 package com.braintribe.model.stateprocessing.api;
 
-import java.util.Map;
+//import java.util.Map;
 
-import com.braintribe.model.extensiondeployment.meta.OnChange;
+//import com.braintribe.model.extensiondeployment.meta.OnChange;
 import com.braintribe.model.generic.GenericEntity;
 import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.generic.reflection.EntityTypes;
 
-
+// Commenting out as this type seems to be unused and we want to avoid the dependency on the extension deployment model.
 public interface OnChangeCustomContext extends GenericEntity{
 
 	EntityType<OnChangeCustomContext> T = EntityTypes.T(OnChangeCustomContext.class);
 
-	public Map<OnChange, GenericEntity> getChangeContexts();
-	public void setChangeContexts( Map<OnChange, GenericEntity> changeContexts);
+//	public Map<OnChange, GenericEntity> getChangeContexts();
+//	public void setChangeContexts( Map<OnChange, GenericEntity> changeContexts);
 	
 }
