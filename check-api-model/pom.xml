@@ -34,14 +34,9 @@ limitations under the License.
     </licenses>
     <dependencies>
         <dependency>
-            <groupId>com.braintribe.gm</groupId>
-            <artifactId>service-api-model</artifactId>
-            <version>${V.com.braintribe.gm}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.braintribe.gm</groupId>
-            <artifactId>access-request-model</artifactId>
-            <version>${V.com.braintribe.gm}</version>
+            <groupId>tribefire.cortex</groupId>
+            <artifactId>check-base-api-model</artifactId>
+            <version>${V.tribefire.cortex}</version>
         </dependency>
         <dependency>
             <groupId>tribefire.cortex</groupId>

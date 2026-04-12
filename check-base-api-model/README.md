@@ -1,0 +1,1 @@
+See [check-api-model](../check-api-model/README.md)

@@ -35,7 +35,7 @@ limitations under the License.
     <dependencies>
         <dependency>
             <groupId>tribefire.cortex</groupId>
-            <artifactId>check-api-model</artifactId>
+            <artifactId>check-base-api-model</artifactId>
             <version>${V.tribefire.cortex}</version>
         </dependency>
         <dependency>
