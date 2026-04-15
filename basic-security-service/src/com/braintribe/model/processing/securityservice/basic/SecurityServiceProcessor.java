@@ -318,7 +318,7 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 				return Reasons.build(InvalidArgument.T).text("Invalid property value for entryPoint").cause(cause).toMaybe();
 			}
 		} else {
-			entryPoint = null;
+			entryPoint = requestContext.findOrNull(OpenUserSessionEntryPointAttribute.class);
 		}
 
 		return Maybe.complete(new ValidationResult(entryPoint));
@@ -339,9 +339,6 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 	}
 
 	private boolean hasRequiredRoles(ServiceRequestContext requestContext, OpenUserSessionEntryPoint entryPoint, Set<String> effectiveRoles) {
-		if (entryPoint == null)
-			entryPoint = requestContext.findOrNull(OpenUserSessionEntryPointAttribute.class);
-
 		if (entryPoint == null)
 			return true;
 
