@@ -247,6 +247,7 @@ public abstract class ResourcesBaseSpace implements WireSpace {
 
 	}
 
+	@SuppressWarnings("deprecation")
 	public static class UrlResourcesBuilder extends ResourcesBuilding.UrlResourcesBuilder implements ResourcesBuilder {
 
 		public static UrlResourcesBuilder create(String value) throws MalformedURLException {

@@ -28,6 +28,7 @@ import com.braintribe.wire.api.annotation.Import;
 import com.braintribe.wire.api.annotation.Managed;
 
 import tribefire.module.wire.contract.SystemToolsContract;
+import tribefire.platform.wire.space.common.InitializerManagerSpace;
 import tribefire.platform.wire.space.cortex.services.WorkerSpace;
 
 @Managed
@@ -39,7 +40,12 @@ public class SystemTasksSpace implements SystemToolsContract {
 	@Import
 	private WorkerSpace worker;
 
+	@Import
+	private InitializerManagerSpace initializerManager;
+
 	public void startTasks() {
+		initializerManager.runInitialization();
+
 		worker.taskScheduler() //
 				.scheduleAtFixedRate("Process-Terminator", processTerminator(), 0, 10, TimeUnit.SECONDS) //
 				.interruptOnCancel(false) //

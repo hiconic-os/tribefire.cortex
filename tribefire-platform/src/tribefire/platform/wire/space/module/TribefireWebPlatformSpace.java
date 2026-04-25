@@ -46,6 +46,7 @@ import tribefire.platform.wire.space.MasterResourcesSpace;
 import tribefire.platform.wire.space.common.BindersSpace;
 import tribefire.platform.wire.space.common.CryptoSpace;
 import tribefire.platform.wire.space.common.HttpSpace;
+import tribefire.platform.wire.space.common.InitializerManagerSpace;
 import tribefire.platform.wire.space.common.MessagingSpace;
 import tribefire.platform.wire.space.common.ResourceProcessingSpace;
 import tribefire.platform.wire.space.common.TribefireConnectionsSpace;
@@ -80,6 +81,7 @@ public class TribefireWebPlatformSpace implements TribefireWebPlatformContract {
 	@Import private DeploymentSpace deployment;
 	@Import private GmSessionsSpace gmSessions;
 	@Import private HttpSpace http;
+	@Import private InitializerManagerSpace initializerManager;
 	@Import private WebPlatformMarshallingSpace marshalling;
 	@Import private MasterUserAuthContextSpace masterUserAuthContext;
 	@Import private MessagingSpace messaging;
@@ -125,6 +127,7 @@ public class TribefireWebPlatformSpace implements TribefireWebPlatformContract {
 		bean.setPushHandlerAdder(rpc.pushProcessor()::addHandler);
 		bean.setMdPerspectiveRegistry(gmSessions.mdPerspectiveRegistry());
 		bean.setDenotationTransformerRegistry(cortexAccess.transformerRegistry());
+		bean.setInitializerRegistry(initializerManager.initializerRegistry());
 		bean.setHomeServlet(systemServlets.homeServlet());
 		bean.addAuthFilter(securityServlet.authFilterAdminStrict());
 		bean.addAuthFilter(securityServlet.authFilterLenient());
@@ -146,7 +149,6 @@ public class TribefireWebPlatformSpace implements TribefireWebPlatformContract {
 	@Override public CryptoContract crypto() { return crypto; }
 	@Override public HttpContract http() { return http; }
 	@Override public WebPlatformMarshallingContract marshalling() { return marshalling; }
-	@Override public MasterUserAuthContextContract masterUserAuthContext() { return masterUserAuthContext; }
 	@Override public MessagingSpace messaging() { return messaging; }
 	@Override public WebPlatformReflectionContract platformReflection() { return platformReflection; }
 	@Override public RequestProcessingContract requestProcessing() { return requestProcessing; }
@@ -161,5 +163,7 @@ public class TribefireWebPlatformSpace implements TribefireWebPlatformContract {
 	@Override public TopologyContract topology() { return topology; }
 	@Override public TribefireConnectionsContract tribefireConnections() { return tribefireConnections; }
 	@Override public WorkerContract worker() { return worker; }
+	@Deprecated
+	@Override public MasterUserAuthContextContract masterUserAuthContext() { return masterUserAuthContext; }
 	// @formatter:on
 }

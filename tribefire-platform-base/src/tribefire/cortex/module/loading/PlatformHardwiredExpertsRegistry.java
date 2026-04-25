@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import com.braintribe.cfg.Required;
+import com.braintribe.gm.initializer.api.InitializerRegistry;
 import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.meta.data.MetaData;
 import com.braintribe.model.meta.selector.MetaDataSelector;
@@ -49,10 +50,16 @@ public class PlatformHardwiredExpertsRegistry implements HardwiredExpertsContrac
 	private MdPerspectiveRegistry mdPerspectiveRegistry;
 
 	private DenotationTransformerRegistry transformerRegistry;
+	private InitializerRegistry initializerRegistry;
 
 	@Required
 	public void setDenotationTransformerRegistry(DenotationTransformerRegistry transformerRegistry) {
 		this.transformerRegistry = transformerRegistry;
+	}
+
+	@Required
+	public void setInitializerRegistry(InitializerRegistry initializerRegistry) {
+		this.initializerRegistry = initializerRegistry;
 	}
 
 	@Required
@@ -72,6 +79,11 @@ public class PlatformHardwiredExpertsRegistry implements HardwiredExpertsContrac
 	@Override
 	public DenotationTransformerRegistry denotationTransformationRegistry() {
 		return transformerRegistry;
+	}
+
+	@Override
+	public InitializerRegistry initializerRegistry() {
+		return initializerRegistry;
 	}
 
 	@Override

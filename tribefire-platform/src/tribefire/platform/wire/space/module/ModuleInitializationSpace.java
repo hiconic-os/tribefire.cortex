@@ -106,6 +106,7 @@ public class ModuleInitializationSpace implements WireSpace {
 		return bean;
 	}
 
+	@SuppressWarnings("deprecation")
 	private void bindPlatform(PlatformContractsRegistry registry) {
 		// Contracts that extend other contracts have to be bound for all levels (e.g. TfWebPlatform, TfPlatform)
 		registry.bindAllContractsOf(tfPlatform);

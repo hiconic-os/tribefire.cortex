@@ -17,6 +17,7 @@ package tribefire.module.wire.contract;
 
 import java.util.function.Predicate;
 
+import com.braintribe.gm.initializer.api.InitializerRegistry;
 import com.braintribe.model.deployment.HardwiredDeployable;
 import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.generic.session.GmSession;
@@ -79,5 +80,7 @@ public interface HardwiredExpertsContract extends WireSpace {
 	void extendMetaDataDomain(String domain, Predicate<MetaData> test);
 
 	DenotationTransformerRegistry denotationTransformationRegistry();
+
+	InitializerRegistry initializerRegistry();
 
 }
