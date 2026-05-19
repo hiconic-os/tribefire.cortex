@@ -33,7 +33,6 @@ import com.braintribe.gm.model.reason.Maybe;
 import com.braintribe.gm.model.reason.Reasons;
 import com.braintribe.gm.model.security.reason.SessionNotFound;
 import com.braintribe.gm.model.usersession.PersistenceUserSession;
-import com.braintribe.logging.Logger;
 import com.braintribe.model.processing.securityservice.api.exceptions.SecurityServiceException;
 import com.braintribe.model.time.TimeSpan;
 import com.braintribe.model.user.User;
@@ -47,21 +46,19 @@ public class JdbcUserSessionService extends AbstractUserSessionService {
 	private static final String CREATE_PERSISTENCE_USER_SESSION_STMT = //
 			"INSERT INTO TF_US_PERSISTENCE_USER_SESSION (" +
 				"ID, "+
-				"USER_NAME, USER_FIRST_NAME, USER_LAST_NAME, USER_EMAIL, " +
+				"USER_ID, USER_NAME, USER_FIRST_NAME, USER_LAST_NAME, USER_EMAIL, " +
 				"CREATION_DATE, FIXED_EXPIRY_DATE, EXPIRY_DATE, LAST_ACCESSED_DATE, " +
 				"MAX_IDLE_TIME, EFFECTIVE_ROLES, SESSION_TYPE, CREATION_INTERNET_ADDRESS, CREATION_NODE_ID, PROPERTIES, "+
 				"ACQUIRATION_KEY, BLOCKS_AUTHENTICATION_AFTER_LOGOUT" +
 			") VALUES ("+
-				"?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?"+
+				"?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?"+
 			")";
 	// @formatter:on
-	private static final String FIND_PERSISTENCE_USER_SESSION_STMT = "SELECT ID, USER_NAME, USER_FIRST_NAME, USER_LAST_NAME, USER_EMAIL, CREATION_DATE, FIXED_EXPIRY_DATE, EXPIRY_DATE, LAST_ACCESSED_DATE, MAX_IDLE_TIME, EFFECTIVE_ROLES, SESSION_TYPE, CREATION_INTERNET_ADDRESS, CREATION_NODE_ID, PROPERTIES, ACQUIRATION_KEY, BLOCKS_AUTHENTICATION_AFTER_LOGOUT FROM TF_US_PERSISTENCE_USER_SESSION WHERE ID = ?";
-	private static final String FIND_PERSISTENCE_USER_SESSION_BY_ACQKEY_STMT = "SELECT ID, USER_NAME, USER_FIRST_NAME, USER_LAST_NAME, USER_EMAIL, CREATION_DATE, FIXED_EXPIRY_DATE, EXPIRY_DATE, LAST_ACCESSED_DATE, MAX_IDLE_TIME, EFFECTIVE_ROLES, SESSION_TYPE, CREATION_INTERNET_ADDRESS, CREATION_NODE_ID, PROPERTIES, ACQUIRATION_KEY, BLOCKS_AUTHENTICATION_AFTER_LOGOUT FROM TF_US_PERSISTENCE_USER_SESSION WHERE ACQUIRATION_KEY = ? ORDER BY CREATION_DATE DESC";
+	private static final String FIND_PERSISTENCE_USER_SESSION_STMT = "SELECT ID, USER_ID, USER_NAME, USER_FIRST_NAME, USER_LAST_NAME, USER_EMAIL, CREATION_DATE, FIXED_EXPIRY_DATE, EXPIRY_DATE, LAST_ACCESSED_DATE, MAX_IDLE_TIME, EFFECTIVE_ROLES, SESSION_TYPE, CREATION_INTERNET_ADDRESS, CREATION_NODE_ID, PROPERTIES, ACQUIRATION_KEY, BLOCKS_AUTHENTICATION_AFTER_LOGOUT FROM TF_US_PERSISTENCE_USER_SESSION WHERE ID = ?";
+	private static final String FIND_PERSISTENCE_USER_SESSION_BY_ACQKEY_STMT = "SELECT ID, USER_ID, USER_NAME, USER_FIRST_NAME, USER_LAST_NAME, USER_EMAIL, CREATION_DATE, FIXED_EXPIRY_DATE, EXPIRY_DATE, LAST_ACCESSED_DATE, MAX_IDLE_TIME, EFFECTIVE_ROLES, SESSION_TYPE, CREATION_INTERNET_ADDRESS, CREATION_NODE_ID, PROPERTIES, ACQUIRATION_KEY, BLOCKS_AUTHENTICATION_AFTER_LOGOUT FROM TF_US_PERSISTENCE_USER_SESSION WHERE ACQUIRATION_KEY = ? ORDER BY CREATION_DATE DESC";
 	private static final String TOUCH_PERSISTENCE_USER_SESSION_STMT = "UPDATE TF_US_PERSISTENCE_USER_SESSION SET LAST_ACCESSED_DATE = ?, EXPIRY_DATE = ? WHERE ID = ?";
 	private static final String DELETE_PERSISTENCE_USER_SESSION_STMT = "DELETE FROM TF_US_PERSISTENCE_USER_SESSION WHERE ID = ?";
 	private static final String CLOSE_PERSISTENCE_USER_SESSION_STMT = "UPDATE TF_US_PERSISTENCE_USER_SESSION SET CLOSED = ?, EXPIRY_DATE = ? WHERE ID = ?";
-
-	static final Logger log = Logger.getLogger(JdbcUserSessionService.class);
 
 	@Required
 	public void setDataSource(DataSource dataSource) {
@@ -88,26 +85,27 @@ public class JdbcUserSessionService extends AbstractUserSessionService {
 
 		try (Connection conn = openJdbcConnection(); PreparedStatement stmt = conn.prepareStatement(CREATE_PERSISTENCE_USER_SESSION_STMT)) {
 			stmt.setString(1, pUserSession.getId());
-			stmt.setString(2, pUserSession.getUserName());
-			stmt.setString(3, pUserSession.getUserFirstName());
-			stmt.setString(4, pUserSession.getUserLastName());
-			stmt.setString(5, pUserSession.getUserEmail());
-			stmt.setTimestamp(6, new Timestamp(pUserSession.getCreationDate().getTime()));
-			stmt.setTimestamp(7, pUserSession.getFixedExpiryDate() != null ? new Timestamp(pUserSession.getFixedExpiryDate().getTime()) : null);
-			stmt.setTimestamp(8, pUserSession.getExpiryDate() != null ? new Timestamp(pUserSession.getExpiryDate().getTime()) : null);
-			stmt.setTimestamp(9, new Timestamp(pUserSession.getLastAccessedDate().getTime()));
+			stmt.setString(2, pUserSession.getUserId());
+			stmt.setString(3, pUserSession.getUserName());
+			stmt.setString(4, pUserSession.getUserFirstName());
+			stmt.setString(5, pUserSession.getUserLastName());
+			stmt.setString(6, pUserSession.getUserEmail());
+			stmt.setTimestamp(7, new Timestamp(pUserSession.getCreationDate().getTime()));
+			stmt.setTimestamp(8, pUserSession.getFixedExpiryDate() != null ? new Timestamp(pUserSession.getFixedExpiryDate().getTime()) : null);
+			stmt.setTimestamp(9, pUserSession.getExpiryDate() != null ? new Timestamp(pUserSession.getExpiryDate().getTime()) : null);
+			stmt.setTimestamp(10, new Timestamp(pUserSession.getLastAccessedDate().getTime()));
 			if (pUserSession.getMaxIdleTime() != null) {
-				stmt.setLong(10, pUserSession.getMaxIdleTime());
+				stmt.setLong(11, pUserSession.getMaxIdleTime());
 			} else {
-				stmt.setNull(10, Types.BIGINT);
+				stmt.setNull(11, Types.BIGINT);
 			}
-			stmt.setString(11, pUserSession.getEffectiveRoles());
-			stmt.setString(12, pUserSession.getSessionType());
-			stmt.setString(13, pUserSession.getCreationInternetAddress());
-			stmt.setString(14, pUserSession.getCreationNodeId());
-			stmt.setString(15, pUserSession.getProperties());
-			stmt.setString(16, pUserSession.getAcquirationKey());
-			stmt.setBoolean(17, pUserSession.blocksAuthenticationAfterLogout());
+			stmt.setString(12, pUserSession.getEffectiveRoles());
+			stmt.setString(13, pUserSession.getSessionType());
+			stmt.setString(14, pUserSession.getCreationInternetAddress());
+			stmt.setString(15, pUserSession.getCreationNodeId());
+			stmt.setString(16, pUserSession.getProperties());
+			stmt.setString(17, pUserSession.getAcquirationKey());
+			stmt.setBoolean(18, pUserSession.blocksAuthenticationAfterLogout());
 
 			stmt.execute();
 		} catch (Exception e) {
@@ -162,27 +160,28 @@ public class JdbcUserSessionService extends AbstractUserSessionService {
 		}
 		PersistenceUserSession pUserSession = PersistenceUserSession.T.create();
 		pUserSession.setId(result.getString(1));
-		pUserSession.setUserName(result.getString(2));
-		pUserSession.setUserFirstName(result.getString(3));
-		pUserSession.setUserLastName(result.getString(4));
-		pUserSession.setUserEmail(result.getString(5));
-		Timestamp creationDate = result.getTimestamp(6);
+		pUserSession.setUserId(result.getString(2));
+		pUserSession.setUserName(result.getString(3));
+		pUserSession.setUserFirstName(result.getString(4));
+		pUserSession.setUserLastName(result.getString(5));
+		pUserSession.setUserEmail(result.getString(6));
+		Timestamp creationDate = result.getTimestamp(7);
 		pUserSession.setCreationDate(creationDate != null ? new Date(creationDate.getTime()) : null);
-		Timestamp fixedExpiryDate = result.getTimestamp(7);
+		Timestamp fixedExpiryDate = result.getTimestamp(8);
 		pUserSession.setFixedExpiryDate(fixedExpiryDate != null ? new Date(fixedExpiryDate.getTime()) : null);
-		Timestamp expiryDate = result.getTimestamp(8);
+		Timestamp expiryDate = result.getTimestamp(9);
 		pUserSession.setExpiryDate(expiryDate != null ? new Date(expiryDate.getTime()) : null);
-		Timestamp lastAccessedDate = result.getTimestamp(9);
+		Timestamp lastAccessedDate = result.getTimestamp(10);
 		pUserSession.setLastAccessedDate(lastAccessedDate != null ? new Date(lastAccessedDate.getTime()) : null);
-		Long maxIdleTime = result.getLong(10);
+		Long maxIdleTime = result.getLong(11);
 		pUserSession.setMaxIdleTime(maxIdleTime == 0 ? null : maxIdleTime);
-		pUserSession.setEffectiveRoles(result.getString(11));
-		pUserSession.setSessionType(result.getString(12));
-		pUserSession.setCreationInternetAddress(result.getString(13));
-		pUserSession.setCreationNodeId(result.getString(14));
-		pUserSession.setProperties(result.getString(15));
-		pUserSession.setAcquirationKey(result.getString(16));
-		pUserSession.setBlocksAuthenticationAfterLogout(result.getBoolean(17));
+		pUserSession.setEffectiveRoles(result.getString(12));
+		pUserSession.setSessionType(result.getString(13));
+		pUserSession.setCreationInternetAddress(result.getString(14));
+		pUserSession.setCreationNodeId(result.getString(15));
+		pUserSession.setProperties(result.getString(16));
+		pUserSession.setAcquirationKey(result.getString(17));
+		pUserSession.setBlocksAuthenticationAfterLogout(result.getBoolean(18));
 
 		return pUserSession;
 	}

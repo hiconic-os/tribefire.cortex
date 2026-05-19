@@ -27,37 +27,32 @@ import com.braintribe.model.securityservice.credentials.identification.UserIdent
 import com.braintribe.model.usersession.UserSession;
 
 /**
- * {@link com.braintribe.model.processing.securityservice.basic.SecurityServiceProcessor#openUserSession(OpenUserSession)}
- * tests based on {@link GrantedCredentials} with {@link ExistingSessionCredentials} as granting credentials.
+ * {@link com.braintribe.model.processing.securityservice.basic.SecurityServiceProcessor#openUserSession} tests based on
+ * {@link GrantedCredentials} with {@link ExistingSessionCredentials} as granting credentials.
  * 
  */
-public class GrantingExistingSessionCredentialsAuthenticationTestBase extends GrantedCredentialsAuthenticationTestBase {
+public class GrantingExistingSessionCredentialsAuthenticationTest extends GrantedCredentialsAuthenticationTestBase {
 
 	@Test
 	public void testGrantingToUserNameNullSessionId() throws Exception {
-
 		ExistingSessionCredentials grantingExistingSessionCredentials = ExistingSessionCredentials.T.create();
 		grantingExistingSessionCredentials.setExistingSessionId(null);
 
 		testFailedGrantingToUserNameIdentification("john.smith", grantingExistingSessionCredentials, "null session id", InvalidCredentials.T);
-
 	}
 
 	@Test
 	public void testGrantingToUserNameInexistentSessionId() throws Exception {
-
 		UserSession grantingSession = openSession();
 
 		ExistingSessionCredentials grantingExistingSessionCredentials = ExistingSessionCredentials.T.create();
 		grantingExistingSessionCredentials.setExistingSessionId(grantingSession.getSessionId().substring(1));
 
 		testFailedGrantingToUserNameIdentification("john.smith", grantingExistingSessionCredentials, "inexistent session id", InvalidCredentials.T);
-
 	}
 
 	@Test
 	public void testGrantingToUserNameInvalidatedSessionId() throws Exception {
-
 		UserSession grantingSession = openSession();
 
 		logout(grantingSession.getSessionId());
@@ -66,7 +61,6 @@ public class GrantingExistingSessionCredentialsAuthenticationTestBase extends Gr
 		grantingExistingSessionCredentials.setExistingSessionId(grantingSession.getSessionId());
 
 		testFailedGrantingToUserNameIdentification("john.smith", grantingExistingSessionCredentials, "invalidated session id", InvalidCredentials.T);
-
 	}
 
 	@Test
@@ -76,18 +70,15 @@ public class GrantingExistingSessionCredentialsAuthenticationTestBase extends Gr
 
 	@Test
 	public void testGrantingToEmailNullSessionId() throws Exception {
-
 		ExistingSessionCredentials grantingExistingSessionCredentials = ExistingSessionCredentials.T.create();
 		grantingExistingSessionCredentials.setExistingSessionId(null);
 
 		testFailedGrantingToEmailIdentification("john.smith@braintribe.com", grantingExistingSessionCredentials, "null session id",
 				InvalidCredentials.T);
-
 	}
 
 	@Test
 	public void testGrantingToEmailInexistentSessionId() throws Exception {
-
 		UserSession grantingSession = openSession();
 
 		ExistingSessionCredentials grantingExistingSessionCredentials = ExistingSessionCredentials.T.create();
@@ -95,12 +86,10 @@ public class GrantingExistingSessionCredentialsAuthenticationTestBase extends Gr
 
 		testFailedGrantingToEmailIdentification("john.smith@braintribe.com", grantingExistingSessionCredentials, "inexistent session id",
 				InvalidCredentials.T);
-
 	}
 
 	@Test
 	public void testGrantingToEmailInvalidatedSessionId() throws Exception {
-
 		UserSession grantingSession = openSession();
 
 		logout(grantingSession.getSessionId());
@@ -110,7 +99,6 @@ public class GrantingExistingSessionCredentialsAuthenticationTestBase extends Gr
 
 		testFailedGrantingToEmailIdentification("john.smith@braintribe.com", grantingExistingSessionCredentials, "invalidated session id",
 				InvalidCredentials.T);
-
 	}
 
 	@Test
@@ -119,7 +107,6 @@ public class GrantingExistingSessionCredentialsAuthenticationTestBase extends Gr
 	}
 
 	protected void testExpiredGrantingSession(UserIdentification identification) throws Exception {
-
 		if (!testConfig.getEnableExpiration()) {
 			System.out.println("suppressed test as testConfig.getEnableExpiration() is " + testConfig.getEnableExpiration());
 			return;
@@ -150,14 +137,12 @@ public class GrantingExistingSessionCredentialsAuthenticationTestBase extends Gr
 
 	@Override
 	protected Credentials getValidGrantingCredentials() {
-
 		UserSession grantingSession = openSession();
 
 		ExistingSessionCredentials grantingExistingSessionCredentials = ExistingSessionCredentials.T.create();
 		grantingExistingSessionCredentials.setExistingSessionId(grantingSession.getSessionId());
 
 		return grantingExistingSessionCredentials;
-
 	}
 
 }

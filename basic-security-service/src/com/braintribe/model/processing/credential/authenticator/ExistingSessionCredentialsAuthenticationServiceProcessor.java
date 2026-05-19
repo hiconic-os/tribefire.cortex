@@ -57,14 +57,13 @@ public class ExistingSessionCredentialsAuthenticationServiceProcessor
 		if (credentials.getReuseSession())
 			return Maybe.complete(buildAuthenticatedUserSessionFrom(userSession));
 		else {
-			Maybe<User> userMaybe = retrieveUser(UserNameIdentification.of(userSession.getUser().getId()));
+			Maybe<User> userMaybe = retrieveUser(UserNameIdentification.of(userSession.getUser().getName()));
 
 			if (userMaybe.isUnsatisfied()) {
 
 				// An internal user session may not refer to a persisted user. We will use the one attached to the session instead
-				if (userSession.getEffectiveRoles().contains("tf-internal")) {
+				if (userSession.getEffectiveRoles().contains("tf-internal"))
 					return Maybe.complete(buildAuthenticatedUserFrom(userSession.getUser()));
-				}
 
 				String msg = "User from existing session was not found in persistence for authentication";
 				log.debug(() -> msg + ": " + userMaybe.whyUnsatisfied().stringify());

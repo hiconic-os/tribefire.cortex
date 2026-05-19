@@ -163,9 +163,8 @@ public abstract class AbstractUserSessionService implements UserSessionService, 
 		log.trace(() -> "Fetching user session '" + sessionId + "'");
 		Maybe<PersistenceUserSession> pUserSessionMaybe = findPersistenceUserSession(sessionId);
 
-		if (pUserSessionMaybe.isUnsatisfied()) {
-			return Maybe.empty(pUserSessionMaybe.whyUnsatisfied());
-		}
+		if (pUserSessionMaybe.isUnsatisfied())
+			return pUserSessionMaybe.propagateReason();
 
 		PersistenceUserSession pUserSession = pUserSessionMaybe.get();
 
@@ -317,7 +316,7 @@ public abstract class AbstractUserSessionService implements UserSessionService, 
 			userSession.setMaxIdleTime(millisToTimeSpan(pUserSession.getMaxIdleTime()));
 		}
 		User user = User.T.create();
-		user.setId(pUserSession.getUserName());
+		user.setId(pUserSession.getUserId());
 		user.setName(pUserSession.getUserName());
 		user.setFirstName(pUserSession.getUserFirstName());
 		user.setLastName(pUserSession.getUserLastName());
@@ -411,6 +410,7 @@ public abstract class AbstractUserSessionService implements UserSessionService, 
 	protected PersistenceUserSession initPersistenceUserSession(PersistenceUserSession pUserSession, User user, Set<String> additionalRoles, TimeSpan maxIdleTime, TimeSpan maxAge,
 			Date fixedExpiryDate, String internetAddress, Map<String, String> properties, String acquirationKey,
 			boolean blocksAuthenticationAfterLogout, UserSessionType userSessionType, Date now) {
+
 		pUserSession.setId(generateSessionId(userSessionType));
 		pUserSession.setAcquirationKey(acquirationKey);
 		pUserSession.setBlocksAuthenticationAfterLogout(blocksAuthenticationAfterLogout);
@@ -436,10 +436,15 @@ public abstract class AbstractUserSessionService implements UserSessionService, 
 		touchPersistenceUserSessionLocally(pUserSession);
 
 		pUserSession.setUserName(user.getName());
+		pUserSession.setUserId(toStringOrNull(user.getId()));
 		pUserSession.setUserFirstName(user.getFirstName());
 		pUserSession.setUserLastName(user.getLastName());
 		pUserSession.setUserEmail(user.getEmail());
 		return pUserSession;
+	}
+
+	private String toStringOrNull(Object id) {
+		return id == null ? null : id.toString();
 	}
 
 }

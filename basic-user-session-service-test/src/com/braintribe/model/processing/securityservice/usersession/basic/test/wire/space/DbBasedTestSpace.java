@@ -63,6 +63,7 @@ public class DbBasedTestSpace extends BaseTestSpace {
 			GmDb gmDb = GmDb.newDb(delegate).done();
 
 			GmColumn<String> ID = gmDb.shortString("ID", 1000).primaryKey().notNull().done();
+			GmColumn<String> USER_ID = gmDb.shortString("USER_ID", 1000).done();
 			GmColumn<String> USER_NAME = gmDb.shortString("USER_NAME", 1000).done();
 			GmColumn<String> USER_FIRST_NAME = gmDb.shortString("USER_FIRST_NAME", 1000).done();
 			GmColumn<String> USER_LAST_NAME = gmDb.shortString("USER_LAST_NAME", 1000).done();
@@ -83,7 +84,9 @@ public class DbBasedTestSpace extends BaseTestSpace {
 
 			GmTable table = gmDb.newTable("TF_US_PERSISTENCE_USER_SESSION") //
 					.withColumns( //
-							ID, USER_NAME, //
+							ID, // 
+							USER_ID, //
+							USER_NAME, //
 							USER_FIRST_NAME, //
 							USER_LAST_NAME, //
 							USER_EMAIL, //
