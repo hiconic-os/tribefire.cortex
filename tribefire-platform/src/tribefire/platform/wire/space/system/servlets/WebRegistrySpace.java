@@ -74,6 +74,7 @@ public class WebRegistrySpace implements WireSpace {
 									"/model-browser/*", 
 									"/about/*", 
 									"/logs/*", 
+									"/logs-download/*", 
 									"/deployment-summary/*"),
 						lenientAuthFilterConfiguration(),
 						filter()
@@ -101,6 +102,11 @@ public class WebRegistrySpace implements WireSpace {
 							.name("logs-servlet")
 							.instance(systemServlets.logsServlet())
 							.pattern("/logs/*")
+							.multipart(),
+						servlet()
+						.name("logs-download-servlet")
+							.instance(systemServlets.logsDownloadServlet())
+							.pattern("/logs-download/*")
 							.multipart(),
 						servlet()
 							.name("home-servlet")

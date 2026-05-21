@@ -146,7 +146,7 @@ public abstract class BasicTemplateBasedServlet extends HttpServlet {
 		} else {
 			if (trace)
 				logger.trace("Using default template: " + this.templateLocationMap.get(DEFAULT_TEMPLATE_KEY));
-			template = this.templateMap.get(DEFAULT_TEMPLATE_KEY);
+			template = getTemplate(DEFAULT_TEMPLATE_KEY);
 		}
 
 		if (template == null) {

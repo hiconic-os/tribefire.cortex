@@ -154,6 +154,7 @@ public class LogsServlet extends BasicTemplateBasedServlet implements Initializa
 
 	@Override
 	public void postConstruct() {
+		// setRefreshFileBasedTemplates(true); // when debugging
 		setTemplateLocation(logsTemplateLocation);
 	}
 
@@ -168,6 +169,7 @@ public class LogsServlet extends BasicTemplateBasedServlet implements Initializa
 	 */
 	@Override
 	protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		super.refreshFileBasedTemplates = true;
 		String pathInfo = req.getPathInfo();
 		if (pathInfo != null) {
 			if (pathInfo.equals(String.format("/%s", setLogLevelPageName))) {

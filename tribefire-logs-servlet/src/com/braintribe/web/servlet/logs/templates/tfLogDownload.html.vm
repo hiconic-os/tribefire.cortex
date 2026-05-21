@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html>
+<title>tribefire Logs - Download</title>
+  <head>
+    <style>
+
+body {
+	margin: 0px;
+	padding: 0px;
+	font-family: 'Roboto', sans-serif;
+	color: #333;
+}
+
+/*TABS*/
+.tabs-container {
+	display: flex;
+	gap: 0;
+	padding: 16px 10% 0 10%;
+	background-color: #f9f9f9;
+	border-bottom: 2px solid #ddd;
+}
+.tab {
+	padding: 10px 24px;
+	text-decoration: none;
+	color: #555;
+	font-family: 'Roboto', sans-serif;
+	font-size: 14px;
+	font-weight: 600;
+	border: 1px solid transparent;
+	border-bottom: none;
+	border-radius: 6px 6px 0 0;
+	margin-bottom: -2px;
+	transition: all 0.2s;
+}
+.tab:hover {
+	background-color: #eee;
+	color: #333;
+}
+.tab.active {
+	background-color: #fff;
+	color: #faa500;
+	border-color: #ddd;
+	border-bottom: 2px solid #fff;
+}
+
+.content {
+	width: 80%;
+	margin: 24px auto;
+}
+
+.view-toggle {
+	display: inline-block;
+	padding: 8px 20px;
+	margin-bottom: 16px;
+	background-color: #faa500;
+	color: #fff;
+	border: none;
+	border-radius: 4px;
+	font-family: 'Roboto', sans-serif;
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background-color 0.2s;
+}
+.view-toggle:hover {
+	background-color: #e09500;
+}
+.view-toggle:disabled {
+	background-color: #ccc;
+	cursor: not-allowed;
+}
+
+.group-header {
+	background-color: #f0f0f0;
+	padding: 8px 12px;
+	margin-top: 16px;
+	margin-bottom: 0;
+	font-weight: 600;
+	font-size: 14px;
+	border-left: 4px solid #faa500;
+	border-radius: 2px;
+	display: flex;
+	align-items: center;
+}
+
+.group-header input[type="checkbox"] {
+	margin-right: 10px;
+	accent-color: #faa500;
+	cursor: pointer;
+	width: 15px;
+	height: 15px;
+}
+
+.file-table {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 0 0 0 16px;
+	table-layout: auto;
+}
+
+.file-table td {
+	padding: 5px 8px;
+	font-size: 13px;
+	border-bottom: 1px solid #f0f0f0;
+	vertical-align: middle;
+}
+
+.file-table tr:hover {
+	background-color: rgba(0,0,0,0.02);
+}
+
+.file-table tr {
+	cursor: pointer;
+}
+
+.col-checkbox {
+	width: 30px;
+	text-align: center;
+}
+
+.col-checkbox input[type="checkbox"] {
+	accent-color: #faa500;
+	pointer-events: none; /* click handled by row */
+}
+
+.col-name {
+	font-family: 'Roboto Mono', monospace;
+}
+
+.col-size {
+	text-align: right;
+	color: #888;
+	font-size: 12px;
+	white-space: nowrap;
+}
+
+.col-date {
+	text-align: right;
+	color: #888;
+	font-size: 12px;
+	white-space: nowrap;
+}
+
+.col-node {
+	text-align: right;
+	color: #888;
+	font-size: 12px;
+	white-space: nowrap;
+}
+
+.node-color-indicator {
+	display: inline-block;
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	margin-right: 4px;
+	vertical-align: middle;
+}
+
+.view-container {
+	display: none;
+}
+.view-container.active {
+	display: block;
+}
+
+    </style>
+    <link href='https://fonts.googleapis.com/css?family=Roboto|Roboto+Mono' rel='stylesheet' type='text/css'>
+  </head>
+<body>
+
+	<div class="content">
+		<div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">
+			<button class="view-toggle" onclick="toggleView()">
+				<span id="toggleLabel">#if($groupBy == 'date')Group by Node#{else}Group by Date#end</span>
+			</button>
+			<button id="downloadBtn" class="view-toggle" style="margin-left: auto;" onclick="downloadSelected()"#if(!$selectedFiles || $selectedFiles.size() == 0) disabled#end>
+				Download Selected
+			</button>
+		</div>
+
+		<!-- View: Group by Node (server-rendered, enhanced by JS) -->
+		<div id="viewByNode" class="view-container #if($groupBy != 'date')active#end">
+#if($filesByNode && $filesByNode.size() > 0)
+#foreach($nodeEntry in $filesByNode.entrySet())
+			<div class="group-header"><input type="checkbox" class="group-cb" onclick="toggleGroupCheckbox(this)">Node: $nodeEntry.key</div>
+			<table class="file-table">
+#foreach($fi in $nodeEntry.value)
+				<tr data-node="$nodeEntry.key" onclick="toggleCheckbox(this)">
+					<td class="col-checkbox"><input type="checkbox" name="selectedFiles" value="${nodeEntry.key}::${fi.name}"#if($selectedFiles && $selectedFiles.contains("${nodeEntry.key}::${fi.name}")) checked#end></td>
+					<td class="col-name">$fi.name</td>
+					<td class="col-size">$fi.sizeInBytes B</td>
+					<td class="col-date" data-ts="#if($fi.lastModified)$fi.lastModified.time#end"></td>
+				</tr>
+#end
+			</table>
+#end
+#else
+			<p>No log files available.</p>
+#end
+		</div>
+
+		<!-- View: Group by Date (populated by JavaScript) -->
+		<div id="viewByDate" class="view-container #if($groupBy == 'date')active#end">
+		</div>
+	</div>
+
+<script>
+var currentView = '#if($groupBy == "date")date#{else}node#end';
+
+// 10 distinct, muted colors for node color-coding
+var nodeColors = [
+	'#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f',
+	'#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#bab0ac'
+];
+
+var nodeColorMap = {};
+var nodeColorIndex = 0;
+
+function getNodeColor(node) {
+	if (!(node in nodeColorMap)) {
+		nodeColorMap[node] = nodeColors[nodeColorIndex % nodeColors.length];
+		nodeColorIndex++;
+	}
+	return nodeColorMap[node];
+}
+
+var fileData = [];
+#if($filesByNode && $filesByNode.size() > 0)
+#foreach($nodeEntry in $filesByNode.entrySet())
+#foreach($fi in $nodeEntry.value)
+fileData.push({
+	node: "$nodeEntry.key",
+	name: "$fi.name",
+	sizeInBytes: $fi.sizeInBytes,
+	lastModified: #if($fi.lastModified)$fi.lastModified.time#{else}0#end
+});
+#end
+#end
+#end
+
+function toggleCheckbox(tr) {
+	var cb = tr.querySelector('input[type="checkbox"]');
+	if (cb) {
+		cb.checked = !cb.checked;
+		if (cb.checked) {
+			selectedFiles.add(cb.value);
+		} else {
+			selectedFiles.delete(cb.value);
+		}
+		updateGroupCheckbox(cb);
+		updateDownloadButton();
+	}
+}
+
+function updateDownloadButton() {
+	document.getElementById('downloadBtn').disabled = (selectedFiles.size === 0);
+}
+
+function toggleGroupCheckbox(groupCb) {
+	var header = groupCb.closest('.group-header');
+	var table = header.nextElementSibling;
+	if (!table) return;
+	var checkAll = groupCb.checked;
+	groupCb.indeterminate = false;
+	table.querySelectorAll('input[type="checkbox"][name="selectedFiles"]').forEach(function(cb) {
+		cb.checked = checkAll;
+		if (checkAll) {
+			selectedFiles.add(cb.value);
+		} else {
+			selectedFiles.delete(cb.value);
+		}
+	});
+	updateDownloadButton();
+}
+
+function updateGroupCheckbox(fileCb) {
+	var table = fileCb.closest('.file-table');
+	if (!table) return;
+	var header = table.previousElementSibling;
+	if (!header || !header.classList.contains('group-header')) return;
+	var groupCb = header.querySelector('.group-cb');
+	if (!groupCb) return;
+	var cbs = table.querySelectorAll('input[type="checkbox"][name="selectedFiles"]');
+	var total = cbs.length;
+	var checked = 0;
+	cbs.forEach(function(cb) { if (cb.checked) checked++; });
+	if (checked === 0) {
+		groupCb.checked = false;
+		groupCb.indeterminate = false;
+	} else if (checked === total) {
+		groupCb.checked = true;
+		groupCb.indeterminate = false;
+	} else {
+		groupCb.checked = false;
+		groupCb.indeterminate = true;
+	}
+}
+
+function downloadSelected() {
+	if (selectedFiles.size === 0) {
+		alert('No files selected.');
+		return;
+	}
+	var form = document.createElement('form');
+	form.method = 'POST';
+	form.action = 'logs-download/downloadSelected';
+
+	// Pass page state parameters
+	addHiddenInput(form, 'groupBy', currentView);
+	var fromEl = document.getElementById('filterFrom');
+	var toEl = document.getElementById('filterTo');
+	var fromVal = fromEl ? fromEl.value : '';
+	var toVal = toEl ? toEl.value : '';
+	if (fromVal) addHiddenInput(form, 'from', fromVal);
+	if (toVal) addHiddenInput(form, 'to', toVal);
+
+	// Pass selected files
+	selectedFiles.forEach(function(val) {
+		addHiddenInput(form, 'selectedFiles', val);
+	});
+	document.body.appendChild(form);
+	form.submit();
+}
+
+function addHiddenInput(form, name, value) {
+	var input = document.createElement('input');
+	input.type = 'hidden';
+	input.name = name;
+	input.value = value;
+	form.appendChild(input);
+}
+
+var selectedFiles = new Set();
+#if($selectedFiles && $selectedFiles.size() > 0)
+#foreach($sf in $selectedFiles)
+selectedFiles.add("$sf");
+#end
+#end
+
+function formatSize(bytes) {
+	if (bytes < 1024) return bytes + ' B';
+	if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+	return '<b>' + (bytes / 1048576).toFixed(1) + ' MB' + '</b>';
+}
+
+function formatDateTime(ts) {
+	if (!ts) return '';
+	var d = new Date(ts);
+	var pad = function(n) { return n < 10 ? '0' + n : '' + n; };
+	return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + ' '
+		+ pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+}
+
+function formatTime(ts) {
+	if (!ts) return '';
+	var d = new Date(ts);
+	var pad = function(n) { return n < 10 ? '0' + n : '' + n; };
+	return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+}
+
+function dateKey(ts) {
+	if (!ts) return 'Unknown';
+	var d = new Date(ts);
+	var pad = function(n) { return n < 10 ? '0' + n : '' + n; };
+	return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+}
+
+function escapeHtml(s) {
+	var div = document.createElement('div');
+	div.appendChild(document.createTextNode(s));
+	return div.innerHTML;
+}
+
+function buildDateView() {
+	var container = document.getElementById('viewByDate');
+	container.innerHTML = '';
+
+	var sorted = fileData.slice().sort(function(a, b) { return b.lastModified - a.lastModified; });
+
+	var groups = {};
+	var groupOrder = [];
+	sorted.forEach(function(f) {
+		var dk = dateKey(f.lastModified);
+		if (!groups[dk]) {
+			groups[dk] = [];
+			groupOrder.push(dk);
+		}
+		groups[dk].push(f);
+	});
+
+	var html = '';
+	groupOrder.forEach(function(dk) {
+		html += '<div class="group-header"><input type="checkbox" class="group-cb" onclick="toggleGroupCheckbox(this)">' + escapeHtml(dk) + '</div>';
+		html += '<table class="file-table">';
+		groups[dk].forEach(function(f) {
+			var color = getNodeColor(f.node);
+			html += '<tr onclick="toggleCheckbox(this)" style="border-left: 3px solid ' + color + ';">';
+			var fileVal = escapeHtml(f.node) + '::' + escapeHtml(f.name);
+			var checked = selectedFiles.has(fileVal) ? ' checked' : '';
+			html += '<td class="col-checkbox"><input type="checkbox" name="selectedFiles" value="' + fileVal + '"' + checked + '></td>';
+			html += '<td class="col-name">' + escapeHtml(f.name) + '</td>';
+			html += '<td class="col-size">' + formatSize(f.sizeInBytes) + '</td>';
+			html += '<td class="col-date">' + formatTime(f.lastModified) + '</td>';
+			html += '<td class="col-node"><span class="node-color-indicator" style="background-color:' + color + ';"></span>' + escapeHtml(f.node) + '</td>';
+			html += '</tr>';
+		});
+		html += '</table>';
+	});
+
+	if (html === '') {
+		html = '<p>No log files available.</p>';
+	}
+	container.innerHTML = html;
+}
+
+function syncCheckboxes(container) {
+	container.querySelectorAll('input[type="checkbox"][name="selectedFiles"]').forEach(function(cb) {
+		cb.checked = selectedFiles.has(cb.value);
+	});
+	updateAllGroupCheckboxes(container);
+}
+
+function updateAllGroupCheckboxes(container) {
+	container.querySelectorAll('.group-cb').forEach(function(groupCb) {
+		var header = groupCb.closest('.group-header');
+		var table = header.nextElementSibling;
+		if (!table) return;
+		var cbs = table.querySelectorAll('input[type="checkbox"][name="selectedFiles"]');
+		var total = cbs.length;
+		var checked = 0;
+		cbs.forEach(function(cb) { if (cb.checked) checked++; });
+		if (checked === 0) {
+			groupCb.checked = false;
+			groupCb.indeterminate = false;
+		} else if (checked === total) {
+			groupCb.checked = true;
+			groupCb.indeterminate = false;
+		} else {
+			groupCb.checked = false;
+			groupCb.indeterminate = true;
+		}
+	});
+}
+
+function toggleView() {
+	var nodeView = document.getElementById('viewByNode');
+	var dateView = document.getElementById('viewByDate');
+	var label = document.getElementById('toggleLabel');
+
+	if (currentView === 'node') {
+		buildDateView();
+		updateAllGroupCheckboxes(dateView);
+		nodeView.classList.remove('active');
+		dateView.classList.add('active');
+		label.textContent = 'Group by Node';
+		currentView = 'date';
+	} else {
+		dateView.classList.remove('active');
+		nodeView.classList.add('active');
+		syncCheckboxes(nodeView);
+		label.textContent = 'Group by Date';
+		currentView = 'node';
+	}
+}
+
+// Enhance server-rendered node view: format sizes, apply node colors
+(function() {
+	var rows = document.querySelectorAll('#viewByNode tr[data-node]');
+	rows.forEach(function(tr) {
+		var node = tr.getAttribute('data-node');
+		var color = getNodeColor(node);
+		tr.style.borderLeft = '3px solid ' + color;
+
+		var sizeCell = tr.querySelector('.col-size');
+		if (sizeCell) {
+			var text = sizeCell.textContent.trim();
+			var match = text.match(/^(\d+)\s*B$/);
+			if (match) {
+				sizeCell.innerHTML = formatSize(parseInt(match[1], 10));
+			}
+		}
+
+		var dateCell = tr.querySelector('.col-date');
+		if (dateCell) {
+			var ts = dateCell.getAttribute('data-ts');
+			if (ts) {
+				dateCell.textContent = formatDateTime(parseInt(ts, 10));
+			}
+		}
+	});
+
+	// If page loaded in date view, build it now
+	if (currentView === 'date') {
+		buildDateView();
+		updateAllGroupCheckboxes(document.getElementById('viewByDate'));
+	}
+
+	// Set initial group checkbox states for node view
+	updateAllGroupCheckboxes(document.getElementById('viewByNode'));
+})();
+</script>
+
+</body>
+</html>

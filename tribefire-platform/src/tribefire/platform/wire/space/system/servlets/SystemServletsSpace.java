@@ -45,6 +45,7 @@ import com.braintribe.web.servlet.about.expert.Threaddump;
 import com.braintribe.web.servlet.about.expert.TribefireInformation;
 import com.braintribe.web.servlet.deploymentreflection.DeploymentReflectionServlet;
 import com.braintribe.web.servlet.home.HomeServlet;
+import com.braintribe.web.servlet.logs.LogsDownloadServlet;
 import com.braintribe.web.servlet.logs.LogsServlet;
 import com.braintribe.web.servlet.publicresource.PublicResourceServlet;
 import com.braintribe.web.servlet.publicresource.streamer.FavIconStreamer;
@@ -305,6 +306,15 @@ public class SystemServletsSpace implements WireSpace {
 		return bean;
 	}
 
+	@Managed
+	public LogsDownloadServlet logsDownloadServlet() {
+		LogsDownloadServlet bean = new LogsDownloadServlet();
+		bean.setRequestEvaluator(rpc.serviceRequestEvaluator());
+		bean.setCurrentUserSessionIdProvider(currentUserAuthContext.userSessionIdProvider());
+		bean.setStreamPipeFactory(resourceProcessing.streamPipeFactory());
+		return bean;
+	}
+	
 	@Managed
 	public LogsProcessor logsProcessor() {
 		LogsProcessor bean = new LogsProcessor();

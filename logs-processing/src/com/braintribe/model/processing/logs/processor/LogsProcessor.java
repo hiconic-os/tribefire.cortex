@@ -34,8 +34,8 @@ import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.UserPrincipal;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -59,19 +59,22 @@ import javax.management.ObjectName;
 import org.apache.commons.io.input.ReversedLinesFileReader;
 import org.apache.commons.lang.StringEscapeUtils;
 
-import com.braintribe.cfg.Configurable;
 import com.braintribe.cfg.Required;
 import com.braintribe.common.lcd.Numbers;
 import com.braintribe.logging.Logger;
 import com.braintribe.model.logging.LogLevel;
+import com.braintribe.model.logs.request.DownloadSelectedLogFiles;
+import com.braintribe.model.logs.request.FileInfo;
 import com.braintribe.model.logs.request.GetLogContent;
 import com.braintribe.model.logs.request.GetLogFiles;
 import com.braintribe.model.logs.request.GetLogLevel;
 import com.braintribe.model.logs.request.GetLogLevelResponse;
 import com.braintribe.model.logs.request.GetLogs;
+import com.braintribe.model.logs.request.ListLogFiles;
 import com.braintribe.model.logs.request.LogContent;
 import com.braintribe.model.logs.request.LogFileBundle;
 import com.braintribe.model.logs.request.LogFiles;
+import com.braintribe.model.logs.request.LogFilesList;
 import com.braintribe.model.logs.request.Logs;
 import com.braintribe.model.logs.request.LogsRequest;
 import com.braintribe.model.logs.request.LogsResponse;
@@ -88,6 +91,7 @@ import com.braintribe.utils.Base64;
 import com.braintribe.utils.DateTools;
 import com.braintribe.utils.FileTools;
 import com.braintribe.utils.IOTools;
+import com.braintribe.utils.OsTools;
 import com.braintribe.utils.StringTools;
 import com.braintribe.utils.collection.api.MultiMap;
 import com.braintribe.utils.collection.impl.ComparatorBasedNavigableMultiMap;
@@ -101,76 +105,20 @@ public class LogsProcessor extends DispatchingServiceProcessor<LogsRequest, Logs
 	public static final String LOG_LOCATION = "com.braintribe.logging.juli.handlers.FileHandler.directory";
 
 	// protected File logFolder;
-	protected Supplier<String> userNameProvider;
-	protected InstanceId localInstanceId;
+	private Supplier<String> userNameProvider;
+	private InstanceId localInstanceId;
 
-	protected static final int newLineLength = "\r\n".length();
+	private static final int newLineLength = "\r\n".length();
 
-	protected ReentrantLock logFileCacheLock = new ReentrantLock();
-	protected Map<String, File> knownLogFiles = new HashMap<>();
-	protected MultiMap<String, File> knownLogFilesPerKey = null;
-	protected long logFileCacheLastRefresh = -1L;
+	private final ReentrantLock logFileCacheLock = new ReentrantLock();
+	private Map<String, File> knownLogFiles = new HashMap<>();
+	private MultiMap<String, File> knownLogFilesPerKey = null;
+	private long logFileCacheLastRefresh = -1L;
 
-	private void loadLogFiles() {
-		long now = System.currentTimeMillis();
-		if ((now - logFileCacheLastRefresh) < Numbers.MILLISECONDS_PER_SECOND * 10) {
-			return;
-		}
-		logFileCacheLastRefresh = now;
-		logFileCacheLock.lock();
-		try {
-			String catalinaBase = TribefireRuntime.getContainerRoot().replaceAll("\\\\", "/");
-			String logConfDir = catalinaBase + "/conf";
-
-			MultiMap<String, File> logFilesPerKey = new ComparatorBasedNavigableMultiMap<String, File>(new Comparator<String>() {
-				@Override
-				public int compare(String o1, String o2) {
-					return o1.compareTo(o2);
-				}
-			}, new FileComparator());
-			Map<String, File> logFiles = new HashMap<>();
-
-			Set<String> logDirs = new HashSet<String>();
-			try {
-				File logConfFolder = new File(logConfDir);
-				for (File logConf : logConfFolder.listFiles(f -> f.getName().contains("logging.properties"))) {
-					Properties logProps = new Properties();
-					try (InputStream in = new BufferedInputStream(new FileInputStream(logConf))) {
-						logProps.load(in);
-					}
-					String logLocationPath = logProps.getProperty(LOG_LOCATION);
-					logLocationPath = logLocationPath.replaceAll("\\$\\{catalina.base\\}", catalinaBase);
-					logDirs.add(logLocationPath);
-				}
-
-				Pattern keyPattern = Pattern.compile("^[A-Za-z]+([-_][A-Za-z]+)*");
-				logDirs.stream().forEach(dir -> {
-					Arrays.asList(new File(dir).listFiles(f -> f.isFile())).stream().forEach(file -> {
-						String key = file.getName();
-						if (key.equals(".DS_Store")) {
-							// We're on a Mac
-							return;
-						}
-						Matcher keyMatcher = keyPattern.matcher(key);
-						if (keyMatcher.find()) {
-							key = keyMatcher.group();
-						}
-						logFilesPerKey.put(key, file);
-						logFiles.put(file.getName(), file);
-					});
-				});
-
-			} catch (Exception e) {
-				logger.error("Error while reading logging configuration files. " + e.getMessage(), e);
-			}
-
-			knownLogFilesPerKey = logFilesPerKey;
-			knownLogFiles = logFiles;
-
-		} finally {
-			logFileCacheLock.unlock();
-		}
-	}
+	// @formatter:off
+	@Required public void setUserNameProvider(Supplier<String> userNameProvider) { this.userNameProvider = userNameProvider; }
+	@Required public void setLocalInstanceId(InstanceId localInstanceId) { this.localInstanceId = localInstanceId; }
+	// @formatter:on
 
 	@SuppressWarnings("unused")
 	public GetLogLevelResponse getLogLevel(ServiceRequestContext context, GetLogLevel request) throws Exception {
@@ -354,7 +302,6 @@ public class LogsProcessor extends DispatchingServiceProcessor<LogsRequest, Logs
 	}
 
 	private void setFile(Logs logs, File file, String mimeType, boolean base64EncodedResponse) {
-
 		if (base64EncodedResponse) {
 			try (InputStream fis = new BufferedInputStream(new FileInputStream(file));
 					ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -393,17 +340,20 @@ public class LogsProcessor extends DispatchingServiceProcessor<LogsRequest, Logs
 				}
 			}
 
-			try {
-				PosixFileAttributes attrs = Files.readAttributes(file.toPath(), PosixFileAttributes.class);
-				if (attrs != null) {
-					UserPrincipal owner = attrs.owner();
-					if (owner != null) {
-						callResource.setCreator(owner.getName());
+			if (OsTools.isUnixSystem()) {
+				try {
+					PosixFileAttributes attrs = Files.readAttributes(file.toPath(), PosixFileAttributes.class);
+					if (attrs != null) {
+						UserPrincipal owner = attrs.owner();
+						if (owner != null) {
+							callResource.setCreator(owner.getName());
+						}
 					}
-				}
-			} catch (Exception e) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("Could not get the owner of file " + file.getAbsolutePath(), e);
+				} catch (UnsupportedOperationException e) {
+					// ignore
+					
+				} catch (Exception e) {
+					logger.debug(() -> "Could not get the owner of file " + file.getAbsolutePath(), e);
 				}
 			}
 
@@ -413,9 +363,7 @@ public class LogsProcessor extends DispatchingServiceProcessor<LogsRequest, Logs
 	}
 
 	private void setZippedFile(Logs logs, String name, Collection<File> logFiles, int logFilesCount, boolean base64EncodedResponse) {
-
 		if (base64EncodedResponse) {
-
 			try (InputStream fis = new ZippingInputStreamProvider(name, logFiles, logFilesCount).openInputStream();
 					ByteArrayOutputStream baos = new ByteArrayOutputStream();
 					Base64.OutputStream out = new Base64.OutputStream(baos)) {
@@ -431,7 +379,6 @@ public class LogsProcessor extends DispatchingServiceProcessor<LogsRequest, Logs
 			}
 
 		} else {
-
 			Resource callResource = Resource.createTransient(new ZippingInputStreamProvider(name, logFiles, logFilesCount));
 
 			callResource.setName(name);
@@ -440,13 +387,10 @@ public class LogsProcessor extends DispatchingServiceProcessor<LogsRequest, Logs
 			try {
 				callResource.setCreator(this.userNameProvider.get());
 			} catch (RuntimeException e) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("Could not get the current user name.", e);
-				}
+				logger.debug("Could not get the current user name.", e);
 			}
 
 			logs.setLog(callResource);
-
 		}
 	}
 
@@ -488,7 +432,6 @@ public class LogsProcessor extends DispatchingServiceProcessor<LogsRequest, Logs
 
 	@SuppressWarnings("unused")
 	public LogContent getLogContent(ServiceRequestContext context, GetLogContent request) throws Exception {
-
 		loadLogFiles();
 		Map<String, File> knownLogFilesRef = knownLogFiles;
 
@@ -556,15 +499,138 @@ public class LogsProcessor extends DispatchingServiceProcessor<LogsRequest, Logs
 		return logContentResult;
 	}
 
-	@Configurable
-	@Required
-	public void setUserNameProvider(Supplier<String> userNameProvider) {
-		this.userNameProvider = userNameProvider;
-	}
-	@Configurable
-	@Required
-	public void setLocalInstanceId(InstanceId localInstanceId) {
-		this.localInstanceId = localInstanceId;
+	@SuppressWarnings("unused")
+	public LogFilesList listLogFiles(ServiceRequestContext context, ListLogFiles request) throws Exception {
+		loadLogFiles();
+		MultiMap<String, File> knownLogFilesPerKeyRef = knownLogFilesPerKey;
+
+		Date from = request.getFrom();
+		Date to = request.getTo();
+
+		LogFilesList logFilesList = LogFilesList.T.create();
+		List<FileInfo> fileInfos = logFilesList.getFileInfos();
+
+		for (File f : knownLogFilesPerKeyRef.values()) {
+
+			boolean acceptDate = true;
+			if (from != null || to != null) {
+				Date fileDate = new Date(f.lastModified());
+				if (from != null && from.compareTo(fileDate) > 0) {
+					acceptDate = false;
+				}
+				if (to != null && to.compareTo(fileDate) < 0) {
+					acceptDate = false;
+				}
+			}
+			if (acceptDate) {
+				FileInfo fileInfo = FileInfo.T.create();
+				fileInfo.setName(f.getName());
+				fileInfo.setSizeInBytes(f.length());
+				fileInfo.setLastModified(new Date(f.lastModified()));
+				fileInfos.add(fileInfo);
+			}
+		}
+
+		return logFilesList;
 	}
 
-}
+	@SuppressWarnings("unused")
+	public Logs downloadSelectedLogFiles(ServiceRequestContext context, DownloadSelectedLogFiles request) throws Exception {
+		loadLogFiles();
+		Map<String, File> knownLogFilesRef = knownLogFiles;
+
+		List<String> requestedFilenames = request.getFilenames();
+		if (requestedFilenames == null || requestedFilenames.isEmpty()) {
+			throw new IllegalArgumentException("No filenames specified for download.");
+		}
+
+		List<File> filesToPackage = new ArrayList<>();
+		for (String filename : requestedFilenames) {
+			if (filename.contains("/") || filename.contains("\\")) {
+				throw new IllegalArgumentException("No paths allowed in filename: " + filename);
+			}
+			File file = knownLogFilesRef.get(filename);
+			if (file != null && file.exists()) {
+				filesToPackage.add(file);
+			} else {
+				logger.info(() -> "Requested log file not found, skipping: " + filename);
+			}
+		}
+
+		Logs logs = Logs.T.create();
+
+		if (filesToPackage.size() > 0) {
+			String dateStr = DateTools.encode(new Date(), DateTools.TERSE_DATETIME_FORMAT_2);
+			String name = String.format("logs-%s.zip", dateStr);
+			setZippedFile(logs, name, filesToPackage, filesToPackage.size(), false);
+		}
+
+		return logs;
+	}
+
+	
+	private void loadLogFiles() {
+		long now = System.currentTimeMillis();
+		if ((now - logFileCacheLastRefresh) < Numbers.MILLISECONDS_PER_SECOND * 10) {
+			return;
+		}
+		logFileCacheLastRefresh = now;
+		logFileCacheLock.lock();
+		try {
+			MultiMap<String, File> logFilesPerKey = new ComparatorBasedNavigableMultiMap<String, File>(Comparator.naturalOrder(), new FileComparator());
+			Map<String, File> logFiles = new HashMap<>();
+
+			try {
+				Pattern keyPattern = Pattern.compile("^[A-Za-z]+([-_][A-Za-z]+)*");
+
+				Set<File> logDirs = findLogDirs();
+				for (File dir : logDirs) {
+					for (File file : dir.listFiles(f -> f.isFile())) {
+						String key = file.getName();
+						if (key.equals(".DS_Store")) {
+							// We're on a Mac
+							return;
+						}
+						Matcher keyMatcher = keyPattern.matcher(key);
+						if (keyMatcher.find()) {
+							key = keyMatcher.group();
+						}
+						logFilesPerKey.put(key, file);
+						logFiles.put(file.getName(), file);
+					}
+				}
+
+			} catch (Exception e) {
+				logger.error("Error while reading logging configuration files. " + e.getMessage(), e);
+			}
+
+			knownLogFilesPerKey = logFilesPerKey;
+			knownLogFiles = logFiles;
+
+		} finally {
+			logFileCacheLock.unlock();
+		}
+	}
+
+	private Set<File> findLogDirs() {
+		try {
+			String catalinaBase = TribefireRuntime.getContainerRoot().replaceAll("\\\\", "/");
+			String logConfDir = catalinaBase + "/conf";
+			Set<File> logDirs = new HashSet<>();
+			File logConfFolder = new File(logConfDir);
+			for (File logConf : logConfFolder.listFiles(f -> f.getName().contains("logging.properties"))) {
+				Properties logProps = new Properties();
+				try (InputStream in = new BufferedInputStream(new FileInputStream(logConf))) {
+					logProps.load(in);
+				}
+				String logLocationPath = logProps.getProperty(LOG_LOCATION);
+				logLocationPath = logLocationPath.replaceAll("\\$\\{catalina.base\\}", catalinaBase);
+				logDirs.add(new File(logLocationPath));
+			}
+			return logDirs;
+
+		} catch (Exception e) {
+			logger.error("Error while reading logging configuration files. " + e.getMessage(), e);
+			return Collections.emptySet();
+		}
+	}}
