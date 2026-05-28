@@ -27,6 +27,7 @@ import tribefire.platform.wire.space.cortex.deployment.DeploymentSpace;
 import tribefire.platform.wire.space.messaging.MulticastSpace;
 import tribefire.platform.wire.space.module.ModuleInitializationSpace;
 import tribefire.platform.wire.space.system.PreLoadingSpace;
+import tribefire.platform.wire.space.system.SystemInitializationSpace;
 import tribefire.platform.wire.space.system.SystemTasksSpace;
 import tribefire.platform.wire.space.system.servlets.WebRegistrySpace;
 
@@ -40,6 +41,7 @@ public class MainTribefireSpace implements MainTribefireContract {
 	@Import	private DeploymentSpace deployment;
 	@Import	private ModuleInitializationSpace moduleInitialization;
 	@Import	private MulticastSpace multicast;
+	@Import	private SystemInitializationSpace systemInitialization;
 	@Import	private SystemTasksSpace systemTasks;
 	@Import	private WebRegistrySpace webRegistry;
 	// @formatter:on
@@ -47,7 +49,8 @@ public class MainTribefireSpace implements MainTribefireContract {
 	@Override
 	public void activate() {
 		StopWatch stopWatch = new StopWatch();
-
+		systemInitialization.initialize();
+		
 		moduleInitialization.loadModules();
 		stopWatch.intermediate("Load Modules");
 

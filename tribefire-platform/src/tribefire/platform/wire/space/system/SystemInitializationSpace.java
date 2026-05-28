@@ -25,15 +25,14 @@ import com.braintribe.exception.Exceptions;
 import com.braintribe.model.processing.shutdown.JvmShutdownWatcher;
 import com.braintribe.utils.FileAutoDeletion;
 import com.braintribe.wire.api.annotation.Managed;
-import com.braintribe.wire.api.context.WireContextConfiguration;
 import com.braintribe.wire.api.space.WireSpace;
 
 @Managed
 public class SystemInitializationSpace implements WireSpace {
 
-	@Override
-	public void onLoaded(WireContextConfiguration configuration) {
+	public void initialize() {
 		setSystemProperties();
+
 		// We need to load this bean explicitly so that it gets closed when the services are stopped
 		fileAutoDeletion();
 
@@ -48,12 +47,12 @@ public class SystemInitializationSpace implements WireSpace {
 	}
 
 	@Managed
-	public FileAutoDeletion fileAutoDeletion() {
+	private FileAutoDeletion fileAutoDeletion() {
 		FileAutoDeletion bean = new FileAutoDeletion();
 		return bean;
 	}
 
-	public void setSystemProperties() {
+	private void setSystemProperties() {
 		// @formatter:off
 		setSystemProperties(
 				map(
@@ -63,7 +62,7 @@ public class SystemInitializationSpace implements WireSpace {
 		// @formatter:on
 	}
 
-	protected void setSystemProperties(Map<String, String> systemProperties) {
+	private void setSystemProperties(Map<String, String> systemProperties) {
 		for (Map.Entry<String, String> entry : systemProperties.entrySet()) {
 
 			String key = entry.getKey();
