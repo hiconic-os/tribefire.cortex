@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -203,6 +204,8 @@ public class LogsDownloadServlet extends BasicTemplateBasedServlet implements In
 			}
 		}
 
+		logger.debug(() -> "Requesting the following log files from the cluster:\n" + formatFilenamesByNode(filenamesByNode));
+
 		// Send one DownloadLogFiles request per node and collect responses
 		String userSessionId = userSessionIdProvider.get();
 		Map<String, Resource> resourcesByNode = new TreeMap<>();
@@ -216,7 +219,6 @@ public class LogsDownloadServlet extends BasicTemplateBasedServlet implements In
 
 			InstanceId addressee = InstanceId.T.create();
 			addressee.setNodeId(nodeId);
-			// addressee.setApplicationId("app");
 
 			MulticastRequest mr = MulticastRequest.T.create();
 			mr.setServiceRequest(dlSelectedRequest);
@@ -234,6 +236,8 @@ public class LogsDownloadServlet extends BasicTemplateBasedServlet implements In
 						Resource resource = logs.getLog();
 						if (resource != null) {
 							resourcesByNode.put(nodeId, resource);
+						} else {
+							logger.warn("Log file [" + logs.getFilename() + "] not received from node: " + nodeId);
 						}
 					} else if (result instanceof Failure) {
 						Throwable throwable = FailureCodec.INSTANCE.decode(result.asFailure());
@@ -298,6 +302,12 @@ public class LogsDownloadServlet extends BasicTemplateBasedServlet implements In
 				IOTools.pump(in, resp.getOutputStream(), 0xffff);
 			}
 		}
+	}
+
+	private String formatFilenamesByNode(Map<String, List<String>> filenamesByNode) {
+		return filenamesByNode.entrySet().stream() //
+				.map(e -> e.getKey() + ":\n  " + String.join("\n  ", e.getValue())) //
+				.collect(Collectors.joining("\n"));
 	}
 
 	@Required

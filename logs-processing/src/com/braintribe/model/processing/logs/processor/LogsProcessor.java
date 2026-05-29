@@ -15,6 +15,8 @@
 // ============================================================================
 package com.braintribe.model.processing.logs.processor;
 
+import static com.braintribe.utils.lcd.CollectionTools2.newList;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -318,11 +320,10 @@ public class LogsProcessor extends DispatchingServiceProcessor<LogsRequest, Logs
 			}
 		} else {
 
-			Resource callResource = Resource.createTransient(() -> new FileInputStream(file));
-
-			callResource.setName(file.getName());
-			callResource.setMimeType(mimeType);
-			callResource.setFileSize(file.length());
+			Resource resource = Resource.createTransient(() -> new FileInputStream(file));
+			resource.setName(file.getName());
+			resource.setMimeType(mimeType);
+			resource.setFileSize(file.length());
 
 			try {
 				BasicFileAttributes attrs = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
@@ -331,7 +332,7 @@ public class LogsProcessor extends DispatchingServiceProcessor<LogsRequest, Logs
 					if (creationTime != null) {
 						GregorianCalendar atime = new GregorianCalendar();
 						atime.setTimeInMillis(creationTime.toMillis());
-						callResource.setCreated(atime.getTime());
+						resource.setCreated(atime.getTime());
 					}
 				}
 			} catch (IOException e) {
@@ -346,7 +347,7 @@ public class LogsProcessor extends DispatchingServiceProcessor<LogsRequest, Logs
 					if (attrs != null) {
 						UserPrincipal owner = attrs.owner();
 						if (owner != null) {
-							callResource.setCreator(owner.getName());
+							resource.setCreator(owner.getName());
 						}
 					}
 				} catch (UnsupportedOperationException e) {
@@ -357,8 +358,8 @@ public class LogsProcessor extends DispatchingServiceProcessor<LogsRequest, Logs
 				}
 			}
 
-			logs.setLog(callResource);
-
+			logs.setLog(resource);
+			logs.setFilename(file.getName());
 		}
 	}
 
@@ -379,18 +380,18 @@ public class LogsProcessor extends DispatchingServiceProcessor<LogsRequest, Logs
 			}
 
 		} else {
-			Resource callResource = Resource.createTransient(new ZippingInputStreamProvider(name, logFiles, logFilesCount));
-
-			callResource.setName(name);
-			callResource.setMimeType("application/zip");
-			callResource.setCreated(new Date());
+			Resource resource = Resource.createTransient(new ZippingInputStreamProvider(name, logFiles, logFilesCount));
+			resource.setName(name);
+			resource.setMimeType("application/zip");
+			resource.setCreated(new Date());
 			try {
-				callResource.setCreator(this.userNameProvider.get());
+				resource.setCreator(this.userNameProvider.get());
 			} catch (RuntimeException e) {
 				logger.debug("Could not get the current user name.", e);
 			}
 
-			logs.setLog(callResource);
+			logs.setLog(resource);
+			logs.setFilename(name);
 		}
 	}
 
@@ -457,8 +458,7 @@ public class LogsProcessor extends DispatchingServiceProcessor<LogsRequest, Logs
 					// Mark end of file
 					logMark = logFile.length();
 
-					// Read log file from bottom to top
-					try (ReversedLinesFileReader logFileReader = new ReversedLinesFileReader(logFile, 1024, Charset.forName("UTF-8"))) {
+					try (ReversedLinesFileReader logFileReader = ReversedLinesFileReader.builder().setFile(logFile).setBufferSize(1024).setCharset("UTF-8").get()) {
 						String logLine = null;
 						int readLogLines = 0;
 
@@ -540,26 +540,27 @@ public class LogsProcessor extends DispatchingServiceProcessor<LogsRequest, Logs
 		Map<String, File> knownLogFilesRef = knownLogFiles;
 
 		List<String> requestedFilenames = request.getFilenames();
-		if (requestedFilenames == null || requestedFilenames.isEmpty()) {
+		if (requestedFilenames == null || requestedFilenames.isEmpty())
 			throw new IllegalArgumentException("No filenames specified for download.");
-		}
 
 		List<File> filesToPackage = new ArrayList<>();
+		List<String> notFounds = newList();
 		for (String filename : requestedFilenames) {
 			if (filename.contains("/") || filename.contains("\\")) {
 				throw new IllegalArgumentException("No paths allowed in filename: " + filename);
 			}
 			File file = knownLogFilesRef.get(filename);
-			if (file != null && file.exists()) {
+			if (file != null && file.exists())
 				filesToPackage.add(file);
-			} else {
-				logger.info(() -> "Requested log file not found, skipping: " + filename);
-			}
+			else
+				notFounds.add(filename);
 		}
+
+		logger.debug("Downloading log files\n\tFound: " + filesToPackage + "\n\t: Not found: " + notFounds);
 
 		Logs logs = Logs.T.create();
 
-		if (filesToPackage.size() > 0) {
+		if (!filesToPackage.isEmpty()) {
 			String dateStr = DateTools.encode(new Date(), DateTools.TERSE_DATETIME_FORMAT_2);
 			String name = String.format("logs-%s.zip", dateStr);
 			setZippedFile(logs, name, filesToPackage, filesToPackage.size(), false);

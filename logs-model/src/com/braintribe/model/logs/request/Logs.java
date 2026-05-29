@@ -26,10 +26,10 @@ public interface Logs extends LogsResponse {
 	void setLog(Resource log);
 	Resource getLog();
 
-	// The following properties are used when the caller requested a base64 encoded response rather than a resource
-
 	String getFilename();
 	void setFilename(String filename);
+
+	// The following properties are used when the caller requested a base64 encoded response rather than a resource
 
 	String getMimeType();
 	void setMimeType(String mimeType);

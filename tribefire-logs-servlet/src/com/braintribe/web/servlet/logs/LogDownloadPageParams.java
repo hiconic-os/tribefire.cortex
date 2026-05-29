@@ -25,7 +25,7 @@ import javax.servlet.http.HttpServletRequest;
  * Encapsulates the page-level parameters for the log download page. These parameters control the current view state
  * (grouping mode, date filters) and are preserved across interactions such as downloading selected files.
  */
-public class LogDownloadPageParams {
+/* package */ class LogDownloadPageParams {
 
 	public static final String PARAM_GROUP_BY = "groupBy";
 	public static final String PARAM_FROM = "from";
