@@ -217,6 +217,34 @@ var nodeColors = [
 var nodeColorMap = {};
 var nodeColorIndex = 0;
 
+// Compute common prefix of all node IDs for shorter display
+function commonPrefix(arr) {
+	if (!arr || arr.length === 0) return '';
+	if (arr.length === 1) return '';
+	var s = arr[0];
+	for (var i = 1; i < arr.length; i++) {
+		while (arr[i].indexOf(s) !== 0) {
+			s = s.substring(0, s.length - 1);
+			if (s === '') return '';
+		}
+	}
+	return s;
+}
+var allNodeIds = [];
+#if($filesByNode && $filesByNode.size() > 0)
+#foreach($nodeEntry in $filesByNode.entrySet())
+allNodeIds.push("$nodeEntry.key");
+#end
+#end
+var nodePrefix = commonPrefix(allNodeIds);
+function displayNodeId(fullId) {
+	if (nodePrefix.length > 0 && allNodeIds.length > 1) {
+		var short = fullId.substring(nodePrefix.length).trim();
+		return short || fullId;
+	}
+	return fullId;
+}
+
 function getNodeColor(node) {
 	if (!(node in nodeColorMap)) {
 		nodeColorMap[node] = nodeColors[nodeColorIndex % nodeColors.length];
@@ -402,7 +430,7 @@ function buildDateView() {
 			html += '<td class="col-name">' + escapeHtml(f.name) + '</td>';
 			html += '<td class="col-size">' + formatSize(f.sizeInBytes) + '</td>';
 			html += '<td class="col-date">' + formatTime(f.lastModified) + '</td>';
-			html += '<td class="col-node"><span class="node-color-indicator" style="background-color:' + color + ';"></span>' + escapeHtml(f.node) + '</td>';
+			html += '<td class="col-node"><span class="node-color-indicator" style="background-color:' + color + ';"></span>' + escapeHtml(displayNodeId(f.node)) + '</td>';
 			html += '</tr>';
 		});
 		html += '</table>';
@@ -488,6 +516,15 @@ function toggleView() {
 				dateCell.textContent = formatDateTime(parseInt(ts, 10));
 			}
 		}
+	});
+
+	// Shorten node IDs in group headers for display
+	document.querySelectorAll('#viewByNode .group-header').forEach(function(header) {
+		var text = header.textContent.replace('Node: ', '').trim();
+		var cb = header.querySelector('input');
+		header.innerHTML = '';
+		if (cb) header.appendChild(cb);
+		header.appendChild(document.createTextNode('Node: ' + displayNodeId(text)));
 	});
 
 	// If page loaded in date view, build it now

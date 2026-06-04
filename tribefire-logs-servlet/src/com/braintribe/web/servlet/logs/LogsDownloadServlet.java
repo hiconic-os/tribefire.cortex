@@ -32,7 +32,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.velocity.VelocityContext;
 
 import com.braintribe.cfg.InitializationAware;
@@ -171,17 +170,6 @@ public class LogsDownloadServlet extends BasicTemplateBasedServlet implements In
 			}
 		}
 
-		// Shorten node IDs by removing common prefix
-		String[] nodeIds = result.keySet().toArray(new String[0]);
-		if (nodeIds.length > 1) {
-			String commonPrefix = StringUtils.getCommonPrefix(nodeIds);
-			if (commonPrefix != null && commonPrefix.length() > 0) {
-				Map<String, List<FileInfo>> shortenedMap = new TreeMap<>();
-				result.forEach((key, value) -> shortenedMap.put(key.substring(commonPrefix.length()).trim(), value));
-				return shortenedMap;
-			}
-		}
-
 		return result;
 	}
 
@@ -229,7 +217,13 @@ public class LogsDownloadServlet extends BasicTemplateBasedServlet implements In
 			try {
 				MulticastResponse multicastResponse = mr.eval(requestEvaluator).get();
 
-				for (Map.Entry<InstanceId, ServiceResult> responseEntry : multicastResponse.getResponses().entrySet()) {
+				Map<InstanceId, ServiceResult> responses = multicastResponse.getResponses();
+				if (responses.isEmpty()) 
+					logger.warn("No response received from node: " + nodeId);
+				 else if (responses.size() > 1) 
+					logger.warn("Multiple responses received from node: " + nodeId);
+
+				for (Map.Entry<InstanceId, ServiceResult> responseEntry : responses.entrySet()) {
 					ServiceResult result = responseEntry.getValue();
 					if (result instanceof ResponseEnvelope) {
 						Logs logs = (Logs) ((ResponseEnvelope) result).getResult();
