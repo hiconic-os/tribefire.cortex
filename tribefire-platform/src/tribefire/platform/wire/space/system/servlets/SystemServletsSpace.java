@@ -323,7 +323,8 @@ public class SystemServletsSpace implements WireSpace {
 		bean.setLocalInstanceId(cartridgeInformation.instanceId());
 		return bean;
 	}
-
+	
+	
 	// Test streamer:
 	// @Managed
 	// public StaticResourceStreamer testUiThemeStreamer() throws Exception {

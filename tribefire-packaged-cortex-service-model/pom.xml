@@ -112,6 +112,12 @@ limitations under the License.
             <?tag asset?>
         </dependency>
         <dependency>
+            <groupId>com.braintribe.gm</groupId>
+            <artifactId>log-level-api-model</artifactId>
+            <version>${V.com.braintribe.gm}</version>
+            <?tag asset?>
+        </dependency>
+        <dependency>
             <groupId>tribefire.cortex</groupId>
             <artifactId>model-deployment-api-model</artifactId>
             <version>${V.tribefire.cortex}</version>

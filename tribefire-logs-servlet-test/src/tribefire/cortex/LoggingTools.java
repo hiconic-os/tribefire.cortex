@@ -1,13 +1,89 @@
 package tribefire.cortex;
-import java.util.*;
-import java.util.logging.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.util.Comparator;
+import java.util.Enumeration;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
 
 public class LoggingTools {
 	private static final Logger logger = Logger.getLogger(LoggingTools.class.getName());
+
+	public static Level toJulLevel(String levelName) {
+		if (levelName == null) {
+			return null;
+		}
+
+		switch (levelName.trim().toUpperCase(Locale.ROOT)) {
+			case "TRACE":
+				return Level.FINEST;
+			case "DEBUG":
+				return Level.FINE;
+			case "INFO":
+				return Level.INFO;
+			case "WARN":
+				return Level.WARNING;
+			case "ERROR":
+			case "FATAL":
+				return Level.SEVERE;
+			default:
+				return null;
+		}
+	}
+
+	public static String toLogLevel(Level julLevel) {
+		if (julLevel == null) {
+			return null;
+		}
+
+		if (julLevel.equals(Level.FINEST) || julLevel.equals(Level.FINER)) {
+			return "TRACE";
+		}
+		if (julLevel.equals(Level.FINE)) {
+			return "DEBUG";
+		}
+		if (julLevel.equals(Level.INFO)) {
+			return "INFO";
+		}
+		if (julLevel.equals(Level.WARNING)) {
+			return "WARN";
+		}
+		if (julLevel.equals(Level.SEVERE)) {
+			return "ERROR";
+		}
+
+		return null;
+	}
 	
 	static {
 		LogConfigLoader.load();
 		logger.setLevel(Level.FINER);
+		
+		try (Reader reader = new InputStreamReader(new FileInputStream(new File("res/log-levels.properties")))) {
+			Properties properties = new Properties();
+			properties.load(reader);
+			
+			for (Map.Entry<Object, Object> entry: properties.entrySet()) {
+				String key = (String)entry.getKey();
+				String value = (String)entry.getValue();
+				
+				Level julLevel = toJulLevel(value);
+				
+				Logger.getLogger(key).setLevel(julLevel);
+			}
+		}
+		catch (IOException e) {
+			logger.log(Level.SEVERE, "Error while reading log-levels.properties", e);
+		}
 	}
 
     public static Map<String, Level> getLogLevels() {

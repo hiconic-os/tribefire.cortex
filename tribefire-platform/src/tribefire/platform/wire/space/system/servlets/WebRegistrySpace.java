@@ -32,6 +32,7 @@ import com.braintribe.wire.api.space.WireSpace;
 
 import tribefire.platform.impl.web.CompressionFilter;
 import tribefire.platform.wire.space.security.servlets.SecurityServletSpace;
+import tribefire.platform.wire.space.system.LogLevelSpace;
 
 @Managed
 public class WebRegistrySpace implements WireSpace {
@@ -41,6 +42,9 @@ public class WebRegistrySpace implements WireSpace {
 
 	@Import
 	private SystemServletsSpace systemServlets;
+	
+	@Import
+	private LogLevelSpace logLevel;
 
 	@Managed
 	public ConfigurableWebRegistry webRegistry() {
@@ -74,6 +78,7 @@ public class WebRegistrySpace implements WireSpace {
 									"/model-browser/*", 
 									"/about/*", 
 									"/logs/*", 
+									"/log-levels", 
 									"/logs-download/*", 
 									"/deployment-summary/*"),
 						lenientAuthFilterConfiguration(),
@@ -102,6 +107,11 @@ public class WebRegistrySpace implements WireSpace {
 							.name("logs-servlet")
 							.instance(systemServlets.logsServlet())
 							.pattern("/logs/*")
+							.multipart(),
+						servlet()
+							.name("log-level-servlet")
+							.instance(logLevel.logLevelServlet())
+							.pattern("/log-levels")
 							.multipart(),
 						servlet()
 						.name("logs-download-servlet")

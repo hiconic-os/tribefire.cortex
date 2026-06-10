@@ -23,6 +23,7 @@ import com.braintribe.codec.marshaller.api.HasStringCodec;
 import com.braintribe.execution.virtual.VirtualThreadExecutor;
 import com.braintribe.execution.virtual.VirtualThreadExecutorBuilder;
 import com.braintribe.gm.marshaller.processing.MarshallerProcessor;
+import com.braintribe.gm.model.logging.level.api.LogLevelRequest;
 import com.braintribe.gm.model.marshaller.api.request.AbstractMarshallRequest;
 import com.braintribe.gm.model.persistence.reflection.api.PersistenceReflectionRequest;
 import com.braintribe.gm.model.user_session_service.CleanupUserSessions;
@@ -143,6 +144,7 @@ import tribefire.platform.wire.space.streaming.MimeTypeSpace;
 import tribefire.platform.wire.space.streaming.ResourceAccessSpace;
 import tribefire.platform.wire.space.system.ChecksSpace;
 import tribefire.platform.wire.space.system.ExecutionPersistenceSpace;
+import tribefire.platform.wire.space.system.LogLevelSpace;
 import tribefire.platform.wire.space.system.SystemInformationSpace;
 import tribefire.platform.wire.space.system.servlets.SystemServletsSpace;
 
@@ -179,6 +181,7 @@ public class RpcSpace implements WireSpace {
 	@Import private SystemInformationSpace systemInformation;
 	@Import private SystemServletsSpace systemServlets;
 	@Import private UserSessionServiceSpace sessionService;
+	@Import private LogLevelSpace logLevel;
 	// @formatter:on
 
 	@Managed
@@ -325,6 +328,7 @@ public class RpcSpace implements WireSpace {
 		bean.bindServiceRequest(PlatformReflectionRequest.T, systemInformation.platformReflectionProcessor());
 		bean.bindServiceRequest(CheckBundlesRequest.T, systemInformation.checkBundlesProcessor());
 		bean.bindServiceRequest(LogsRequest.T, systemServlets.logsProcessor());
+		bean.bindServiceRequest(LogLevelRequest.T, logLevel.logLevelProcessor());
 		bean.bindServiceRequest(CurrentUserInformationRequest.T, currentUserInformationProcessor());
 		bean.bindServiceRequest(ModelNotificationRequest.T, modelNotification.processor());
 		bean.bindServiceRequest(InternalModelNotificationRequest.T, modelNotification.internalProcessor());
