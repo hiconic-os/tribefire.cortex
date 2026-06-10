@@ -45,11 +45,6 @@
 			<artifactId>stream-pipes</artifactId>
 			<version>${V.com.braintribe.common}</version>
 		</dependency>
-		<dependency>
-			<groupId>com.braintribe.common</groupId>
-			<artifactId>log-level-persistence</artifactId>
-			<version>${V.com.braintribe.common}</version>
-		</dependency>
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
