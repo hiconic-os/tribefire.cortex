@@ -65,6 +65,10 @@ public class MainTribefireSpace implements MainTribefireContract {
 		deployment.activation().activate();
 		stopWatch.intermediate("Activation");
 
+		// initialization (via InitializerManager)
+		systemTasks.runInitialization();
+		stopWatch.intermediate("Run Initialization");
+
 		logger.trace(() -> "onLoaded: " + stopWatch);
 	}
 

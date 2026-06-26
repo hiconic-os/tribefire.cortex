@@ -44,12 +44,14 @@ public class SystemTasksSpace implements SystemToolsContract {
 	private InitializerManagerSpace initializerManager;
 
 	public void startTasks() {
-		initializerManager.runInitialization();
-
 		worker.taskScheduler() //
 				.scheduleAtFixedRate("Process-Terminator", processTerminator(), 0, 10, TimeUnit.SECONDS) //
 				.interruptOnCancel(false) //
 				.done();
+	}
+
+	public void runInitialization() {
+		initializerManager.runInitialization();
 	}
 
 	@Managed
