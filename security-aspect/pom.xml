@@ -35,48 +35,8 @@ limitations under the License.
     <dependencies>
         <dependency>
             <groupId>com.braintribe.gm</groupId>
-            <artifactId>access-control-model</artifactId>
+            <artifactId>security-aspect</artifactId>
             <version>${V.com.braintribe.gm}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.braintribe.gm</groupId>
-            <artifactId>acl-support</artifactId>
-            <version>${V.com.braintribe.gm}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.braintribe.gm</groupId>
-            <artifactId>basic-meta-model</artifactId>
-            <version>${V.com.braintribe.gm}</version>
-        </dependency>
-        <dependency>
-            <groupId>tribefire.cortex</groupId>
-            <artifactId>aop-access-api</artifactId>
-            <version>${V.tribefire.cortex}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.braintribe.gm</groupId>
-            <artifactId>gm-security-api</artifactId>
-            <version>${V.com.braintribe.gm}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.braintribe.gm</groupId>
-            <artifactId>cascading-meta-data</artifactId>
-            <version>${V.com.braintribe.gm}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.braintribe.gm</groupId>
-            <artifactId>basic-manipulation-processing</artifactId>
-            <version>${V.com.braintribe.gm}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.braintribe.gm</groupId>
-            <artifactId>basic-persistence-gm-session</artifactId>
-            <version>${V.com.braintribe.gm}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.braintribe.common</groupId>
-            <artifactId>platform-api</artifactId>
-            <version>${V.com.braintribe.common}</version>
         </dependency>
     </dependencies>
 </project>

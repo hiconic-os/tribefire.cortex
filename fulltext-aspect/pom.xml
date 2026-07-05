@@ -34,18 +34,8 @@ limitations under the License.
     </licenses>
     <dependencies>
         <dependency>
-            <groupId>tribefire.cortex</groupId>
-            <artifactId>aop-access</artifactId>
-            <version>${V.tribefire.cortex}</version>
-        </dependency>
-        <dependency>
             <groupId>com.braintribe.gm</groupId>
-            <artifactId>root-model</artifactId>
-            <version>${V.com.braintribe.gm}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.braintribe.gm</groupId>
-            <artifactId>basic-meta-model</artifactId>
+            <artifactId>fulltext-aspect</artifactId>
             <version>${V.com.braintribe.gm}</version>
         </dependency>
     </dependencies>
