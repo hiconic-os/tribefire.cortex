@@ -259,7 +259,13 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 		AuthenticateCredentialsResponse authenticatedCredentialsResponse = maybe.get();
 
 		if (authenticatedCredentialsResponse instanceof AuthenticatedUserSession authenticatedUserSession) {
-			return Maybe.complete(createResponseFrom(authenticatedUserSession.getUserSession(), true));
+			UserSession userSession = authenticatedUserSession.getUserSession();
+			Reason authorizationFailure = checkAuthorization(requestContext, validationResult.entryPoint(), userSession.getEffectiveRoles());
+
+			if (authorizationFailure != null)
+				return authorizationFailure.asMaybe();
+
+			return Maybe.complete(createResponseFrom(userSession, true));
 		}
 
 		Reason authorizationFailure = checkAuthorization(requestContext, validationResult.entryPoint(), authenticatedCredentialsResponse);
