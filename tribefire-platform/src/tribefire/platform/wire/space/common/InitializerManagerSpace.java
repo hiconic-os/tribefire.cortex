@@ -84,11 +84,8 @@ public class InitializerManagerSpace implements WireSpace {
 
 	private DataSource resolveDataSource(InitializerDbConfiguration initConfiguration) {
 		String externalId = initConfiguration.getDatabaseId();
-		DataSource dataSource = deployment.registry().resolve(externalId, DatabaseConnectionPool.T);
-		if (dataSource == null)
-			throw new IllegalArgumentException("Cannot deploy GmDbInitializerManager. " + "No deployed DatabaseConnectionPool found for id ["
-					+ externalId + "]. Configuration entity: [" + InitializerDbConfiguration.T.getShortName() + "]");
-
+		// eager DataSource proxy via proxyingDeployedComponentResolver which is later bound by deployment 
+		DataSource dataSource = deployment.proxyingDeployedComponentResolver().resolve(externalId, DatabaseConnectionPool.T);
 		return dataSource;
 	}
 
