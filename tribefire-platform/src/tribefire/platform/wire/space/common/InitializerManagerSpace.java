@@ -20,7 +20,6 @@ import com.braintribe.gm.initializer.jdbc.processing.AbstractInitializerManager;
 import com.braintribe.gm.initializer.jdbc.processing.FileSystemInitializerManager;
 import com.braintribe.gm.initializer.jdbc.processing.GmDbInitializerManager;
 import com.braintribe.gm.initializer.model.configuration.InitializerDbConfiguration;
-import com.braintribe.model.deployment.database.pool.DatabaseConnectionPool;
 import com.braintribe.wire.api.annotation.Import;
 import com.braintribe.wire.api.annotation.Managed;
 import com.braintribe.wire.api.space.WireSpace;
@@ -44,6 +43,9 @@ public class InitializerManagerSpace implements WireSpace {
 
 	@Import
 	private DeploymentSpace deployment;
+
+	@Import
+	private BindersSpace binders;
 
 	public void runInitialization() {
 		initializerManager().runInitializers();
@@ -84,8 +86,9 @@ public class InitializerManagerSpace implements WireSpace {
 
 	private DataSource resolveDataSource(InitializerDbConfiguration initConfiguration) {
 		String externalId = initConfiguration.getDatabaseId();
-		// eager DataSource proxy via proxyingDeployedComponentResolver which is later bound by deployment 
-		DataSource dataSource = deployment.proxyingDeployedComponentResolver().resolve(externalId, DatabaseConnectionPool.T);
+		// The registry-based overload cannot be used this early because component interfaces are registered later during deployment binding.
+		// Supplying the binder directly lets us create the lazy DataSource proxy without resolving the actual deployable yet.
+		DataSource dataSource = deployment.proxyingDeployedComponentResolver().resolve(externalId, binders.databaseConnectionPool());
 		return dataSource;
 	}
 
