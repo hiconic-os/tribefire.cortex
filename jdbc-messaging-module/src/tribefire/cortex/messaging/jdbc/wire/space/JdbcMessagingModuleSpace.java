@@ -7,6 +7,7 @@ import javax.sql.DataSource;
 
 import com.braintribe.common.concurrent.ScheduledTask;
 import com.braintribe.common.concurrent.TaskScheduler;
+import com.braintribe.gm.marshaller.resource.aware.ResourceAwareMarshaller;
 import com.braintribe.gm.model.reason.Maybe;
 import com.braintribe.messaging.jdbc.JdbcConnectionProvider;
 import com.braintribe.model.deployment.database.pool.DatabaseConnectionPool;
@@ -23,7 +24,7 @@ import tribefire.module.wire.contract.TribefireModuleContract;
 import tribefire.module.wire.contract.TribefireWebPlatformContract;
 
 /**
- * This module's javadoc is yet to be written.
+ * Binds {@link JdbcConnectionProvider} as expert for {@link JdbcMessaging}.
  */
 @Managed
 public class JdbcMessagingModuleSpace implements TribefireModuleContract {
@@ -69,9 +70,18 @@ public class JdbcMessagingModuleSpace implements TribefireModuleContract {
 		bean.setSqlPrefix(deployable.getSqlPrefix());
 		bean.setDataSource(dataSource);
 		bean.setMessagingContext(tfPlatform.messaging().context());
+		bean.setMarshallerWithResourceSupport(resourceAwareMarshaller());
 
 		configureExpiredMessagesDeleting(bean, InstanceConfiguration.currentInstance());
 
+		return bean;
+	}
+
+	@Managed
+	private ResourceAwareMarshaller resourceAwareMarshaller() {
+		ResourceAwareMarshaller bean = new ResourceAwareMarshaller();
+		bean.setGmDataMimeType("application/gm");
+		bean.setMarshaller(tfPlatform.marshalling().binMarshaller());
 		return bean;
 	}
 
