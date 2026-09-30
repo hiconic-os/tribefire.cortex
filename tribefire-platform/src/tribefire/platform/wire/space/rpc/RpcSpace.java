@@ -74,7 +74,7 @@ import com.braintribe.model.processing.service.common.ElapsedTimeMeasuringInterc
 import com.braintribe.model.processing.service.common.RoleBasedAuthorizingInterceptor;
 import com.braintribe.model.processing.service.common.ThreadNamingInterceptor;
 import com.braintribe.model.processing.service.common.UnicastProcessor;
-import com.braintribe.model.processing.service.common.eval.AuthorizingServiceRequestEvaluator;
+import com.braintribe.model.processing.securityservice.commons.eval.AuthorizingServiceRequestEvaluator;
 import com.braintribe.model.processing.service.common.eval.ConfigurableServiceRequestEvaluator;
 import com.braintribe.model.prototyping.api.StaticPrototyping;
 import com.braintribe.model.prototyping.impl.StaticPrototypingProcessor;
