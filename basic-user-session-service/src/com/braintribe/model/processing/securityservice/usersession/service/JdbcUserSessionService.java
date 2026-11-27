@@ -126,7 +126,7 @@ public class JdbcUserSessionService extends AbstractUserSessionService {
 			}
 
 			if (pUserSession == null)
-				return Reasons.build(SessionNotFound.T).text("User session '" + sessionId + "' not found").toMaybe();
+				return Reasons.build(SessionNotFound.T).text("User session was not found.").toMaybe();
 		} catch (Exception e) {
 			throw Exceptions.unchecked(e, "Failed to query user session '" + sessionId + "'");
 		}

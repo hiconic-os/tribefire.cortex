@@ -242,6 +242,10 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 			if (acquiredUserSessionMaybe.isUnsatisfiedBy(InvalidCredentials.T)) {
 				// In this case the credentials are blocked via the acquiration mechanism and a reauthentication is not possible
 				return acquiredUserSessionMaybe.whyUnsatisfied().asMaybe();
+			} else if (acquiredUserSessionMaybe.isUnsatisfiedBy(SessionExpired.T)) {
+				// An acquired session is part of the credential's local lifecycle. An expired session must not be bypassed by
+				// transparently authenticating the same credential again; a renewed credential may establish a new lifecycle.
+				return acquiredUserSessionMaybe.whyUnsatisfied().asMaybe();
 			} else if (!acquiredUserSessionMaybe.isUnsatisfiedBy(SessionNotFound.T)) {
 				log.debug("Error while finding session via acquiration key: " + acquiredUserSessionMaybe.whyUnsatisfied().stringify());
 			}
@@ -563,11 +567,11 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 		boolean hasFixedExpired = userSession.getFixedExpiryDate() != null && now.after(userSession.getFixedExpiryDate());
 
 		if (hasExpired || hasFixedExpired) {
-			return Reasons.build(SessionExpired.T).text("User session '" + userSession.getId() + "' has expired.").toMaybe();
+			return Reasons.build(SessionExpired.T).text("User session has expired.").toMaybe();
 		}
 
 		LazyInitialized<Reason> verifyReason = new LazyInitialized<>(
-				() -> Reasons.build(InvalidSession.T).text("User session '" + userSession.getId() + "' is invalid.").toReason());
+				() -> Reasons.build(InvalidSession.T).text("User session is invalid.").toReason());
 
 		if (userSessionAccessVerificationExperts != null && !userSessionAccessVerificationExperts.isEmpty()) {
 			for (UserSessionAccessVerificationExpert expert : userSessionAccessVerificationExperts) {
@@ -580,7 +584,7 @@ public class SecurityServiceProcessor extends AbstractDispatchingServiceProcesso
 
 		if (verifyReason.isInitialized()) {
 			log.debug(verifyReason.get().stringify());
-			return Reasons.build(InvalidSession.T).text("User session '" + userSession.getId() + "' is invalid.").toMaybe();
+			return Reasons.build(InvalidSession.T).text("User session is invalid.").toMaybe();
 		}
 
 		return Maybe.complete(userSession);

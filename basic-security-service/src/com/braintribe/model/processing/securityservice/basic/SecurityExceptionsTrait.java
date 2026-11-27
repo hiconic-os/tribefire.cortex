@@ -40,13 +40,13 @@ public interface SecurityExceptionsTrait {
 			return Maybe.complete(callable.call());
 		} //
 		catch (SessionNotFoundException e) {
-			return Reasons.build(SessionNotFound.T).text(e.getMessage()).toMaybe();
+			return Reasons.build(SessionNotFound.T).text("User session was not found.").toMaybe();
 		} //
 		catch (ExpiredSessionException e) {
-			return Reasons.build(SessionExpired.T).text(e.getMessage()).toMaybe();
+			return Reasons.build(SessionExpired.T).text("User session has expired.").toMaybe();
 		} //
 		catch (InvalidSessionException e) {
-			return Reasons.build(InvalidSession.T).text(e.getMessage()).toMaybe();
+			return Reasons.build(InvalidSession.T).text("User session is invalid.").toMaybe();
 		} //
 		catch (InvalidCredentialsException | UserNotFoundException e) {
 			return Reasons.build(InvalidCredentials.T).text(e.getMessage()).toMaybe();

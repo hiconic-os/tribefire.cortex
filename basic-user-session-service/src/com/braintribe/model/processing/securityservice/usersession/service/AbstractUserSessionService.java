@@ -38,6 +38,7 @@ import com.braintribe.gm.model.reason.Maybe;
 import com.braintribe.gm.model.reason.Reasons;
 import com.braintribe.gm.model.reason.essential.InvalidArgument;
 import com.braintribe.gm.model.security.reason.InvalidCredentials;
+import com.braintribe.gm.model.security.reason.SessionExpired;
 import com.braintribe.gm.model.usersession.PersistenceUserSession;
 import com.braintribe.logging.Logger;
 import com.braintribe.model.generic.session.exception.GmSessionException;
@@ -185,8 +186,16 @@ public abstract class AbstractUserSessionService implements UserSessionService, 
 
 		PersistenceUserSession pUserSession = pUserSessionMaybe.get();
 
-		if (pUserSession.closed() && pUserSession.blocksAuthenticationAfterLogout())
-			return Reasons.build(InvalidCredentials.T).text("Credentials where already logged out").toMaybe();
+		if (pUserSession.blocksAuthenticationAfterLogout()) {
+			if (pUserSession.closed())
+				return Reasons.build(InvalidCredentials.T).text("Credentials were already logged out").toMaybe();
+
+			Date now = new Date();
+			Date fixedExpiryDate = pUserSession.getFixedExpiryDate();
+			Date expiryDate = pUserSession.getExpiryDate();
+			if ((fixedExpiryDate != null && fixedExpiryDate.before(now)) || (expiryDate != null && expiryDate.before(now)))
+				return Reasons.build(SessionExpired.T).text("User session has expired.").toMaybe();
+		}
 
 		UserSession userSession = mapToUserSession(pUserSession);
 

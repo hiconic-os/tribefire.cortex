@@ -86,7 +86,7 @@ public class AccessUserSessionService extends AbstractUserSessionService {
 			PersistenceUserSession userSession = gmSession.query().entities(findPersistenceUserSessionBySessionIdQuery(sessionId)).first();
 
 			if (userSession == null)
-				return Reasons.build(SessionNotFound.T).text("User session '" + sessionId + "' not found").toMaybe();
+				return Reasons.build(SessionNotFound.T).text("User session was not found.").toMaybe();
 
 			return Maybe.complete(userSession);
 		} catch (Exception e) {
